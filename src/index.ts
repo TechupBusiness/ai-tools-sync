@@ -15,6 +15,29 @@ export type { Result, Ok, Err } from './utils/result.js';
 
 // Re-export core functionality
 export { loadConfig, validateConfig } from './config/loader.js';
+export {
+  loadTargetMapping,
+  loadAllTargetMappings,
+  getOutputDir,
+  isFeatureSupported,
+  getTerminology,
+  getToolMapping,
+  getModelMapping,
+  getFrontmatterConfig,
+  supportsImportSyntax,
+  getImportFormat,
+} from './config/target-mapping.js';
+export type {
+  TargetMapping,
+  TargetOutputConfig,
+  ToolMappingOptions,
+  ModelMappingOptions,
+  FrontmatterConfig,
+  FrontmatterConfigs,
+  TerminologyMapping,
+  ImportSyntaxConfig,
+  LoadTargetMappingOptions,
+} from './config/target-mapping.js';
 export { parseRule } from './parsers/rule.js';
 export { parsePersona } from './parsers/persona.js';
 export { parseCommand } from './parsers/command.js';

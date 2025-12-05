@@ -1,0 +1,129 @@
+# =============================================================================
+# Cursor IDE Target Configuration
+# =============================================================================
+# This file defines how content is transformed and output for Cursor IDE.
+# Project-specific overrides can be placed in .ai/targets/cursor.yaml
+# =============================================================================
+
+# Target metadata
+name: cursor
+version: "1.0.0"
+description: "Target configuration for Cursor IDE"
+
+# =============================================================================
+# Output Configuration
+# =============================================================================
+output:
+  # Directory for rules (.mdc files)
+  rules_dir: ".cursor/rules"
+  rules_format: "mdc"
+  rules_extension: ".mdc"
+  
+  # Directory for personas (as command roles)
+  personas_dir: ".cursor/commands/roles"
+  personas_format: "md"
+  
+  # Directory for commands
+  commands_dir: ".cursor/commands"
+  commands_format: "md"
+  
+  # Entry point file (null means no root entry point for rules)
+  entry_point: "AGENTS.md"
+  
+  # MCP configuration file
+  mcp_file: "mcp.json"
+
+# =============================================================================
+# Tool Mapping
+# =============================================================================
+# Maps generic tool names to Cursor-specific names
+tool_mapping:
+  read: "Read"
+  write: "Create"
+  edit: "Edit"
+  execute: "Execute"
+  search: "Grep"
+  glob: "Glob"
+  fetch: "FetchUrl"
+  ls: "LS"
+
+# How to handle unknown tools
+tool_options:
+  preserve_unknown: true
+  unknown_transform: "capitalize"  # capitalize, lowercase, uppercase, none
+
+# =============================================================================
+# Model Mapping
+# =============================================================================
+# Maps generic model names to Cursor-specific names
+# Cursor uses "inherit" to use the IDE's selected model
+model_mapping:
+  default: "inherit"
+  fast: "inherit"
+  powerful: "inherit"
+
+# How to handle model selection
+model_options:
+  inherit_behavior: "passthrough"  # passthrough or use-default
+  unknown_behavior: "passthrough"  # passthrough or use-default
+
+# =============================================================================
+# Frontmatter Transformations
+# =============================================================================
+# How to transform frontmatter fields for Cursor format
+frontmatter:
+  rules:
+    # Fields to include in output frontmatter
+    include_fields:
+      - description
+      - globs
+      - alwaysApply
+    
+    # Field name mappings (generic -> cursor)
+    field_mappings:
+      always_apply: "alwaysApply"
+    
+    # Value transformations
+    transforms:
+      globs: "array_to_comma_separated"
+      alwaysApply: "to_boolean"
+      always_apply: "to_boolean"
+  
+  personas:
+    include_fields:
+      - name
+      - description
+    field_mappings: {}
+    transforms: {}
+  
+  commands:
+    include_fields:
+      - name
+      - description
+      - execute
+      - args
+    field_mappings: {}
+    transforms: {}
+
+# =============================================================================
+# Unsupported Features
+# =============================================================================
+# Features not supported by Cursor
+unsupported:
+  - hooks
+
+# Behavior when encountering unsupported features
+unsupported_behavior: "warn"  # warn, skip, or error
+
+# =============================================================================
+# Terminology Mapping
+# =============================================================================
+# How generic terms map to Cursor-specific terms
+terminology:
+  rule: "rule"
+  persona: "role"
+  command: "command"
+  hook: null  # not supported
+  skill: "rule"
+  agent: "role"
+

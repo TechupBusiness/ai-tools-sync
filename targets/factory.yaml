@@ -1,0 +1,127 @@
+# =============================================================================
+# Factory Target Configuration
+# =============================================================================
+# This file defines how content is transformed and output for Factory.
+# Project-specific overrides can be placed in .ai/targets/factory.yaml
+# =============================================================================
+
+# Target metadata
+name: factory
+version: "1.0.0"
+description: "Target configuration for Factory"
+
+# =============================================================================
+# Output Configuration
+# =============================================================================
+output:
+  # Root directory for Factory configuration
+  root_dir: ".factory"
+  
+  # Directory for skills (rules as skill directories)
+  rules_dir: ".factory/skills"
+  rules_format: "skill"  # Creates <name>/SKILL.md structure
+  rules_extension: ".md"
+  
+  # Directory for droids (personas)
+  personas_dir: ".factory/droids"
+  personas_format: "md"
+  
+  # Directory for commands
+  commands_dir: ".factory/commands"
+  commands_format: "md"
+  
+  # Entry point file
+  entry_point: "AGENTS.md"
+  
+  # MCP configuration
+  mcp_file: ".factory/mcp.json"
+
+# =============================================================================
+# Tool Mapping
+# =============================================================================
+# Maps generic tool names to Factory-specific names (lowercase convention)
+tool_mapping:
+  read: "read"
+  write: "write"
+  edit: "edit"
+  execute: "execute"
+  search: "search"
+  glob: "glob"
+  fetch: "fetch"
+  ls: "list"
+
+# How to handle unknown tools
+tool_options:
+  preserve_unknown: true
+  unknown_transform: "lowercase"
+
+# =============================================================================
+# Model Mapping
+# =============================================================================
+# Maps generic model names to Factory-specific identifiers
+model_mapping:
+  default: "default"
+  fast: "fast"
+  powerful: "powerful"
+
+# How to handle model selection
+model_options:
+  inherit_behavior: "passthrough"
+  unknown_behavior: "passthrough"
+
+# =============================================================================
+# Frontmatter Transformations
+# =============================================================================
+frontmatter:
+  rules:
+    include_fields:
+      - name
+      - description
+      - always_apply
+      - globs
+      - priority
+      - requires
+    field_mappings: {}
+    transforms:
+      tools: "map_tools_for_target"
+  
+  personas:
+    include_fields:
+      - name
+      - description
+      - tools
+      - model
+    field_mappings: {}
+    transforms:
+      tools: "map_tools_for_target"
+      model: "map_model_for_target"
+  
+  commands:
+    include_fields:
+      - name
+      - description
+      - execute
+      - args
+    field_mappings: {}
+    transforms: {}
+
+# =============================================================================
+# Unsupported Features
+# =============================================================================
+# Hooks are not documented/supported in Factory
+unsupported:
+  - hooks
+
+unsupported_behavior: "warn"
+
+# =============================================================================
+# Terminology Mapping
+# =============================================================================
+terminology:
+  rule: "skill"
+  persona: "droid"
+  command: "command"
+  hook: null  # not supported
+  skill: "skill"
+  agent: "droid"
+

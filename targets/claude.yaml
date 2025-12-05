@@ -1,0 +1,161 @@
+# =============================================================================
+# Claude Code Target Configuration
+# =============================================================================
+# This file defines how content is transformed and output for Claude Code.
+# Project-specific overrides can be placed in .ai/targets/claude.yaml
+# =============================================================================
+
+# Target metadata
+name: claude
+version: "1.0.0"
+description: "Target configuration for Claude Code"
+
+# =============================================================================
+# Output Configuration
+# =============================================================================
+output:
+  # Root directory for Claude configuration
+  root_dir: ".claude"
+  
+  # Directory for skills (rules as skill directories)
+  rules_dir: ".claude/skills"
+  rules_format: "skill"  # Creates <name>/SKILL.md structure
+  rules_extension: ".md"
+  
+  # Directory for agents (personas)
+  personas_dir: ".claude/agents"
+  personas_format: "md"
+  
+  # Settings file (contains hooks and commands)
+  settings_file: ".claude/settings.json"
+  
+  # Entry point file
+  entry_point: "CLAUDE.md"
+  
+  # MCP configuration
+  mcp_file: ".claude/mcp_servers.json"
+
+# =============================================================================
+# Tool Mapping
+# =============================================================================
+# Maps generic tool names to Claude-specific names
+tool_mapping:
+  read: "Read"
+  write: "Write"
+  edit: "Edit"
+  execute: "Bash"
+  search: "Search"
+  glob: "Glob"
+  fetch: "WebFetch"
+  ls: "ListDir"
+
+# How to handle unknown tools
+tool_options:
+  preserve_unknown: true
+  unknown_transform: "capitalize"
+
+# =============================================================================
+# Model Mapping
+# =============================================================================
+# Maps generic model names to Claude-specific model identifiers
+model_mapping:
+  default: "claude-sonnet-4-20250514"
+  fast: "claude-3-5-haiku-20241022"
+  powerful: "claude-sonnet-4-20250514"
+
+# How to handle model selection
+model_options:
+  inherit_behavior: "use-default"  # use the default model for inherit
+  unknown_behavior: "passthrough"  # pass through unknown model names
+
+# =============================================================================
+# Frontmatter Transformations
+# =============================================================================
+frontmatter:
+  rules:
+    include_fields:
+      - name
+      - description
+      - always_apply
+      - globs
+      - priority
+      - requires
+    field_mappings: {}
+    transforms:
+      tools: "map_tools_for_target"
+  
+  personas:
+    include_fields:
+      - name
+      - description
+      - tools
+      - model
+    field_mappings: {}
+    transforms:
+      tools: "map_tools_for_target"
+      model: "map_model_for_target"
+  
+  commands:
+    include_fields:
+      - name
+      - description
+      - execute
+      - args
+    field_mappings: {}
+    transforms: {}
+  
+  hooks:
+    include_fields:
+      - name
+      - event
+      - tool_match
+      - execute
+    field_mappings: {}
+    transforms: {}
+
+# =============================================================================
+# Supported Features
+# =============================================================================
+# Claude Code supports all features
+supported:
+  - rules
+  - personas
+  - commands
+  - hooks
+  - skills
+  - agents
+
+# No unsupported features
+unsupported: []
+unsupported_behavior: "skip"
+
+# =============================================================================
+# Hook Events
+# =============================================================================
+# Supported hook events in Claude Code
+hook_events:
+  - PreToolUse
+  - PostToolUse
+  - PreMessage
+  - PostMessage
+  - PreCommit
+
+# =============================================================================
+# Import Syntax
+# =============================================================================
+# Claude supports @import syntax in CLAUDE.md
+import_syntax:
+  enabled: true
+  format: "@import {path}"
+
+# =============================================================================
+# Terminology Mapping
+# =============================================================================
+terminology:
+  rule: "skill"
+  persona: "agent"
+  command: "command"
+  hook: "hook"
+  skill: "skill"
+  agent: "agent"
+
