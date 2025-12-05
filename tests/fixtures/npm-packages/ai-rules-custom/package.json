@@ -1,0 +1,7 @@
+{
+  "name": "ai-rules-custom",
+  "version": "3.0.0",
+  "description": "Package with custom aiContentPath",
+  "aiContentPath": "custom-ai"
+}
+

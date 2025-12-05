@@ -23,6 +23,14 @@ export { parseHook } from './parsers/hook.js';
 // Re-export loaders
 export { LocalLoader, createLocalLoader } from './loaders/local.js';
 export {
+  NpmLoader,
+  createNpmLoader,
+  clearNpmCache,
+  getNpmCacheEntries,
+  NPM_PREFIX,
+} from './loaders/npm.js';
+export type { NpmPackageInfo, NpmPackageJson, NpmLoaderOptions } from './loaders/npm.js';
+export {
   emptyLoadResult,
   mergeLoadResults,
   filterLoadResultByTarget,
