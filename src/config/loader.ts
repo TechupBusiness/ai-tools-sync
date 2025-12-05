@@ -7,11 +7,12 @@ import * as path from 'node:path';
 
 import { dirExists, fileExists, readFile } from '../utils/fs.js';
 import { type Result, err, ok } from '../utils/result.js';
-import { parseYaml, YamlParseError } from '../utils/yaml.js';
+import { parseYaml, type YamlParseError } from '../utils/yaml.js';
 
 import { applyDefaults } from './defaults.js';
-import type { ConfigOptions, ConfigValidationError, ResolvedConfig } from './types.js';
 import { formatValidationErrors, validateConfig } from './validator.js';
+
+import type { ConfigOptions, ConfigValidationError, ResolvedConfig } from './types.js';
 
 /**
  * Error thrown when configuration loading fails

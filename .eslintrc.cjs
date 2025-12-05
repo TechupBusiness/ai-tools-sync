@@ -21,10 +21,13 @@ module.exports = {
   ],
   settings: {
     'import/resolver': {
-      typescript: {
-        alwaysTryTypes: true,
-        project: './tsconfig.json',
-      },
+      // To use a more complex ESLint import resolver, install npm install -D eslint-import-resolver-typescript 
+      // and enable the following configuration (remove node: true):
+      //typescript: {
+      //  alwaysTryTypes: true,
+      //  project: './tsconfig.json',
+      //},
+      node: true,
     },
   },
   rules: {
@@ -88,7 +91,10 @@ module.exports = {
       },
     },
     {
-      files: ['*.cjs'],
+      files: ['*.cjs', '*.js'],
+      parserOptions: {
+        project: null,
+      },
       rules: {
         '@typescript-eslint/no-var-requires': 'off',
       },

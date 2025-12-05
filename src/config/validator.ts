@@ -6,6 +6,7 @@
 import { type Result, err, ok } from '../utils/result.js';
 
 import { isValidVersion, isVersionCompatible, isSupportedTarget } from './defaults.js';
+
 import type { Config, ConfigValidationError } from './types.js';
 
 /**
@@ -125,8 +126,7 @@ function validateTargets(config: Record<string, unknown>, ctx: ValidationContext
     return;
   }
 
-  for (let i = 0; i < targets.length; i++) {
-    const target = targets[i];
+  for (const [i, target] of targets.entries()) {
     if (typeof target !== 'string') {
       ctx.addError(`targets[${i}]`, 'Target must be a string', target);
     } else if (!isSupportedTarget(target)) {
@@ -152,8 +152,7 @@ function validateLoaders(config: Record<string, unknown>, ctx: ValidationContext
 
   const validTypes = ['ai-tool-sync', 'local', 'npm', 'pip', 'claude-plugin', 'url'];
 
-  for (let i = 0; i < loaders.length; i++) {
-    const loader = loaders[i];
+  for (const [i, loader] of loaders.entries()) {
 
     if (typeof loader !== 'object' || loader === null) {
       ctx.addError(`loaders[${i}]`, 'Loader must be an object', loader);
@@ -248,8 +247,7 @@ function validatePlugins(plugins: unknown, ctx: ValidationContext): void {
     return;
   }
 
-  for (let i = 0; i < plugins.length; i++) {
-    const plugin = plugins[i];
+  for (const [i, plugin] of plugins.entries()) {
 
     if (typeof plugin !== 'object' || plugin === null) {
       ctx.addError(`use.plugins[${i}]`, 'Plugin must be an object', plugin);
@@ -320,8 +318,7 @@ function validateRules(config: Record<string, unknown>, ctx: ValidationContext):
       if (!Array.isArray(ruleObj.targets)) {
         ctx.addError(`rules.${name}.targets`, 'Targets must be an array', ruleObj.targets);
       } else {
-        for (let i = 0; i < ruleObj.targets.length; i++) {
-          const target = ruleObj.targets[i];
+        for (const [i, target] of (ruleObj.targets as unknown[]).entries()) {
           if (typeof target !== 'string') {
             ctx.addError(`rules.${name}.targets[${i}]`, 'Target must be a string', target);
           } else if (!isSupportedTarget(target)) {
@@ -400,9 +397,7 @@ function validateHooks(config: Record<string, unknown>, ctx: ValidationContext):
       continue;
     }
 
-    for (let i = 0; i < hookList.length; i++) {
-      const hook = hookList[i];
-
+    for (const [i, hook] of (hookList as unknown[]).entries()) {
       if (typeof hook !== 'object' || hook === null) {
         ctx.addError(`hooks.${event}[${i}]`, 'Hook must be an object', hook);
         continue;
