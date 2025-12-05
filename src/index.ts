@@ -21,8 +21,16 @@ export { parseCommand } from './parsers/command.js';
 export { parseHook } from './parsers/hook.js';
 
 // Re-export loaders
-export { LocalLoader } from './loaders/local.js';
-export type { Loader, LoadResult, LoaderOptions } from './loaders/base.js';
+export { LocalLoader, createLocalLoader } from './loaders/local.js';
+export {
+  emptyLoadResult,
+  mergeLoadResults,
+  filterLoadResultByTarget,
+  isLoadResultEmpty,
+  getLoadResultStats,
+  DEFAULT_DIRECTORIES,
+} from './loaders/base.js';
+export type { Loader, LoadResult, LoaderOptions, LoadError } from './loaders/base.js';
 
 // Re-export generators
 export { CursorGenerator } from './generators/cursor.js';
