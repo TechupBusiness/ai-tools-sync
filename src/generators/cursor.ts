@@ -1,30 +1,470 @@
 /**
  * @file Cursor Generator
- * @description Generate .cursor/rules/*.mdc and related files
+ * @description Generate .cursor/rules/*.mdc and related files for Cursor IDE
  *
- * This is a stub file - full implementation in Phase 6
+ * Cursor IDE format:
+ * - Rules: .cursor/rules/*.mdc with YAML frontmatter (alwaysApply, globs, description)
+ * - Personas: .cursor/commands/roles/*.md
+ * - Commands: .cursor/commands/*.md
+ * - Hooks: NOT supported (skipped)
+ * - Entry point: AGENTS.md (if personas/commands exist)
+ * - MCP: mcp.json in project root
  */
 
+import * as path from 'node:path';
+
+import type { ParsedCommand } from '../parsers/command.js';
+import type { ParsedPersona } from '../parsers/persona.js';
+import type { ParsedRule } from '../parsers/rule.js';
 import {
+  serializeFrontmatter,
+  transformForCursor,
+} from '../transformers/frontmatter.js';
+import { mapTools } from '../transformers/tool-mapper.js';
+import {
+  dirExists,
+  ensureDir,
+  glob,
+  joinPath,
+  removeDir,
+  writeFile,
+} from '../utils/fs.js';
+
+import {
+  type GeneratedFile,
   type Generator,
   type GeneratorOptions,
   type GenerateResult,
   type ResolvedContent,
+  DO_NOT_EDIT_HEADER,
   emptyGenerateResult,
+  filterContentByTarget,
+  sortCommandsByName,
+  sortPersonasByName,
+  sortRulesByPriority,
+  toSafeFilename,
 } from './base.js';
+
+/**
+ * Output directories for Cursor
+ */
+const CURSOR_DIRS = {
+  rules: '.cursor/rules',
+  commands: '.cursor/commands',
+  roles: '.cursor/commands/roles',
+} as const;
 
 /**
  * Generator for Cursor IDE output
  */
 export class CursorGenerator implements Generator {
-  readonly name = 'cursor';
+  readonly name = 'cursor' as const;
 
   async generate(
-    _content: ResolvedContent,
-    _options?: GeneratorOptions
+    content: ResolvedContent,
+    options: GeneratorOptions = {}
   ): Promise<GenerateResult> {
-    // Stub implementation
-    return emptyGenerateResult();
+    const result = emptyGenerateResult();
+    const outputDir = options.outputDir ?? content.projectRoot;
+    const generated: GeneratedFile[] = [];
+
+    // Filter content for cursor target
+    const cursorContent = filterContentByTarget(content, 'cursor');
+
+    // Handle hooks - warn and skip
+    if (cursorContent.hooks.length > 0) {
+      result.warnings.push(
+        `Cursor does not support hooks. ${cursorContent.hooks.length} hook(s) will be skipped.`
+      );
+    }
+
+    // Clean if requested
+    if (options.clean && !options.dryRun) {
+      const deleted = await this.cleanOutputDirs(outputDir);
+      result.deleted.push(...deleted);
+    }
+
+    // Generate rules
+    const ruleFiles = await this.generateRules(
+      cursorContent.rules,
+      outputDir,
+      options
+    );
+    generated.push(...ruleFiles);
+
+    // Generate personas as roles
+    const personaFiles = await this.generatePersonas(
+      cursorContent.personas,
+      outputDir,
+      options
+    );
+    generated.push(...personaFiles);
+
+    // Generate commands
+    const commandFiles = await this.generateCommands(
+      cursorContent.commands,
+      outputDir,
+      options
+    );
+    generated.push(...commandFiles);
+
+    // Generate AGENTS.md entry point if we have personas or commands
+    if (cursorContent.personas.length > 0 || cursorContent.commands.length > 0) {
+      const agentsMd = this.generateAgentsMd(cursorContent, options);
+      generated.push(agentsMd);
+    }
+
+    // Write files if not dry run
+    if (!options.dryRun) {
+      for (const file of generated) {
+        const filePath = joinPath(outputDir, file.path);
+        const writeResult = await writeFile(filePath, file.content);
+        if (writeResult.ok) {
+          result.files.push(file.path);
+        } else {
+          result.warnings.push(`Failed to write ${file.path}: ${writeResult.error.message}`);
+        }
+      }
+    } else {
+      result.generated = generated;
+      result.files = generated.map((f) => f.path);
+    }
+
+    return result;
+  }
+
+  /**
+   * Clean existing output directories
+   */
+  private async cleanOutputDirs(outputDir: string): Promise<string[]> {
+    const deleted: string[] = [];
+
+    // Clean rules directory
+    const rulesDir = joinPath(outputDir, CURSOR_DIRS.rules);
+    if (await dirExists(rulesDir)) {
+      const files = await glob('*.mdc', { cwd: rulesDir, absolute: false });
+      await removeDir(rulesDir);
+      deleted.push(...files.map((f) => joinPath(CURSOR_DIRS.rules, f)));
+    }
+
+    // Clean roles directory
+    const rolesDir = joinPath(outputDir, CURSOR_DIRS.roles);
+    if (await dirExists(rolesDir)) {
+      const files = await glob('*.md', { cwd: rolesDir, absolute: false });
+      await removeDir(rolesDir);
+      deleted.push(...files.map((f) => joinPath(CURSOR_DIRS.roles, f)));
+    }
+
+    return deleted;
+  }
+
+  /**
+   * Generate .mdc rule files
+   */
+  private async generateRules(
+    rules: ParsedRule[],
+    outputDir: string,
+    options: GeneratorOptions
+  ): Promise<GeneratedFile[]> {
+    const generated: GeneratedFile[] = [];
+    const sortedRules = sortRulesByPriority(rules);
+
+    // Ensure rules directory exists
+    if (!options.dryRun) {
+      await ensureDir(joinPath(outputDir, CURSOR_DIRS.rules));
+    }
+
+    for (const rule of sortedRules) {
+      const file = this.generateRuleFile(rule, options);
+      generated.push(file);
+    }
+
+    return generated;
+  }
+
+  /**
+   * Generate a single .mdc rule file
+   */
+  private generateRuleFile(rule: ParsedRule, options: GeneratorOptions): GeneratedFile {
+    const filename = `${toSafeFilename(rule.frontmatter.name)}.mdc`;
+    const filePath = joinPath(CURSOR_DIRS.rules, filename);
+
+    // Transform frontmatter to Cursor format
+    const cursorFrontmatter = transformForCursor(
+      rule.frontmatter as unknown as Record<string, unknown>
+    );
+
+    // Build content
+    const parts: string[] = [];
+
+    // Add header if requested
+    if (options.addHeaders) {
+      parts.push(DO_NOT_EDIT_HEADER.trim());
+      parts.push('');
+    }
+
+    // Add frontmatter
+    parts.push('---');
+    parts.push(serializeFrontmatter(cursorFrontmatter));
+    parts.push('---');
+    parts.push('');
+
+    // Add body content
+    parts.push(rule.content.trim());
+    parts.push('');
+
+    return {
+      path: filePath,
+      content: parts.join('\n'),
+      type: 'rule',
+    };
+  }
+
+  /**
+   * Generate persona files as Cursor roles
+   */
+  private async generatePersonas(
+    personas: ParsedPersona[],
+    outputDir: string,
+    options: GeneratorOptions
+  ): Promise<GeneratedFile[]> {
+    const generated: GeneratedFile[] = [];
+    const sortedPersonas = sortPersonasByName(personas);
+
+    if (sortedPersonas.length === 0) {
+      return generated;
+    }
+
+    // Ensure roles directory exists
+    if (!options.dryRun) {
+      await ensureDir(joinPath(outputDir, CURSOR_DIRS.roles));
+    }
+
+    for (const persona of sortedPersonas) {
+      const file = this.generatePersonaFile(persona, options);
+      generated.push(file);
+    }
+
+    return generated;
+  }
+
+  /**
+   * Generate a single persona file for Cursor (as a role)
+   */
+  private generatePersonaFile(persona: ParsedPersona, options: GeneratorOptions): GeneratedFile {
+    const filename = `${toSafeFilename(persona.frontmatter.name)}.md`;
+    const filePath = joinPath(CURSOR_DIRS.roles, filename);
+
+    // Map tools to Cursor-specific names
+    const tools = persona.frontmatter.tools ?? [];
+    const mappedTools = mapTools(tools, 'cursor');
+
+    // Build content
+    const parts: string[] = [];
+
+    // Add header if requested
+    if (options.addHeaders) {
+      parts.push(DO_NOT_EDIT_HEADER.trim());
+      parts.push('');
+    }
+
+    // Add title
+    parts.push(`# ${persona.frontmatter.name}`);
+    parts.push('');
+
+    // Add description if present
+    if (persona.frontmatter.description) {
+      parts.push(`> ${persona.frontmatter.description}`);
+      parts.push('');
+    }
+
+    // Add tools section
+    if (mappedTools.length > 0) {
+      parts.push('## Available Tools');
+      parts.push('');
+      parts.push(mappedTools.map((t) => `- ${t}`).join('\n'));
+      parts.push('');
+    }
+
+    // Add body content
+    if (persona.content.trim()) {
+      parts.push(persona.content.trim());
+      parts.push('');
+    }
+
+    return {
+      path: filePath,
+      content: parts.join('\n'),
+      type: 'persona',
+    };
+  }
+
+  /**
+   * Generate command files for Cursor
+   */
+  private async generateCommands(
+    commands: ParsedCommand[],
+    outputDir: string,
+    options: GeneratorOptions
+  ): Promise<GeneratedFile[]> {
+    const generated: GeneratedFile[] = [];
+    const sortedCommands = sortCommandsByName(commands);
+
+    if (sortedCommands.length === 0) {
+      return generated;
+    }
+
+    // Ensure commands directory exists
+    if (!options.dryRun) {
+      await ensureDir(joinPath(outputDir, CURSOR_DIRS.commands));
+    }
+
+    for (const command of sortedCommands) {
+      const file = this.generateCommandFile(command, options);
+      generated.push(file);
+    }
+
+    return generated;
+  }
+
+  /**
+   * Generate a single command file for Cursor
+   */
+  private generateCommandFile(command: ParsedCommand, options: GeneratorOptions): GeneratedFile {
+    const filename = `${toSafeFilename(command.frontmatter.name)}.md`;
+    const filePath = joinPath(CURSOR_DIRS.commands, filename);
+
+    // Build content
+    const parts: string[] = [];
+
+    // Add header if requested
+    if (options.addHeaders) {
+      parts.push(DO_NOT_EDIT_HEADER.trim());
+      parts.push('');
+    }
+
+    // Add title
+    parts.push(`# ${command.frontmatter.name}`);
+    parts.push('');
+
+    // Add description if present
+    if (command.frontmatter.description) {
+      parts.push(`> ${command.frontmatter.description}`);
+      parts.push('');
+    }
+
+    // Add execute section if present
+    if (command.frontmatter.execute) {
+      parts.push('## Execute');
+      parts.push('');
+      parts.push('```bash');
+      parts.push(command.frontmatter.execute);
+      parts.push('```');
+      parts.push('');
+    }
+
+    // Add arguments section if present
+    const args = command.frontmatter.args ?? [];
+    if (args.length > 0) {
+      parts.push('## Arguments');
+      parts.push('');
+      for (const arg of args) {
+        const required = arg.required ? ' (required)' : '';
+        const defaultVal = arg.default !== undefined ? ` [default: ${arg.default}]` : '';
+        parts.push(`- **${arg.name}** (${arg.type})${required}${defaultVal}`);
+        if (arg.description) {
+          parts.push(`  ${arg.description}`);
+        }
+        if (arg.choices && arg.choices.length > 0) {
+          parts.push(`  Choices: ${arg.choices.join(', ')}`);
+        }
+      }
+      parts.push('');
+    }
+
+    // Add body content
+    if (command.content.trim()) {
+      parts.push(command.content.trim());
+      parts.push('');
+    }
+
+    return {
+      path: filePath,
+      content: parts.join('\n'),
+      type: 'command',
+    };
+  }
+
+  /**
+   * Generate AGENTS.md entry point
+   */
+  private generateAgentsMd(
+    content: ResolvedContent,
+    options: GeneratorOptions
+  ): GeneratedFile {
+    const parts: string[] = [];
+
+    // Add header if requested
+    if (options.addHeaders) {
+      parts.push(DO_NOT_EDIT_HEADER.trim());
+      parts.push('');
+    }
+
+    parts.push('# AI Agents');
+    parts.push('');
+
+    if (content.projectName) {
+      parts.push(`Project: **${content.projectName}**`);
+      parts.push('');
+    }
+
+    // List roles/personas
+    if (content.personas.length > 0) {
+      parts.push('## Available Roles');
+      parts.push('');
+      const sortedPersonas = sortPersonasByName(content.personas);
+      for (const persona of sortedPersonas) {
+        const desc = persona.frontmatter.description
+          ? ` - ${persona.frontmatter.description}`
+          : '';
+        const rolePath = path.posix.join(
+          CURSOR_DIRS.roles,
+          `${toSafeFilename(persona.frontmatter.name)}.md`
+        );
+        parts.push(`- [${persona.frontmatter.name}](${rolePath})${desc}`);
+      }
+      parts.push('');
+    }
+
+    // List commands
+    if (content.commands.length > 0) {
+      parts.push('## Available Commands');
+      parts.push('');
+      const sortedCommands = sortCommandsByName(content.commands);
+      for (const cmd of sortedCommands) {
+        const desc = cmd.frontmatter.description
+          ? ` - ${cmd.frontmatter.description}`
+          : '';
+        const cmdPath = path.posix.join(
+          CURSOR_DIRS.commands,
+          `${toSafeFilename(cmd.frontmatter.name)}.md`
+        );
+        parts.push(`- [${cmd.frontmatter.name}](${cmdPath})${desc}`);
+      }
+      parts.push('');
+    }
+
+    return {
+      path: 'AGENTS.md',
+      content: parts.join('\n'),
+      type: 'entrypoint',
+    };
   }
 }
 
+/**
+ * Create a new Cursor generator instance
+ */
+export function createCursorGenerator(): CursorGenerator {
+  return new CursorGenerator();
+}
