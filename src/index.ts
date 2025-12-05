@@ -54,6 +54,17 @@ export type {
   ClaudeAgentFrontmatter,
 } from './loaders/claude-plugin.js';
 export {
+  UrlLoader,
+  createUrlLoader,
+  clearUrlCache,
+  getUrlCacheEntries,
+  isValidUrl,
+  URL_PREFIX,
+  DEFAULT_TIMEOUT_MS,
+  DEFAULT_CACHE_TTL_MS,
+} from './loaders/url.js';
+export type { UrlLoaderOptions } from './loaders/url.js';
+export {
   emptyLoadResult,
   mergeLoadResults,
   filterLoadResultByTarget,
