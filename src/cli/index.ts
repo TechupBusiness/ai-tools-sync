@@ -2,7 +2,10 @@
  * @file CLI Entry Point
  * @description Command-line interface for ai-sync
  *
- * This is a stub file - full implementation in Phase 8
+ * Provides three main commands:
+ * - sync (default): Sync .ai/ configuration to tool-specific outputs
+ * - init: Initialize .ai/ directory with template configuration
+ * - validate: Validate configuration without generating output
  */
 
 import { Command } from 'commander';
@@ -10,11 +13,15 @@ import { Command } from 'commander';
 import { logger } from '../utils/logger.js';
 import { VERSION } from '../index.js';
 
+import { sync } from './commands/sync.js';
+import { init } from './commands/init.js';
+import { validate } from './commands/validate.js';
+
 const program = new Command();
 
 program
   .name('ai-sync')
-  .description('Unified AI tool configuration - single source of truth')
+  .description('Unified AI tool configuration - single source of truth for Cursor, Claude Code, Factory, and more')
   .version(VERSION);
 
 program
@@ -23,50 +30,94 @@ program
   .option('-v, --verbose', 'Enable verbose output')
   .option('-d, --dry-run', 'Show what would be generated without writing files')
   .option('--no-clean', 'Do not clean output directories before generating')
-  .action(async (options: { verbose?: boolean; dryRun?: boolean; clean?: boolean }) => {
+  .option('-p, --project <path>', 'Project root directory')
+  .action(async (options: {
+    verbose?: boolean;
+    dryRun?: boolean;
+    clean?: boolean;
+    project?: string;
+  }) => {
     if (options.verbose) {
       logger.setVerbose(true);
     }
 
-    logger.header('AI Tool Sync');
-    logger.info('Syncing configuration...');
+    try {
+      const result = await sync({
+        verbose: options.verbose,
+        dryRun: options.dryRun,
+        clean: options.clean,
+        projectRoot: options.project,
+      });
 
-    if (options.dryRun) {
-      logger.info('Dry run mode - no files will be written');
+      // Exit with error code if sync failed
+      if (!result.success) {
+        process.exit(1);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error(`Sync failed: ${message}`);
+      if (options.verbose && error instanceof Error && error.stack) {
+        console.error(error.stack);
+      }
+      process.exit(1);
     }
-
-    // Stub implementation
-    logger.success('Sync complete');
   });
 
 program
   .command('init')
   .description('Initialize .ai/ directory with template configuration')
   .option('-f, --force', 'Overwrite existing configuration')
-  .action(async (options: { force?: boolean }) => {
-    logger.header('Initialize AI Configuration');
+  .option('-y, --yes', 'Skip prompts and use defaults')
+  .option('-p, --project <path>', 'Project root directory')
+  .action(async (options: {
+    force?: boolean;
+    yes?: boolean;
+    project?: string;
+  }) => {
+    try {
+      const result = await init({
+        force: options.force,
+        yes: options.yes,
+        projectRoot: options.project,
+      });
 
-    if (options.force) {
-      logger.warn('Force mode - will overwrite existing files');
+      if (!result.success) {
+        process.exit(1);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error(`Init failed: ${message}`);
+      process.exit(1);
     }
-
-    // Stub implementation
-    logger.success('Initialization complete');
   });
 
 program
   .command('validate')
   .description('Validate configuration without generating output')
   .option('-v, --verbose', 'Show detailed validation results')
-  .action(async (options: { verbose?: boolean }) => {
+  .option('-p, --project <path>', 'Project root directory')
+  .action(async (options: {
+    verbose?: boolean;
+    project?: string;
+  }) => {
     if (options.verbose) {
       logger.setVerbose(true);
     }
 
-    logger.header('Validate Configuration');
+    try {
+      const result = await validate({
+        verbose: options.verbose,
+        projectRoot: options.project,
+      });
 
-    // Stub implementation
-    logger.success('Configuration is valid');
+      if (!result.success) {
+        process.exit(1);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error(`Validate failed: ${message}`);
+      process.exit(1);
+    }
   });
 
 /**
@@ -81,8 +132,13 @@ export function run(): void {
  */
 export default run;
 
+// Re-export commands for programmatic usage
+export { sync, init, validate };
+export type { SyncOptions, SyncResult } from './commands/sync.js';
+export type { InitOptions, InitResult } from './commands/init.js';
+export type { ValidateOptions, ValidateResult } from './commands/validate.js';
+
 // Run if executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   run();
 }
-
