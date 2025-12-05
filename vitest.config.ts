@@ -6,7 +6,9 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['tests/**/*.test.ts'],
-    exclude: ['tests/e2e/**/*.test.ts', 'node_modules', 'dist'],
+    // E2E tests are excluded from regular test runs but can be run separately
+    // via `npm run test:e2e` which overrides this with --include
+    exclude: ['node_modules', 'dist'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
