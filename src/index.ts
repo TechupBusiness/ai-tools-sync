@@ -1,0 +1,39 @@
+/**
+ * @file AI Tool Sync - Main Entry Point
+ * @description Unified AI tool configuration - single source of truth for Cursor, Claude Code, Factory, and more
+ *
+ * This module exports the public API for programmatic usage of ai-tool-sync.
+ */
+
+// Re-export types
+export type { Config, ConfigOptions } from './config/types.js';
+export type { Rule, ParsedRule } from './parsers/rule.js';
+export type { Persona, ParsedPersona } from './parsers/persona.js';
+export type { Command, ParsedCommand } from './parsers/command.js';
+export type { Hook, ParsedHook } from './parsers/hook.js';
+export type { Result, Ok, Err } from './utils/result.js';
+
+// Re-export core functionality
+export { loadConfig, validateConfig } from './config/loader.js';
+export { parseRule } from './parsers/rule.js';
+export { parsePersona } from './parsers/persona.js';
+export { parseCommand } from './parsers/command.js';
+export { parseHook } from './parsers/hook.js';
+
+// Re-export loaders
+export { LocalLoader } from './loaders/local.js';
+export type { Loader, LoadResult, LoaderOptions } from './loaders/base.js';
+
+// Re-export generators
+export { CursorGenerator } from './generators/cursor.js';
+export { ClaudeGenerator } from './generators/claude.js';
+export { FactoryGenerator } from './generators/factory.js';
+export type { Generator, GeneratorOptions, ResolvedContent } from './generators/base.js';
+
+// Re-export utilities
+export { ok, err, isOk, isErr } from './utils/result.js';
+export { logger } from './utils/logger.js';
+
+// Version
+export const VERSION = '0.1.0';
+

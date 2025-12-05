@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Test coverage
+coverage/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Lock files (use one, ignore others)
+# package-lock.json
+# pnpm-lock.yaml
+# yarn.lock
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Generated files in tests
+tests/fixtures/generated/
+
+demo-content/
