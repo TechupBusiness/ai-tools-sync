@@ -1,0 +1,5 @@
+[project]
+name = "regular-pip-package"
+version = "3.0.0"
+description = "A regular Python package without AI content"
+

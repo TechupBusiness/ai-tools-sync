@@ -1,0 +1,9 @@
+[project]
+name = "ai-rules-configured"
+version = "1.5.0"
+description = "AI rules package with custom directory configuration"
+
+[tool.ai-tool-sync]
+rules = "my_rules"
+personas = "my_personas"
+

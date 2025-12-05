@@ -31,6 +31,14 @@ export {
 } from './loaders/npm.js';
 export type { NpmPackageInfo, NpmPackageJson, NpmLoaderOptions } from './loaders/npm.js';
 export {
+  PipLoader,
+  createPipLoader,
+  clearPipCache,
+  getPipCacheEntries,
+  PIP_PREFIX,
+} from './loaders/pip.js';
+export type { PipPackageInfo, PipPackageMetadata, PipLoaderOptions } from './loaders/pip.js';
+export {
   emptyLoadResult,
   mergeLoadResults,
   filterLoadResultByTarget,

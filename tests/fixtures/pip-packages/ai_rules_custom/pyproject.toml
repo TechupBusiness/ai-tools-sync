@@ -1,0 +1,8 @@
+[project]
+name = "ai-rules-custom"
+version = "2.0.0"
+description = "Custom AI rules package with custom content path"
+
+[tool.ai-tool-sync]
+content_path = "custom_ai"
+
