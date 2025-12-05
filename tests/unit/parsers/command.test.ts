@@ -1,0 +1,363 @@
+/**
+ * @file Command Parser Tests
+ * @description Tests for command file parsing, validation, and defaults
+ */
+
+import { describe, it, expect } from 'vitest';
+
+import {
+  parseCommand,
+  parseCommands,
+  filterCommandsByTarget,
+  COMMAND_DEFAULTS,
+} from '../../../src/parsers/command.js';
+import { isOk, isErr } from '../../../src/utils/result.js';
+
+describe('Command Parser', () => {
+  describe('parseCommand()', () => {
+    it('should parse valid command with all fields', () => {
+      const content = `---
+name: deploy
+description: Deploy application to environment
+version: 1.0.0
+execute: scripts/deploy.sh
+args:
+  - name: environment
+    type: string
+    description: Target environment
+    default: staging
+    choices:
+      - staging
+      - production
+    required: false
+  - name: force
+    type: boolean
+    description: Force deployment
+    default: false
+targets:
+  - cursor
+  - claude
+---
+# Deploy Command
+
+Deploy your application with this command.`;
+
+      const result = parseCommand(content, 'commands/deploy.md');
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.frontmatter.name).toBe('deploy');
+        expect(result.value.frontmatter.description).toBe('Deploy application to environment');
+        expect(result.value.frontmatter.version).toBe('1.0.0');
+        expect(result.value.frontmatter.execute).toBe('scripts/deploy.sh');
+        expect(result.value.frontmatter.args).toHaveLength(2);
+        expect(result.value.frontmatter.args?.[0].name).toBe('environment');
+        expect(result.value.frontmatter.args?.[0].type).toBe('string');
+        expect(result.value.frontmatter.args?.[0].choices).toEqual(['staging', 'production']);
+        expect(result.value.frontmatter.args?.[1].type).toBe('boolean');
+        expect(result.value.frontmatter.targets).toEqual(['cursor', 'claude']);
+        expect(result.value.content).toContain('Deploy Command');
+        expect(result.value.filePath).toBe('commands/deploy.md');
+      }
+    });
+
+    it('should apply defaults for optional fields', () => {
+      const content = `---
+name: simple-command
+---
+Content`;
+
+      const result = parseCommand(content);
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.frontmatter.args).toEqual(COMMAND_DEFAULTS.args);
+        expect(result.value.frontmatter.targets).toEqual(COMMAND_DEFAULTS.targets);
+      }
+    });
+
+    it('should return error for missing name', () => {
+      const content = `---
+description: Missing name
+---
+Content`;
+
+      const result = parseCommand(content);
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        expect(result.error.validationErrors?.some((e) => e.path === 'name')).toBe(true);
+      }
+    });
+
+    it('should return error for invalid arg type', () => {
+      const content = `---
+name: test
+args:
+  - name: myArg
+    type: invalid
+---
+Content`;
+
+      const result = parseCommand(content);
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        expect(result.error.validationErrors?.some((e) => e.path === 'args[0].type')).toBe(true);
+      }
+    });
+
+    it('should return error for missing arg name', () => {
+      const content = `---
+name: test
+args:
+  - type: string
+---
+Content`;
+
+      const result = parseCommand(content);
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        expect(result.error.validationErrors?.some((e) => e.path === 'args[0].name')).toBe(true);
+      }
+    });
+
+    it('should return error for missing arg type', () => {
+      const content = `---
+name: test
+args:
+  - name: myArg
+---
+Content`;
+
+      const result = parseCommand(content);
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        expect(result.error.validationErrors?.some((e) => e.path === 'args[0].type')).toBe(true);
+      }
+    });
+
+    it('should return error for type mismatch in default value', () => {
+      const content = `---
+name: test
+args:
+  - name: myArg
+    type: number
+    default: "not a number"
+---
+Content`;
+
+      const result = parseCommand(content);
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        expect(result.error.validationErrors?.some((e) => e.path === 'args[0].default')).toBe(true);
+      }
+    });
+
+    it('should return error when default not in choices', () => {
+      const content = `---
+name: test
+args:
+  - name: env
+    type: string
+    default: invalid
+    choices:
+      - staging
+      - production
+---
+Content`;
+
+      const result = parseCommand(content);
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        expect(result.error.validationErrors?.some((e) => e.path === 'args[0].default')).toBe(true);
+        expect(result.error.validationErrors?.some((e) => e.message.includes('choices'))).toBe(true);
+      }
+    });
+
+    it('should accept number type with number default', () => {
+      const content = `---
+name: test
+args:
+  - name: count
+    type: number
+    default: 10
+---
+Content`;
+
+      const result = parseCommand(content);
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.frontmatter.args?.[0].default).toBe(10);
+      }
+    });
+
+    it('should accept boolean type with boolean default', () => {
+      const content = `---
+name: test
+args:
+  - name: verbose
+    type: boolean
+    default: true
+---
+Content`;
+
+      const result = parseCommand(content);
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.frontmatter.args?.[0].default).toBe(true);
+      }
+    });
+
+    it('should accept number choices', () => {
+      const content = `---
+name: test
+args:
+  - name: port
+    type: number
+    default: 3000
+    choices:
+      - 3000
+      - 8080
+      - 8000
+---
+Content`;
+
+      const result = parseCommand(content);
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.frontmatter.args?.[0].choices).toEqual([3000, 8080, 8000]);
+      }
+    });
+
+    it('should return error for non-array args', () => {
+      const content = `---
+name: test
+args:
+  name: single
+  type: string
+---
+Content`;
+
+      const result = parseCommand(content);
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        expect(result.error.validationErrors?.some((e) => e.path === 'args')).toBe(true);
+      }
+    });
+
+    it('should return error for non-object arg', () => {
+      const content = `---
+name: test
+args:
+  - "just a string"
+---
+Content`;
+
+      const result = parseCommand(content);
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        expect(result.error.validationErrors?.some((e) => e.path === 'args[0]')).toBe(true);
+      }
+    });
+
+    it('should return error for missing frontmatter', () => {
+      const content = `# Just a title
+No frontmatter`;
+
+      const result = parseCommand(content);
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        expect(result.error.message).toContain('missing frontmatter');
+      }
+    });
+
+    it('should validate multiple args', () => {
+      const content = `---
+name: test
+args:
+  - name: valid
+    type: string
+  - type: number
+  - name: another
+    type: invalid
+---
+Content`;
+
+      const result = parseCommand(content);
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        expect(result.error.validationErrors?.some((e) => e.path === 'args[1].name')).toBe(true);
+        expect(result.error.validationErrors?.some((e) => e.path === 'args[2].type')).toBe(true);
+      }
+    });
+  });
+
+  describe('parseCommands()', () => {
+    it('should parse multiple valid commands', () => {
+      const files = [
+        { content: `---\nname: cmd1\n---\nCommand 1`, filePath: 'cmd1.md' },
+        { content: `---\nname: cmd2\n---\nCommand 2`, filePath: 'cmd2.md' },
+      ];
+
+      const result = parseCommands(files);
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.length).toBe(2);
+      }
+    });
+
+    it('should collect all errors', () => {
+      const files = [
+        { content: `---\ndescription: no name\n---\n`, filePath: 'bad1.md' },
+        { content: `# No frontmatter`, filePath: 'bad2.md' },
+      ];
+
+      const result = parseCommands(files);
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        expect(result.error.length).toBe(2);
+      }
+    });
+  });
+
+  describe('filterCommandsByTarget()', () => {
+    const commands = [
+      {
+        frontmatter: { name: 'cursor-only', targets: ['cursor'] as const },
+        content: '',
+      },
+      {
+        frontmatter: { name: 'all' },
+        content: '',
+      },
+    ];
+
+    it('should filter by target', () => {
+      const filtered = filterCommandsByTarget(commands as any, 'cursor');
+
+      expect(filtered.length).toBe(2);
+    });
+
+    it('should exclude non-matching commands', () => {
+      const filtered = filterCommandsByTarget(commands as any, 'factory');
+
+      expect(filtered.length).toBe(1);
+      expect(filtered[0].frontmatter.name).toBe('all');
+    });
+  });
+});
+
