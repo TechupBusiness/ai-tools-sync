@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ai-tool-sync.dev/schemas/rule.schema.json",
+  "title": "AI Tool Sync Rule",
+  "description": "Schema for rule file frontmatter",
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Unique identifier for the rule"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the rule"
+    },
+    "version": {
+      "type": "string",
+      "description": "Rule version",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "always_apply": {
+      "type": "boolean",
+      "description": "Always load this rule regardless of context",
+      "default": false
+    },
+    "globs": {
+      "type": "array",
+      "description": "Glob patterns to trigger this rule",
+      "items": { "type": "string" }
+    },
+    "targets": {
+      "type": "array",
+      "description": "Target tools for this rule",
+      "items": {
+        "type": "string",
+        "enum": ["cursor", "claude", "factory"]
+      },
+      "default": ["cursor", "claude", "factory"]
+    },
+    "requires": {
+      "type": "array",
+      "description": "Other rules that must be loaded with this rule",
+      "items": { "type": "string" }
+    },
+    "category": {
+      "type": "string",
+      "description": "Category for organization",
+      "enum": ["core", "infrastructure", "testing", "security", "documentation", "tooling", "other"]
+    },
+    "priority": {
+      "type": "string",
+      "description": "Priority level for rule ordering",
+      "enum": ["low", "medium", "high"],
+      "default": "medium"
+    }
+  },
+  "additionalProperties": false
+}
+

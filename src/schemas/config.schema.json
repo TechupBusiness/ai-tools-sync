@@ -1,0 +1,235 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ai-tool-sync.dev/schemas/config.schema.json",
+  "title": "AI Tool Sync Configuration",
+  "description": "Configuration schema for .ai/config.yaml",
+  "type": "object",
+  "required": ["version"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Configuration version",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "project_name": {
+      "type": "string",
+      "description": "Project name for identification"
+    },
+    "use": {
+      "type": "object",
+      "description": "What to use from ai-tool-sync defaults",
+      "properties": {
+        "personas": {
+          "type": "array",
+          "description": "List of persona names to enable from defaults",
+          "items": { "type": "string" }
+        },
+        "commands": {
+          "type": "array",
+          "description": "List of command names to enable from defaults",
+          "items": { "type": "string" }
+        },
+        "plugins": {
+          "type": "array",
+          "description": "List of plugins to enable",
+          "items": { "$ref": "#/$defs/plugin" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "loaders": {
+      "type": "array",
+      "description": "Content loaders configuration",
+      "items": { "$ref": "#/$defs/loader" }
+    },
+    "targets": {
+      "type": "array",
+      "description": "Target tools to generate for",
+      "items": {
+        "type": "string",
+        "enum": ["cursor", "claude", "factory"]
+      },
+      "default": ["cursor", "claude", "factory"]
+    },
+    "rules": {
+      "type": "object",
+      "description": "Project-specific rule configurations",
+      "additionalProperties": { "$ref": "#/$defs/ruleConfig" }
+    },
+    "subfolder_contexts": {
+      "type": "object",
+      "description": "Subfolder context generation configuration",
+      "additionalProperties": { "$ref": "#/$defs/subfolderContext" }
+    },
+    "hooks": {
+      "type": "object",
+      "description": "Hook configurations by event type",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "$ref": "#/$defs/hookConfig" }
+      }
+    },
+    "output": {
+      "type": "object",
+      "description": "Output generation settings",
+      "properties": {
+        "clean_before_sync": {
+          "type": "boolean",
+          "description": "Clean generated files before syncing",
+          "default": true
+        },
+        "add_do_not_edit_headers": {
+          "type": "boolean",
+          "description": "Add 'do not edit' headers to generated files",
+          "default": true
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "plugin": {
+      "type": "object",
+      "required": ["name", "source"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Plugin identifier"
+        },
+        "source": {
+          "type": "string",
+          "description": "Plugin source (ai-tool-sync, npm:package, claude-plugin:name)"
+        },
+        "version": {
+          "type": "string",
+          "description": "Version constraint for external plugins"
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the plugin is enabled",
+          "default": true
+        },
+        "include": {
+          "type": "array",
+          "description": "Content types to include from plugin",
+          "items": {
+            "type": "string",
+            "enum": ["rules", "personas", "commands", "hooks"]
+          }
+        },
+        "exclude": {
+          "type": "array",
+          "description": "Content types to exclude from plugin",
+          "items": {
+            "type": "string",
+            "enum": ["rules", "personas", "commands", "hooks"]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "loader": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Loader type",
+          "enum": ["ai-tool-sync", "local", "npm", "pip", "claude-plugin", "url"]
+        },
+        "source": {
+          "type": "string",
+          "description": "Source path or URL"
+        },
+        "package": {
+          "type": "string",
+          "description": "Package name for npm/pip loaders"
+        },
+        "version": {
+          "type": "string",
+          "description": "Version constraint"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ruleConfig": {
+      "type": "object",
+      "properties": {
+        "always_apply": {
+          "type": "boolean",
+          "description": "Always load this rule regardless of context",
+          "default": false
+        },
+        "globs": {
+          "type": "array",
+          "description": "Glob patterns to trigger this rule",
+          "items": { "type": "string" }
+        },
+        "targets": {
+          "type": "array",
+          "description": "Target tools for this rule",
+          "items": {
+            "type": "string",
+            "enum": ["cursor", "claude", "factory"]
+          }
+        },
+        "source": {
+          "type": "string",
+          "description": "Source of the rule (ai-tool-sync for defaults)"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description"
+        }
+      },
+      "additionalProperties": false
+    },
+    "subfolderContext": {
+      "type": "object",
+      "required": ["rules"],
+      "properties": {
+        "rules": {
+          "type": "array",
+          "description": "Rules to include in this subfolder context",
+          "items": { "type": "string" }
+        },
+        "personas": {
+          "type": "array",
+          "description": "Personas to include in this subfolder context",
+          "items": { "type": "string" }
+        },
+        "description": {
+          "type": "string",
+          "description": "Description for this subfolder context"
+        }
+      },
+      "additionalProperties": false
+    },
+    "hookConfig": {
+      "type": "object",
+      "required": ["name", "match", "action"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Hook identifier"
+        },
+        "match": {
+          "type": "string",
+          "description": "Tool/pattern match expression"
+        },
+        "action": {
+          "type": "string",
+          "description": "Action to take",
+          "enum": ["warn", "block", "allow"]
+        },
+        "message": {
+          "type": "string",
+          "description": "Message to display"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
+

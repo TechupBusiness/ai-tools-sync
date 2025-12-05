@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ai-tool-sync.dev/schemas/command.schema.json",
+  "title": "AI Tool Sync Command",
+  "description": "Schema for command file frontmatter",
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Unique identifier for the command"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the command"
+    },
+    "version": {
+      "type": "string",
+      "description": "Command version",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "execute": {
+      "type": "string",
+      "description": "Script or command to execute"
+    },
+    "args": {
+      "type": "array",
+      "description": "Command arguments",
+      "items": { "$ref": "#/$defs/arg" }
+    },
+    "targets": {
+      "type": "array",
+      "description": "Target tools for this command",
+      "items": {
+        "type": "string",
+        "enum": ["cursor", "claude", "factory"]
+      },
+      "default": ["cursor", "claude", "factory"]
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "arg": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Argument name"
+        },
+        "type": {
+          "type": "string",
+          "description": "Argument type",
+          "enum": ["string", "number", "boolean"]
+        },
+        "description": {
+          "type": "string",
+          "description": "Argument description"
+        },
+        "default": {
+          "description": "Default value for the argument"
+        },
+        "choices": {
+          "type": "array",
+          "description": "Allowed values for the argument",
+          "items": {}
+        },
+        "required": {
+          "type": "boolean",
+          "description": "Whether the argument is required",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
+

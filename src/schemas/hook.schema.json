@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ai-tool-sync.dev/schemas/hook.schema.json",
+  "title": "AI Tool Sync Hook",
+  "description": "Schema for hook file frontmatter",
+  "type": "object",
+  "required": ["name", "event"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Unique identifier for the hook"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the hook"
+    },
+    "version": {
+      "type": "string",
+      "description": "Hook version",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "event": {
+      "type": "string",
+      "description": "Event that triggers this hook",
+      "enum": ["PreToolUse", "PostToolUse", "PreMessage", "PostMessage", "PreCommit"]
+    },
+    "tool_match": {
+      "type": "string",
+      "description": "Pattern to match tools (e.g., 'Bash(git commit*)')"
+    },
+    "execute": {
+      "type": "string",
+      "description": "Script or command to execute"
+    },
+    "targets": {
+      "type": "array",
+      "description": "Target tools for this hook (usually only Claude supports hooks)",
+      "items": {
+        "type": "string",
+        "enum": ["cursor", "claude", "factory"]
+      },
+      "default": ["claude"]
+    }
+  },
+  "additionalProperties": false
+}
+

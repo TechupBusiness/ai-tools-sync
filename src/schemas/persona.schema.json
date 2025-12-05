@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ai-tool-sync.dev/schemas/persona.schema.json",
+  "title": "AI Tool Sync Persona",
+  "description": "Schema for persona file frontmatter",
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Unique identifier for the persona"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the persona"
+    },
+    "version": {
+      "type": "string",
+      "description": "Persona version",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "tools": {
+      "type": "array",
+      "description": "Tools available to this persona",
+      "items": {
+        "type": "string",
+        "enum": ["read", "write", "edit", "execute", "search", "glob", "fetch", "ls"]
+      }
+    },
+    "model": {
+      "type": "string",
+      "description": "Model to use (default, fast, powerful, inherit, or specific model)",
+      "default": "default"
+    },
+    "targets": {
+      "type": "array",
+      "description": "Target tools for this persona",
+      "items": {
+        "type": "string",
+        "enum": ["cursor", "claude", "factory"]
+      },
+      "default": ["cursor", "claude", "factory"]
+    },
+    "traits": {
+      "type": "object",
+      "description": "Additional persona traits/characteristics",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
+
