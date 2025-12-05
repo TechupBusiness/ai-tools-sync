@@ -1,15 +1,23 @@
 /**
  * @file Sync Command Tests
  * @description Tests for the sync CLI command
+ *
+ * NOTE: These tests write to `.cursor` directories which are blocked by
+ * Cursor IDE's sandbox. Run tests from a regular terminal or with full
+ * permissions: `npm test -- --run tests/unit/cli/sync.test.ts`
  */
 
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { tmpdir } from 'node:os';
 
 import { sync } from '../../../src/cli/commands/sync.js';
 import { dirExists, fileExists, readFile } from '../../../src/utils/fs.js';
+
+// Use a temp directory within the workspace to avoid sandbox issues
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const TESTS_TMP_DIR = path.resolve(__dirname, '..', '..', '.tmp');
 
 // Mock logger to suppress output during tests
 vi.mock('../../../src/utils/logger.js', () => ({
@@ -47,8 +55,8 @@ describe('Sync Command', () => {
   let testDir: string;
 
   beforeEach(async () => {
-    // Create a unique temp directory for each test
-    testDir = path.join(tmpdir(), `ai-sync-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    // Create a unique temp directory within the workspace for each test
+    testDir = path.join(TESTS_TMP_DIR, `ai-sync-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     await fs.mkdir(testDir, { recursive: true });
   });
 
@@ -101,6 +109,21 @@ output:
     });
 
     it('should sync with no content (empty result)', async () => {
+      // Override config to disable default loaders
+      const config = `
+version: "1.0.0"
+project_name: test-project
+targets:
+  - cursor
+  - claude
+  - factory
+loaders: []
+output:
+  clean_before_sync: true
+  add_do_not_edit_headers: true
+`;
+      await fs.writeFile(path.join(testDir, '.ai', 'config.yaml'), config);
+
       const result = await sync({ projectRoot: testDir });
 
       // Should succeed but generate no files (empty content)

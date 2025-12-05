@@ -39,5 +39,6 @@ npm-debug.log*
 
 # Generated files in tests
 tests/fixtures/generated/
+tests/.tmp/
 
 demo-content/
