@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "name": "security-check",
+        "match": "Bash(*rm*)|Edit(*.env*)",
+        "action": "warn",
+        "message": "Potentially dangerous operation detected"
+      },
+      {
+        "name": "lint-before-save",
+        "match": "Write(*.ts)",
+        "command": "npm run lint:fix"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "name": "log-changes",
+        "match": "Edit(*)",
+        "script": "./scripts/log-changes.sh"
+      }
+    ]
+  }
+}
+

@@ -39,6 +39,21 @@ export {
 } from './loaders/pip.js';
 export type { PipPackageInfo, PipPackageMetadata, PipLoaderOptions } from './loaders/pip.js';
 export {
+  ClaudePluginLoader,
+  createClaudePluginLoader,
+  clearClaudePluginCache,
+  getClaudePluginCacheEntries,
+  CLAUDE_PLUGIN_PREFIX,
+} from './loaders/claude-plugin.js';
+export type {
+  ClaudePluginInfo,
+  ClaudePluginLoaderOptions,
+  ClaudeSettings,
+  ClaudeHook,
+  ClaudeSkillFrontmatter,
+  ClaudeAgentFrontmatter,
+} from './loaders/claude-plugin.js';
+export {
   emptyLoadResult,
   mergeLoadResults,
   filterLoadResultByTarget,
