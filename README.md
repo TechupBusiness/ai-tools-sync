@@ -1,57 +1,146 @@
 # ai-tool-sync
 
-Unified AI tool configuration — single source of truth for Cursor, Claude Code, Factory, and more.
+[![npm version](https://img.shields.io/npm/v/@anthropic/ai-tool-sync.svg)](https://www.npmjs.com/package/@anthropic/ai-tool-sync)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-green.svg)](https://nodejs.org)
 
-## Overview
+**Unified AI tool configuration** — single source of truth for Cursor, Claude Code, Factory, and more.
 
-`ai-tool-sync` solves the problem of maintaining separate configurations for different AI coding assistants. Define your rules, personas, commands, and hooks once in a `.ai/` directory, then generate tool-specific outputs for:
+## The Problem
 
-- **Cursor** (`.cursor/rules/*.mdc`, `.cursor/commands/roles/*.md`)
-- **Claude Code** (`.claude/skills/`, `.claude/agents/`, `CLAUDE.md`)
-- **Factory** (`.factory/skills/`, `.factory/droids/`, `AGENTS.md`)
+Modern projects often use multiple AI coding assistants. Each tool has its own configuration format:
+- **Cursor**: `.cursor/rules/*.mdc`
+- **Claude Code**: `.claude/skills/`, `CLAUDE.md`
+- **Factory**: `.factory/skills/`, `.factory/droids/`
 
-## Installation
+Maintaining separate configurations leads to:
+- 🔄 Duplicated content across multiple locations
+- 📝 Inconsistencies when updating rules
+- ⚡ Wasted tokens loading identical context
+- 🤯 Config sprawl that's hard to maintain
 
-```bash
-npm install -g @anthropic/ai-tool-sync
+## The Solution
+
+`ai-tool-sync` provides a **single `.ai/` directory** as your source of truth. Write your rules, personas, and commands once using a generic format, then generate tool-specific outputs automatically.
+
+```
+.ai/                           # You maintain this
+├── config.yaml                # Configuration
+├── rules/                     # Your project rules
+│   ├── _core.md
+│   └── database.md
+├── personas/                  # Custom personas
+└── commands/                  # Custom commands
+        │
+        │  ai-sync
+        ▼
+.cursor/rules/*.mdc            # Generated for Cursor
+.claude/skills/*/SKILL.md      # Generated for Claude Code
+.factory/skills/*/SKILL.md     # Generated for Factory
 ```
 
-Or install locally in your project:
+## Key Features
 
-```bash
-npm install --save-dev @anthropic/ai-tool-sync
-```
+- ✅ **Single source of truth** — Define once, generate everywhere
+- ✅ **11 built-in personas** — Architect, Implementer, Security Hacker, Test Zealot, and more
+- ✅ **Glob-based triggering** — Rules activate only when relevant files are touched
+- ✅ **Monorepo support** — Generate subfolder contexts for different packages
+- ✅ **Plugin system** — Load rules from npm packages, git repos, or local paths
+- ✅ **Language-agnostic** — Works with any project (Node.js, Python, Go, Rust, etc.)
 
 ## Quick Start
 
+### Installation
+
 ```bash
-# Initialize a new .ai/ configuration
+# Global installation
+npm install -g @anthropic/ai-tool-sync
+
+# Or as a dev dependency
+npm install --save-dev @anthropic/ai-tool-sync
+```
+
+### Initialize Your Project
+
+```bash
+# Create .ai/ configuration
 ai-sync init
+```
 
-# Edit your configuration
-# .ai/config.yaml - main configuration
-# .ai/rules/ - your project rules
-# .ai/personas/ - custom personas
-# .ai/commands/ - custom commands
+This creates:
 
-# Generate tool-specific outputs
+```
+.ai/
+├── config.yaml       # Main configuration file
+├── rules/
+│   └── _core.md      # Example core rule (edit this!)
+├── personas/         # Your custom personas
+├── commands/         # Your custom commands
+└── hooks/            # Your custom hooks
+```
+
+### Configure and Sync
+
+1. **Edit your configuration** — `.ai/config.yaml`
+
+```yaml
+version: "1.0.0"
+project_name: my-awesome-project
+
+# Enable built-in personas
+use:
+  personas:
+    - architect
+    - implementer
+    - security-hacker
+    - test-zealot
+  commands:
+    - lint-fix
+
+# Generate for these tools
+targets:
+  - cursor
+  - claude
+  - factory
+```
+
+2. **Write your project rules** — `.ai/rules/_core.md`
+
+```markdown
+---
+name: _core
+description: Core project context
+always_apply: true
+targets: [cursor, claude, factory]
+---
+
+# My Awesome Project
+
+This project is a [describe your project]...
+```
+
+3. **Generate tool configurations**
+
+```bash
 ai-sync
 ```
 
-## CLI Commands
+That's it! Your rules are now available in all your AI tools.
 
-### `ai-sync` (or `ai-sync sync`)
+## CLI Reference
 
-Sync `.ai/` configuration to tool-specific outputs. This is the default command.
+### `ai-sync` (default command)
+
+Generate tool-specific configurations from `.ai/` sources.
 
 ```bash
 ai-sync [options]
 
 Options:
-  -v, --verbose       Enable verbose output
-  -d, --dry-run       Show what would be generated without writing files
-  --no-clean          Do not clean output directories before generating
-  -p, --project <path>  Project root directory (default: current directory)
+  -v, --verbose         Enable verbose output
+  -d, --dry-run         Preview changes without writing files
+  --no-clean            Keep existing generated files
+  -p, --project <path>  Use a different project root
 ```
 
 **Examples:**
@@ -60,76 +149,44 @@ Options:
 # Basic sync
 ai-sync
 
-# Preview changes without writing
+# Preview what would be generated
 ai-sync --dry-run
 
 # Verbose output for debugging
 ai-sync --verbose
 
 # Sync a different project
-ai-sync --project /path/to/project
+ai-sync --project /path/to/other/project
 ```
 
 ### `ai-sync init`
 
-Initialize `.ai/` directory with template configuration.
+Initialize a new `.ai/` configuration directory.
 
 ```bash
 ai-sync init [options]
 
 Options:
-  -f, --force         Overwrite existing configuration
-  -y, --yes           Skip prompts and use defaults
-  -p, --project <path>  Project root directory
-```
-
-**Examples:**
-
-```bash
-# Create new configuration
-ai-sync init
-
-# Overwrite existing configuration
-ai-sync init --force
-```
-
-**Creates:**
-```
-.ai/
-├── config.yaml       # Main configuration file
-├── rules/
-│   └── _core.md      # Example core rule
-├── personas/         # Custom personas (empty)
-├── commands/         # Custom commands (empty)
-└── hooks/            # Custom hooks (empty)
+  -f, --force           Overwrite existing configuration
+  -p, --project <path>  Use a different project root
 ```
 
 ### `ai-sync validate`
 
-Validate configuration without generating output. Useful for CI/CD pipelines.
+Validate configuration without generating output. Useful for CI/CD.
 
 ```bash
 ai-sync validate [options]
 
 Options:
-  -v, --verbose       Show detailed validation results
-  -p, --project <path>  Project root directory
-```
-
-**Examples:**
-
-```bash
-# Validate current project
-ai-sync validate
-
-# Detailed validation output
-ai-sync validate --verbose
+  -v, --verbose         Show detailed validation results
+  -p, --project <path>  Use a different project root
 ```
 
 **Validates:**
-- Configuration file syntax and schema
+- Configuration syntax and schema
 - All rule, persona, command, and hook files
-- References between files (e.g., subfolder_contexts)
+- References between files
 - Common issues (missing globs, duplicates, etc.)
 
 ## Configuration
@@ -140,20 +197,43 @@ ai-sync validate --verbose
 version: "1.0.0"
 project_name: my-project
 
-# What to use from ai-tool-sync defaults
+# Enable built-in content
 use:
   personas:
-    - architect
-    - implementer
-    - security-hacker
+    - architect          # Strategic systems architect
+    - implementer        # Pragmatic coding craftsman
+    - security-hacker    # Security analyst
+    - test-zealot        # Testing specialist
+    - data-specialist    # Database expert
+    - devops-specialist  # Infrastructure guru
+    - hyper-critic       # Critical code reviewer
+    - performance-optimizer  # Performance expert
+    - ux-psychologist    # User experience focus
+    - growth-hacker      # Growth and metrics
+    - coordinator        # Multi-agent orchestration
   commands:
     - lint-fix
+    - type-check
+    - format
 
-# Where to load content from
+# Content loaders
 loaders:
-  - type: ai-tool-sync    # Built-in defaults
+  - type: ai-tool-sync   # Built-in defaults
 
-# Which tools to generate for
+  # Load from local directory
+  - type: local
+    source: ../shared-rules
+
+  # Load from npm package
+  - type: npm
+    package: "@company/ai-rules"
+    version: "^1.0.0"
+
+  # Load from git repository
+  - type: git
+    source: github:company/ai-rules#main
+
+# Target tools
 targets:
   - cursor
   - claude
@@ -168,54 +248,66 @@ output:
 subfolder_contexts:
   packages/backend:
     rules: [_core, database]
-    personas: [implementer]
+    personas: [implementer, data-specialist]
     description: "Backend package context"
 ```
 
-### Rules (`.ai/rules/*.md`)
+### Rule Files (`.ai/rules/*.md`)
 
-```markdown
+```yaml
 ---
 name: database
-description: Database schema and migrations
+description: Database schema and migration guidelines
 version: 1.0.0
 
+# When to load this rule
 always_apply: false
 globs:
   - "**/*.sql"
   - "**/migrations/**"
+
+# Which tools to generate for
 targets: [cursor, claude, factory]
+
+# Rule priority
 priority: high
+
+# Other rules that should load with this
+requires: [_core]
 ---
 
 # Database Guidelines
 
-Your rule content here...
+[Your rule content here...]
 ```
 
-### Personas (`.ai/personas/*.md`)
+### Persona Files (`.ai/personas/*.md`)
 
-```markdown
+```yaml
 ---
-name: architect
-description: System architect for high-level design
+name: my-persona
+description: Custom persona for my project
 version: 1.0.0
 
 tools:
   - read
   - write
-  - search
+  - edit
+  - execute
+
+model: default
+
 targets: [cursor, claude, factory]
 ---
 
-# The Architect
+# My Custom Persona
 
-Persona instructions here...
+[Persona instructions here...]
 ```
 
-### Commands (`.ai/commands/*.md`)
+### Command Files (`.ai/commands/*.md`)
 
-```markdown
+```yaml
 ---
 name: deploy
 description: Deploy to production
@@ -231,12 +323,12 @@ args:
 
 # Deploy Command
 
-Command documentation...
+[Command documentation...]
 ```
 
-### Hooks (`.ai/hooks/*.md`)
+### Hook Files (`.ai/hooks/*.md`)
 
-```markdown
+```yaml
 ---
 name: pre-commit
 description: Run checks before commit
@@ -249,40 +341,56 @@ targets: [claude]
 
 # Pre-commit Hook
 
-Hook instructions...
+[Hook instructions...]
 ```
 
 ## Generated Output
 
-After running `ai-sync`, the following files are generated:
+After running `ai-sync`, the following structure is generated:
 
 ```
 # Cursor
 .cursor/
-├── rules/*.mdc           # Rules with Cursor frontmatter
-└── commands/roles/*.md   # Personas as role commands
-AGENTS.md                 # Entry point
+├── rules/*.mdc              # Rules with Cursor frontmatter
+└── commands/roles/*.md      # Personas as command roles
+AGENTS.md                    # Entry point
 
 # Claude Code
 .claude/
-├── skills/<name>/SKILL.md  # Skills from rules
-├── agents/<name>.md        # Agents from personas
-└── settings.json           # Hooks configuration
-CLAUDE.md                   # Entry point with @imports
+├── skills/<name>/SKILL.md   # Skills from rules
+├── agents/<name>.md         # Agents from personas
+└── settings.json            # Hooks and commands
+CLAUDE.md                    # Entry point with @imports
 
 # Factory
 .factory/
-├── skills/<name>/SKILL.md  # Skills from rules
-├── droids/<name>.md        # Droids from personas
-└── commands/<name>.md      # Commands
-AGENTS.md                   # Entry point
+├── skills/<name>/SKILL.md   # Skills from rules
+├── droids/<name>.md         # Droids from personas
+└── commands/<name>.md       # Commands
+AGENTS.md                    # Entry point
 
 # Subfolder contexts (if configured)
 packages/backend/CLAUDE.md
 packages/backend/AGENTS.md
 ```
 
-## Programmatic Usage
+## Loaders
+
+ai-tool-sync supports multiple content sources:
+
+| Loader | Description | Example |
+|--------|-------------|---------|
+| `ai-tool-sync` | Built-in defaults | `type: ai-tool-sync` |
+| `local` | Local file path | `source: ../shared-rules` |
+| `npm` | npm package | `package: "@company/ai-rules"` |
+| `pip` | Python package | `package: "ai-rules-django"` |
+| `git` | Git repository | `source: github:user/repo#branch` |
+| `url` | Remote URL | `source: https://example.com/rules.yaml` |
+| `claude-plugin` | Claude plugins | `source: claude-plugin:@anthropic/web-dev` |
+
+See [docs/LOADERS.md](docs/LOADERS.md) for detailed configuration.
+
+## Programmatic API
 
 ```typescript
 import { sync, init, validate } from '@anthropic/ai-tool-sync';
@@ -312,6 +420,80 @@ if (!validation.success) {
 }
 ```
 
+## Documentation
+
+- [Configuration Reference](docs/CONFIGURATION.md) — Full config.yaml documentation
+- [Loaders Guide](docs/LOADERS.md) — How to use each loader type
+- [Generators Guide](docs/GENERATORS.md) — Target-specific output details
+- [Contributing](CONTRIBUTING.md) — Development setup and guidelines
+
+## Built-in Personas
+
+ai-tool-sync includes 11 carefully crafted personas:
+
+| Persona | Focus | Best For |
+|---------|-------|----------|
+| **architect** | System design | High-level architecture decisions |
+| **implementer** | Pragmatic coding | Day-to-day implementation |
+| **security-hacker** | Security analysis | Vulnerability assessment |
+| **test-zealot** | Testing | Coverage and test quality |
+| **data-specialist** | Databases | Schema design, queries, migrations |
+| **devops-specialist** | Infrastructure | CI/CD, deployment, monitoring |
+| **hyper-critic** | Code review | Quality gatekeeper |
+| **performance-optimizer** | Performance | Profiling and optimization |
+| **ux-psychologist** | User experience | Usability and accessibility |
+| **growth-hacker** | Growth metrics | A/B testing, analytics |
+| **coordinator** | Orchestration | Multi-agent coordination |
+
+## Examples
+
+### Minimal Setup
+
+```yaml
+# .ai/config.yaml
+version: "1.0.0"
+targets: [cursor]
+```
+
+### Full-Featured Project
+
+```yaml
+version: "1.0.0"
+project_name: enterprise-app
+
+use:
+  personas: [architect, implementer, security-hacker, test-zealot]
+  commands: [lint-fix, type-check]
+
+loaders:
+  - type: ai-tool-sync
+  - type: npm
+    package: "@company/ai-rules-react"
+    version: "^2.0.0"
+
+targets: [cursor, claude, factory]
+
+rules:
+  _core:
+    always_apply: true
+  api:
+    globs: ["apps/api/**"]
+  frontend:
+    globs: ["apps/web/**"]
+
+subfolder_contexts:
+  apps/api:
+    rules: [_core, api]
+    personas: [implementer, security-hacker]
+  apps/web:
+    rules: [_core, frontend]
+    personas: [implementer, ux-psychologist]
+
+output:
+  clean_before_sync: true
+  add_do_not_edit_headers: true
+```
+
 ## Development
 
 ```bash
@@ -324,16 +506,14 @@ npm run build
 # Run tests
 npm test
 
-# Run in development mode
+# Development mode
 npm run dev
 
-# Lint
+# Lint and type check
 npm run lint
-
-# Type check
 npm run typecheck
 ```
 
 ## License
 
-MIT
+MIT © Anthropic

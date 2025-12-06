@@ -1,0 +1,143 @@
+# =============================================================================
+# Full Configuration Example
+# =============================================================================
+# This example demonstrates all available configuration options.
+# It's suitable for enterprise projects with comprehensive AI tooling needs.
+
+version: "1.0.0"
+project_name: enterprise-app
+
+# =============================================================================
+# What to Use from ai-tool-sync Defaults
+# =============================================================================
+
+use:
+  # Enable all relevant personas
+  personas:
+    - architect          # High-level design decisions
+    - implementer        # Day-to-day implementation
+    - security-hacker    # Security reviews
+    - test-zealot        # Testing and coverage
+    - data-specialist    # Database and data work
+    - devops-specialist  # Infrastructure and CI/CD
+    - hyper-critic       # Code review gatekeeper
+    - performance-optimizer  # Performance optimization
+    - ux-psychologist    # User experience focus
+    - coordinator        # Multi-agent orchestration
+
+  # Enable all built-in commands
+  commands:
+    - lint-fix
+    - type-check
+    - format
+
+# =============================================================================
+# Loaders Configuration
+# =============================================================================
+
+loaders:
+  # Built-in defaults
+  - type: ai-tool-sync
+
+  # Company-wide shared rules (example)
+  # - type: npm
+  #   package: "@company/ai-rules-base"
+  #   version: "^1.0.0"
+
+  # Team-specific rules from git (example)
+  # - type: git
+  #   source: github:company/team-rules#main
+
+# =============================================================================
+# Targets to Generate
+# =============================================================================
+
+targets:
+  - cursor
+  - claude
+  - factory
+
+# =============================================================================
+# Rules Configuration
+# =============================================================================
+
+rules:
+  # Core context - always loaded
+  _core:
+    always_apply: true
+    description: "Core project context and guidelines"
+
+  # Database rules - loaded for database work
+  database:
+    always_apply: false
+    globs:
+      - "**/*.sql"
+      - "**/migrations/**"
+      - "**/prisma/**"
+      - "**/supabase/**"
+    priority: high
+
+  # API rules - loaded for API development
+  api:
+    always_apply: false
+    globs:
+      - "apps/api/**"
+      - "**/routes/**"
+      - "**/controllers/**"
+      - "**/*.controller.ts"
+    priority: high
+
+  # Frontend rules - loaded for UI work
+  frontend:
+    always_apply: false
+    globs:
+      - "apps/web/**"
+      - "**/components/**"
+      - "**/*.tsx"
+      - "**/*.css"
+
+  # Testing rules - loaded for test files
+  testing:
+    always_apply: false
+    globs:
+      - "**/*.test.ts"
+      - "**/*.test.tsx"
+      - "**/*.spec.ts"
+      - "**/tests/**"
+      - "**/e2e/**"
+
+  # Security rules - always applied (for Claude only, as example)
+  security:
+    always_apply: true
+    targets: [claude]
+    description: "Security-sensitive code review"
+
+# =============================================================================
+# Hooks (Claude Code only)
+# =============================================================================
+
+hooks:
+  PreToolUse:
+    - name: production-safety
+      match: "Bash(*deploy* --prod*)|Bash(*production*)"
+      action: warn
+      message: "⚠️ Production deployment - please confirm you want to proceed"
+
+    - name: destructive-command
+      match: "Bash(*rm -rf*)|Bash(*drop*)"
+      action: warn
+      message: "⚠️ Destructive command detected - please verify"
+
+    - name: secrets-check
+      match: "Bash(*curl*)|Edit(*env*)"
+      action: warn
+      message: "🔐 Potential secrets operation - ensure no credentials are exposed"
+
+# =============================================================================
+# Output Settings
+# =============================================================================
+
+output:
+  clean_before_sync: true
+  add_do_not_edit_headers: true
+

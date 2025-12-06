@@ -1,0 +1,17 @@
+# =============================================================================
+# Minimal Configuration Example
+# =============================================================================
+# This is the simplest possible ai-tool-sync configuration.
+# It uses all defaults and generates for all targets.
+
+version: "1.0.0"
+
+# Enable built-in personas (optional - remove to use none)
+use:
+  personas:
+    - implementer
+
+# Generate for Cursor only (simplest setup)
+targets:
+  - cursor
+

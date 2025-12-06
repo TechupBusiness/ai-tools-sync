@@ -1,0 +1,152 @@
+# =============================================================================
+# Monorepo Configuration Example
+# =============================================================================
+# This example shows how to configure ai-tool-sync for a monorepo with
+# multiple packages, each with their own focused context.
+
+version: "1.0.0"
+project_name: my-monorepo
+
+# =============================================================================
+# Personas for Different Roles
+# =============================================================================
+
+use:
+  personas:
+    - architect          # For cross-package decisions
+    - implementer        # For day-to-day work
+    - test-zealot        # For testing
+    - data-specialist    # For backend database work
+    - ux-psychologist    # For frontend UX work
+    - devops-specialist  # For infrastructure work
+    - coordinator        # For orchestrating across packages
+
+  commands:
+    - lint-fix
+    - type-check
+
+# =============================================================================
+# Loaders
+# =============================================================================
+
+loaders:
+  - type: ai-tool-sync
+
+  # Shared rules across all packages
+  - type: local
+    source: ./shared-rules
+
+# =============================================================================
+# Targets
+# =============================================================================
+
+targets:
+  - cursor
+  - claude
+  - factory
+
+# =============================================================================
+# Rules Configuration
+# =============================================================================
+
+rules:
+  # Root-level core context
+  _core:
+    always_apply: true
+    description: "Monorepo-wide context and guidelines"
+
+  # Shared package conventions
+  shared:
+    always_apply: false
+    globs:
+      - "packages/shared/**"
+    description: "Shared library conventions"
+
+  # Backend-specific rules
+  backend:
+    always_apply: false
+    globs:
+      - "apps/api/**"
+      - "packages/backend-*/**"
+    description: "Backend development guidelines"
+
+  # Frontend-specific rules
+  frontend:
+    always_apply: false
+    globs:
+      - "apps/web/**"
+      - "apps/mobile/**"
+      - "packages/ui/**"
+      - "**/*.tsx"
+    description: "Frontend development guidelines"
+
+  # Database rules
+  database:
+    always_apply: false
+    globs:
+      - "**/*.sql"
+      - "**/prisma/**"
+      - "**/migrations/**"
+    description: "Database schema and query guidelines"
+
+  # Infrastructure rules
+  infrastructure:
+    always_apply: false
+    globs:
+      - "infra/**"
+      - "**/terraform/**"
+      - "**/k8s/**"
+      - "**/*.tf"
+      - "**/Dockerfile*"
+    description: "Infrastructure and deployment guidelines"
+
+# =============================================================================
+# Subfolder Contexts
+# =============================================================================
+# Each package gets its own CLAUDE.md and AGENTS.md with focused context
+
+subfolder_contexts:
+  # Backend API
+  apps/api:
+    rules: [_core, backend, database]
+    personas: [implementer, data-specialist, test-zealot]
+    description: "API service development"
+
+  # Web frontend
+  apps/web:
+    rules: [_core, frontend]
+    personas: [implementer, ux-psychologist]
+    description: "Web frontend development"
+
+  # Mobile app
+  apps/mobile:
+    rules: [_core, frontend]
+    personas: [implementer, ux-psychologist]
+    description: "Mobile app development"
+
+  # Shared UI components
+  packages/ui:
+    rules: [_core, shared, frontend]
+    personas: [implementer, ux-psychologist, architect]
+    description: "Shared UI component library"
+
+  # Shared utilities
+  packages/shared:
+    rules: [_core, shared]
+    personas: [implementer, architect]
+    description: "Shared utilities and types"
+
+  # Infrastructure
+  infra:
+    rules: [_core, infrastructure]
+    personas: [devops-specialist, architect]
+    description: "Infrastructure and deployment"
+
+# =============================================================================
+# Output Settings
+# =============================================================================
+
+output:
+  clean_before_sync: true
+  add_do_not_edit_headers: true
+
