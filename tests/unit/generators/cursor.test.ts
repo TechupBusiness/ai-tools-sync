@@ -428,3 +428,198 @@ describe('createCursorGenerator', () => {
   });
 });
 
+describe('MCP generation', () => {
+  let generator: CursorGenerator;
+  let tempDir: string;
+
+  beforeEach(async () => {
+    generator = new CursorGenerator();
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cursor-mcp-test-'));
+  });
+
+  afterEach(async () => {
+    try {
+      await fs.rm(tempDir, { recursive: true });
+    } catch {
+      // Ignore cleanup errors
+    }
+  });
+
+  it('should generate mcp.json when MCP config is present', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      mcpConfig: {
+        servers: {
+          filesystem: {
+            command: 'npx',
+            args: ['-y', '@modelcontextprotocol/server-filesystem'],
+            targets: ['cursor'],
+            enabled: true,
+          },
+        },
+      },
+    });
+
+    const result = await generator.generate(content);
+
+    expect(result.files).toContain('mcp.json');
+    const mcpContent = await fs.readFile(path.join(tempDir, 'mcp.json'), 'utf-8');
+    const mcpJson = JSON.parse(mcpContent);
+    expect(mcpJson.mcpServers.filesystem).toBeDefined();
+    expect(mcpJson.mcpServers.filesystem.command).toBe('npx');
+    expect(mcpJson.mcpServers.filesystem.args).toEqual(['-y', '@modelcontextprotocol/server-filesystem']);
+  });
+
+  it('should not generate mcp.json when no MCP config', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+    });
+
+    const result = await generator.generate(content);
+
+    expect(result.files).not.toContain('mcp.json');
+  });
+
+  it('should not generate mcp.json when servers is empty', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      mcpConfig: {
+        servers: {},
+      },
+    });
+
+    const result = await generator.generate(content);
+
+    expect(result.files).not.toContain('mcp.json');
+  });
+
+  it('should generate mcp.json with URL server', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      mcpConfig: {
+        servers: {
+          api: {
+            url: 'https://api.example.com/mcp',
+            headers: { Authorization: 'Bearer token' },
+            targets: ['cursor'],
+            enabled: true,
+          },
+        },
+      },
+    });
+
+    const result = await generator.generate(content);
+
+    expect(result.files).toContain('mcp.json');
+    const mcpContent = await fs.readFile(path.join(tempDir, 'mcp.json'), 'utf-8');
+    const mcpJson = JSON.parse(mcpContent);
+    expect(mcpJson.mcpServers.api).toBeDefined();
+    expect(mcpJson.mcpServers.api.url).toBe('https://api.example.com/mcp');
+    expect(mcpJson.mcpServers.api.headers.Authorization).toBe('Bearer token');
+  });
+
+  it('should filter MCP servers by cursor target', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      mcpConfig: {
+        servers: {
+          cursorOnly: {
+            command: 'cursor-server',
+            targets: ['cursor'],
+            enabled: true,
+          },
+          claudeOnly: {
+            command: 'claude-server',
+            targets: ['claude'],
+            enabled: true,
+          },
+        },
+      },
+    });
+
+    const result = await generator.generate(content);
+
+    expect(result.files).toContain('mcp.json');
+    const mcpContent = await fs.readFile(path.join(tempDir, 'mcp.json'), 'utf-8');
+    const mcpJson = JSON.parse(mcpContent);
+    expect(mcpJson.mcpServers.cursorOnly).toBeDefined();
+    expect(mcpJson.mcpServers.claudeOnly).toBeUndefined();
+  });
+
+  it('should exclude disabled MCP servers', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      mcpConfig: {
+        servers: {
+          enabled: {
+            command: 'enabled-server',
+            targets: ['cursor'],
+            enabled: true,
+          },
+          disabled: {
+            command: 'disabled-server',
+            targets: ['cursor'],
+            enabled: false,
+          },
+        },
+      },
+    });
+
+    const result = await generator.generate(content);
+
+    expect(result.files).toContain('mcp.json');
+    const mcpContent = await fs.readFile(path.join(tempDir, 'mcp.json'), 'utf-8');
+    const mcpJson = JSON.parse(mcpContent);
+    expect(mcpJson.mcpServers.enabled).toBeDefined();
+    expect(mcpJson.mcpServers.disabled).toBeUndefined();
+  });
+
+  it('should add generated marker when addHeaders is true', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      mcpConfig: {
+        servers: {
+          test: {
+            command: 'test',
+            targets: ['cursor'],
+            enabled: true,
+          },
+        },
+      },
+    });
+
+    const result = await generator.generate(content, { addHeaders: true });
+
+    expect(result.files).toContain('mcp.json');
+    const mcpContent = await fs.readFile(path.join(tempDir, 'mcp.json'), 'utf-8');
+    const mcpJson = JSON.parse(mcpContent);
+    expect(mcpJson.__generated_by).toContain('ai-tool-sync');
+  });
+
+  it('should include env and cwd in mcp.json', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      mcpConfig: {
+        servers: {
+          test: {
+            command: 'test-server',
+            args: ['--port', '3000'],
+            env: { NODE_ENV: 'development' },
+            cwd: '/path/to/cwd',
+            targets: ['cursor'],
+            enabled: true,
+          },
+        },
+      },
+    });
+
+    const result = await generator.generate(content);
+
+    expect(result.files).toContain('mcp.json');
+    const mcpContent = await fs.readFile(path.join(tempDir, 'mcp.json'), 'utf-8');
+    const mcpJson = JSON.parse(mcpContent);
+    expect(mcpJson.mcpServers.test.env).toEqual({ NODE_ENV: 'development' });
+    expect(mcpJson.mcpServers.test.cwd).toBe('/path/to/cwd');
+  });
+});
+

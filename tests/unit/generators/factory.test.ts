@@ -418,3 +418,102 @@ describe('createFactoryGenerator', () => {
   });
 });
 
+describe('MCP generation', () => {
+  let generator: FactoryGenerator;
+  let tempDir: string;
+
+  beforeEach(async () => {
+    generator = new FactoryGenerator();
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'factory-mcp-test-'));
+  });
+
+  afterEach(async () => {
+    try {
+      await fs.rm(tempDir, { recursive: true });
+    } catch {
+      // Ignore cleanup errors
+    }
+  });
+
+  it('should generate mcp.json when MCP config is present', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      mcpConfig: {
+        servers: {
+          filesystem: {
+            command: 'npx',
+            args: ['-y', '@modelcontextprotocol/server-filesystem'],
+            targets: ['factory'],
+            enabled: true,
+          },
+        },
+      },
+    });
+
+    const result = await generator.generate(content);
+
+    expect(result.files).toContain('.factory/mcp.json');
+    const mcpContent = await fs.readFile(path.join(tempDir, '.factory/mcp.json'), 'utf-8');
+    const mcpJson = JSON.parse(mcpContent);
+    expect(mcpJson.mcpServers.filesystem).toBeDefined();
+    expect(mcpJson.mcpServers.filesystem.command).toBe('npx');
+  });
+
+  it('should add experimental warning for Factory MCP', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      mcpConfig: {
+        servers: {
+          test: {
+            command: 'test',
+            targets: ['factory'],
+            enabled: true,
+          },
+        },
+      },
+    });
+
+    const result = await generator.generate(content);
+
+    expect(result.warnings.some(w => w.includes('experimental'))).toBe(true);
+  });
+
+  it('should not generate mcp.json when no MCP config', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+    });
+
+    const result = await generator.generate(content);
+
+    expect(result.files).not.toContain('.factory/mcp.json');
+  });
+
+  it('should filter MCP servers by factory target', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      mcpConfig: {
+        servers: {
+          factoryOnly: {
+            command: 'factory-server',
+            targets: ['factory'],
+            enabled: true,
+          },
+          cursorOnly: {
+            command: 'cursor-server',
+            targets: ['cursor'],
+            enabled: true,
+          },
+        },
+      },
+    });
+
+    const result = await generator.generate(content);
+
+    expect(result.files).toContain('.factory/mcp.json');
+    const mcpContent = await fs.readFile(path.join(tempDir, '.factory/mcp.json'), 'utf-8');
+    const mcpJson = JSON.parse(mcpContent);
+    expect(mcpJson.mcpServers.factoryOnly).toBeDefined();
+    expect(mcpJson.mcpServers.cursorOnly).toBeUndefined();
+  });
+});
+

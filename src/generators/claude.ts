@@ -8,10 +8,15 @@
  * - Commands: Integrated via slash commands in settings
  * - Hooks: .claude/settings.json (hooks: { PreToolUse, PostToolUse, ... })
  * - Entry point: CLAUDE.md with @import support
+ * - MCP: .claude/mcp_servers.json
  */
 
 import * as path from 'node:path';
 
+import {
+  isCommandServer,
+  type McpConfig,
+} from '../parsers/mcp.js';
 import { mapModel } from '../transformers/model-mapper.js';
 import { mapTools } from '../transformers/tool-mapper.js';
 import {
@@ -29,6 +34,7 @@ import {
   type GeneratorOptions,
   type GenerateResult,
   type ResolvedContent,
+  DO_NOT_EDIT_COMMENT_JSON,
   DO_NOT_EDIT_HEADER,
   emptyGenerateResult,
   filterContentByTarget,
@@ -131,6 +137,12 @@ export class ClaudeGenerator implements Generator {
     // Generate CLAUDE.md entry point
     const claudeMd = this.generateClaudeMd(claudeContent, options);
     generated.push(claudeMd);
+
+    // Generate MCP servers config if we have MCP config
+    if (claudeContent.mcpConfig && Object.keys(claudeContent.mcpConfig.servers).length > 0) {
+      const mcpFile = this.generateMcpServers(claudeContent.mcpConfig, options);
+      generated.push(mcpFile);
+    }
 
     // Write files if not dry run
     if (!options.dryRun) {
@@ -524,7 +536,84 @@ export class ClaudeGenerator implements Generator {
       type: 'entrypoint',
     };
   }
+
+  /**
+   * Generate MCP servers configuration file for Claude
+   */
+  private generateMcpServers(
+    mcpConfig: McpConfig,
+    options: GeneratorOptions
+  ): GeneratedFile {
+    // Claude expects servers in a specific format
+    const servers: Record<string, ClaudeMcpServer> = {};
+
+    for (const [name, server] of Object.entries(mcpConfig.servers)) {
+      if (isCommandServer(server)) {
+        const claudeServer: ClaudeMcpServerCommand = {
+          command: server.command,
+        };
+        if (server.args && server.args.length > 0) {
+          claudeServer.args = server.args;
+        }
+        if (server.env && Object.keys(server.env).length > 0) {
+          claudeServer.env = server.env;
+        }
+        if (server.cwd) {
+          claudeServer.cwd = server.cwd;
+        }
+        servers[name] = claudeServer;
+      } else {
+        // URL-based server
+        const claudeServer: ClaudeMcpServerUrl = {
+          url: server.url,
+        };
+        if (server.headers && Object.keys(server.headers).length > 0) {
+          claudeServer.headers = server.headers;
+        }
+        servers[name] = claudeServer;
+      }
+    }
+
+    // Build the mcp_servers.json structure
+    const mcpJson: Record<string, unknown> = {
+      mcpServers: servers,
+    };
+
+    // Add generated marker if headers enabled
+    if (options.addHeaders) {
+      Object.assign(mcpJson, DO_NOT_EDIT_COMMENT_JSON);
+    }
+
+    return {
+      path: joinPath(CLAUDE_DIRS.root, 'mcp_servers.json'),
+      content: JSON.stringify(mcpJson, null, 2) + '\n',
+      type: 'config',
+    };
+  }
 }
+
+/**
+ * Claude MCP server (command-based)
+ */
+interface ClaudeMcpServerCommand {
+  command: string;
+  args?: string[];
+  env?: Record<string, string>;
+  cwd?: string;
+}
+
+/**
+ * Claude MCP server (URL-based)
+ */
+interface ClaudeMcpServerUrl {
+  url: string;
+  headers?: Record<string, string>;
+}
+
+/**
+ * Claude MCP server union type
+ */
+type ClaudeMcpServer = ClaudeMcpServerCommand | ClaudeMcpServerUrl;
 
 /**
  * Create a new Claude generator instance

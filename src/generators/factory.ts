@@ -8,10 +8,15 @@
  * - Commands: .factory/commands/<name>.md
  * - Hooks: NOT documented/supported
  * - Entry point: AGENTS.md
+ * - MCP: .factory/mcp.json (if supported)
  */
 
 import * as path from 'node:path';
 
+import {
+  isCommandServer,
+  type McpConfig,
+} from '../parsers/mcp.js';
 import { mapModel } from '../transformers/model-mapper.js';
 import { mapTools } from '../transformers/tool-mapper.js';
 import {
@@ -29,6 +34,7 @@ import {
   type GeneratorOptions,
   type GenerateResult,
   type ResolvedContent,
+  DO_NOT_EDIT_COMMENT_JSON,
   DO_NOT_EDIT_HEADER,
   emptyGenerateResult,
   filterContentByTarget,
@@ -110,6 +116,16 @@ export class FactoryGenerator implements Generator {
     // Generate AGENTS.md entry point
     const agentsMd = this.generateAgentsMd(factoryContent, options);
     generated.push(agentsMd);
+
+    // Generate MCP config if we have MCP config
+    // Note: Factory MCP support is not officially documented, using standard format
+    if (factoryContent.mcpConfig && Object.keys(factoryContent.mcpConfig.servers).length > 0) {
+      const mcpFile = this.generateMcpConfig(factoryContent.mcpConfig, options);
+      generated.push(mcpFile);
+      result.warnings.push(
+        'Factory MCP support is experimental. Generated mcp.json may need manual adjustment.'
+      );
+    }
 
     // Write files if not dry run
     if (!options.dryRun) {
@@ -539,7 +555,85 @@ export class FactoryGenerator implements Generator {
       type: 'entrypoint',
     };
   }
+
+  /**
+   * Generate MCP configuration file for Factory
+   * Note: Factory MCP support is experimental/undocumented
+   */
+  private generateMcpConfig(
+    mcpConfig: McpConfig,
+    options: GeneratorOptions
+  ): GeneratedFile {
+    // Use a similar format to Cursor/Claude for consistency
+    const servers: Record<string, FactoryMcpServer> = {};
+
+    for (const [name, server] of Object.entries(mcpConfig.servers)) {
+      if (isCommandServer(server)) {
+        const factoryServer: FactoryMcpServerCommand = {
+          command: server.command,
+        };
+        if (server.args && server.args.length > 0) {
+          factoryServer.args = server.args;
+        }
+        if (server.env && Object.keys(server.env).length > 0) {
+          factoryServer.env = server.env;
+        }
+        if (server.cwd) {
+          factoryServer.cwd = server.cwd;
+        }
+        servers[name] = factoryServer;
+      } else {
+        // URL-based server
+        const factoryServer: FactoryMcpServerUrl = {
+          url: server.url,
+        };
+        if (server.headers && Object.keys(server.headers).length > 0) {
+          factoryServer.headers = server.headers;
+        }
+        servers[name] = factoryServer;
+      }
+    }
+
+    // Build the mcp.json structure
+    const mcpJson: Record<string, unknown> = {
+      mcpServers: servers,
+    };
+
+    // Add generated marker if headers enabled
+    if (options.addHeaders) {
+      Object.assign(mcpJson, DO_NOT_EDIT_COMMENT_JSON);
+    }
+
+    return {
+      path: joinPath(FACTORY_DIRS.root, 'mcp.json'),
+      content: JSON.stringify(mcpJson, null, 2) + '\n',
+      type: 'config',
+    };
+  }
 }
+
+/**
+ * Factory MCP server (command-based)
+ */
+interface FactoryMcpServerCommand {
+  command: string;
+  args?: string[];
+  env?: Record<string, string>;
+  cwd?: string;
+}
+
+/**
+ * Factory MCP server (URL-based)
+ */
+interface FactoryMcpServerUrl {
+  url: string;
+  headers?: Record<string, string>;
+}
+
+/**
+ * Factory MCP server union type
+ */
+type FactoryMcpServer = FactoryMcpServerCommand | FactoryMcpServerUrl;
 
 /**
  * Create a new Factory generator instance

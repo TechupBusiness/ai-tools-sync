@@ -80,3 +80,20 @@ export {
   type HookEvent,
 } from './hook.js';
 
+// MCP parser
+export {
+  parseMcpConfig,
+  filterServersByTarget,
+  getEnabledServers,
+  countServersByType,
+  interpolateEnvVars,
+  isCommandServer,
+  isUrlServer,
+  MCP_SERVER_DEFAULTS,
+  type McpCommandServer,
+  type McpUrlServer,
+  type McpServer,
+  type McpConfig,
+  type ParsedMcpConfig,
+} from './mcp.js';
+

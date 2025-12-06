@@ -467,3 +467,107 @@ describe('createClaudeGenerator', () => {
   });
 });
 
+describe('MCP generation', () => {
+  let generator: ClaudeGenerator;
+  let tempDir: string;
+
+  beforeEach(async () => {
+    generator = new ClaudeGenerator();
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'claude-mcp-test-'));
+  });
+
+  afterEach(async () => {
+    try {
+      await fs.rm(tempDir, { recursive: true });
+    } catch {
+      // Ignore cleanup errors
+    }
+  });
+
+  it('should generate mcp_servers.json when MCP config is present', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      mcpConfig: {
+        servers: {
+          filesystem: {
+            command: 'npx',
+            args: ['-y', '@modelcontextprotocol/server-filesystem'],
+            targets: ['claude'],
+            enabled: true,
+          },
+        },
+      },
+    });
+
+    const result = await generator.generate(content);
+
+    expect(result.files).toContain('.claude/mcp_servers.json');
+    const mcpContent = await fs.readFile(path.join(tempDir, '.claude/mcp_servers.json'), 'utf-8');
+    const mcpJson = JSON.parse(mcpContent);
+    expect(mcpJson.mcpServers.filesystem).toBeDefined();
+    expect(mcpJson.mcpServers.filesystem.command).toBe('npx');
+  });
+
+  it('should not generate mcp_servers.json when no MCP config', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+    });
+
+    const result = await generator.generate(content);
+
+    expect(result.files).not.toContain('.claude/mcp_servers.json');
+  });
+
+  it('should filter MCP servers by claude target', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      mcpConfig: {
+        servers: {
+          claudeOnly: {
+            command: 'claude-server',
+            targets: ['claude'],
+            enabled: true,
+          },
+          cursorOnly: {
+            command: 'cursor-server',
+            targets: ['cursor'],
+            enabled: true,
+          },
+        },
+      },
+    });
+
+    const result = await generator.generate(content);
+
+    expect(result.files).toContain('.claude/mcp_servers.json');
+    const mcpContent = await fs.readFile(path.join(tempDir, '.claude/mcp_servers.json'), 'utf-8');
+    const mcpJson = JSON.parse(mcpContent);
+    expect(mcpJson.mcpServers.claudeOnly).toBeDefined();
+    expect(mcpJson.mcpServers.cursorOnly).toBeUndefined();
+  });
+
+  it('should generate mcp_servers.json with URL server', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      mcpConfig: {
+        servers: {
+          api: {
+            url: 'https://api.example.com/mcp',
+            headers: { 'X-API-Key': 'secret' },
+            targets: ['claude'],
+            enabled: true,
+          },
+        },
+      },
+    });
+
+    const result = await generator.generate(content);
+
+    expect(result.files).toContain('.claude/mcp_servers.json');
+    const mcpContent = await fs.readFile(path.join(tempDir, '.claude/mcp_servers.json'), 'utf-8');
+    const mcpJson = JSON.parse(mcpContent);
+    expect(mcpJson.mcpServers.api.url).toBe('https://api.example.com/mcp');
+    expect(mcpJson.mcpServers.api.headers['X-API-Key']).toBe('secret');
+  });
+});
+

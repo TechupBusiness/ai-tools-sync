@@ -14,6 +14,10 @@
 import * as path from 'node:path';
 
 import {
+  isCommandServer,
+  type McpConfig,
+} from '../parsers/mcp.js';
+import {
   serializeFrontmatter,
   transformForCursor,
 } from '../transformers/frontmatter.js';
@@ -33,6 +37,7 @@ import {
   type GeneratorOptions,
   type GenerateResult,
   type ResolvedContent,
+  DO_NOT_EDIT_COMMENT_JSON,
   DO_NOT_EDIT_HEADER,
   emptyGenerateResult,
   filterContentByTarget,
@@ -113,6 +118,12 @@ export class CursorGenerator implements Generator {
     if (cursorContent.personas.length > 0 || cursorContent.commands.length > 0) {
       const agentsMd = this.generateAgentsMd(cursorContent, options);
       generated.push(agentsMd);
+    }
+
+    // Generate mcp.json if we have MCP config
+    if (cursorContent.mcpConfig && Object.keys(cursorContent.mcpConfig.servers).length > 0) {
+      const mcpJson = this.generateMcpJson(cursorContent.mcpConfig, options);
+      generated.push(mcpJson);
     }
 
     // Write files if not dry run
@@ -461,7 +472,84 @@ export class CursorGenerator implements Generator {
       type: 'entrypoint',
     };
   }
+
+  /**
+   * Generate mcp.json for Cursor MCP configuration
+   */
+  private generateMcpJson(
+    mcpConfig: McpConfig,
+    options: GeneratorOptions
+  ): GeneratedFile {
+    // Cursor expects the format: { "mcpServers": { "name": { "command": "...", "args": [...], "env": {...} } } }
+    const mcpServers: Record<string, CursorMcpServer> = {};
+
+    for (const [name, server] of Object.entries(mcpConfig.servers)) {
+      if (isCommandServer(server)) {
+        const cursorServer: CursorMcpServerCommand = {
+          command: server.command,
+        };
+        if (server.args && server.args.length > 0) {
+          cursorServer.args = server.args;
+        }
+        if (server.env && Object.keys(server.env).length > 0) {
+          cursorServer.env = server.env;
+        }
+        if (server.cwd) {
+          cursorServer.cwd = server.cwd;
+        }
+        mcpServers[name] = cursorServer;
+      } else {
+        // URL-based server - Cursor may support this differently
+        const cursorServer: CursorMcpServerUrl = {
+          url: server.url,
+        };
+        if (server.headers && Object.keys(server.headers).length > 0) {
+          cursorServer.headers = server.headers;
+        }
+        mcpServers[name] = cursorServer;
+      }
+    }
+
+    // Build the mcp.json structure
+    const mcpJson: Record<string, unknown> = {
+      mcpServers,
+    };
+
+    // Add generated marker if headers enabled
+    if (options.addHeaders) {
+      Object.assign(mcpJson, DO_NOT_EDIT_COMMENT_JSON);
+    }
+
+    return {
+      path: 'mcp.json',
+      content: JSON.stringify(mcpJson, null, 2) + '\n',
+      type: 'config',
+    };
+  }
 }
+
+/**
+ * Cursor MCP server (command-based)
+ */
+interface CursorMcpServerCommand {
+  command: string;
+  args?: string[];
+  env?: Record<string, string>;
+  cwd?: string;
+}
+
+/**
+ * Cursor MCP server (URL-based)
+ */
+interface CursorMcpServerUrl {
+  url: string;
+  headers?: Record<string, string>;
+}
+
+/**
+ * Cursor MCP server union type
+ */
+type CursorMcpServer = CursorMcpServerCommand | CursorMcpServerUrl;
 
 /**
  * Create a new Cursor generator instance

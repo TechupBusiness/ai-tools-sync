@@ -7,9 +7,12 @@
  * a specific target platform (Cursor, Claude, Factory).
  */
 
+import { filterServersByTarget } from '../parsers/mcp.js';
+
 import type { LoadResult } from '../loaders/base.js';
 import type { ParsedCommand } from '../parsers/command.js';
 import type { ParsedHook } from '../parsers/hook.js';
+import type { McpConfig } from '../parsers/mcp.js';
 import type { ParsedPersona } from '../parsers/persona.js';
 import type { ParsedRule } from '../parsers/rule.js';
 import type { TargetType } from '../parsers/types.js';
@@ -27,6 +30,11 @@ export interface ResolvedContent extends LoadResult {
    * Project name
    */
   projectName?: string;
+
+  /**
+   * MCP (Model Context Protocol) configuration
+   */
+  mcpConfig?: McpConfig;
 }
 
 /**
@@ -196,7 +204,7 @@ export function filterContentByTarget(
   content: ResolvedContent,
   target: TargetType
 ): ResolvedContent {
-  return {
+  const filtered: ResolvedContent = {
     ...content,
     rules: content.rules.filter((r) =>
       (r.frontmatter.targets ?? ['cursor', 'claude', 'factory']).includes(target)
@@ -211,6 +219,13 @@ export function filterContentByTarget(
       (h.frontmatter.targets ?? ['claude']).includes(target)
     ),
   };
+
+  // Filter MCP config if present
+  if (content.mcpConfig) {
+    filtered.mcpConfig = filterServersByTarget(content.mcpConfig, target);
+  }
+
+  return filtered;
 }
 
 /**
@@ -297,7 +312,8 @@ export function toSlug(name: string): string {
 export function createResolvedContent(
   loadResult: LoadResult,
   projectRoot: string,
-  projectName?: string
+  projectName?: string,
+  mcpConfig?: McpConfig
 ): ResolvedContent {
   const resolved: ResolvedContent = {
     ...loadResult,
@@ -306,6 +322,10 @@ export function createResolvedContent(
 
   if (projectName !== undefined) {
     resolved.projectName = projectName;
+  }
+
+  if (mcpConfig !== undefined) {
+    resolved.mcpConfig = mcpConfig;
   }
 
   return resolved;
