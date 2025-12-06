@@ -64,7 +64,7 @@ describe('Init Command', () => {
 
   describe('fresh initialization', () => {
     it('should create .ai directory structure', async () => {
-      const result = await init({ projectRoot: testDir });
+      const result = await init({ projectRoot: testDir, yes: true, updateGitignore: false });
 
       expect(result.success).toBe(true);
       expect(await dirExists(path.join(testDir, DEFAULT_CONFIG_DIR))).toBe(true);
@@ -75,7 +75,7 @@ describe('Init Command', () => {
     });
 
     it('should create config.yaml with template content', async () => {
-      await init({ projectRoot: testDir });
+      await init({ projectRoot: testDir, yes: true, updateGitignore: false });
 
       const configPath = path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml');
       expect(await fileExists(configPath)).toBe(true);
@@ -92,7 +92,7 @@ describe('Init Command', () => {
     });
 
     it('should create _core.md rule with template content', async () => {
-      await init({ projectRoot: testDir });
+      await init({ projectRoot: testDir, yes: true, updateGitignore: false });
 
       const corePath = path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', '_core.md');
       expect(await fileExists(corePath)).toBe(true);
@@ -107,7 +107,7 @@ describe('Init Command', () => {
     });
 
     it('should return list of created files', async () => {
-      const result = await init({ projectRoot: testDir });
+      const result = await init({ projectRoot: testDir, yes: true, updateGitignore: false });
 
       expect(result.filesCreated).toContain(`${DEFAULT_CONFIG_DIR}/config.yaml`);
       expect(result.filesCreated).toContain(`${DEFAULT_CONFIG_DIR}/rules/_core.md`);
@@ -121,14 +121,14 @@ describe('Init Command', () => {
     });
 
     it('should fail without --force when .ai exists', async () => {
-      const result = await init({ projectRoot: testDir });
+      const result = await init({ projectRoot: testDir, yes: true, updateGitignore: false });
 
       expect(result.success).toBe(false);
       expect(result.errors).toContain('Configuration already exists. Use --force to overwrite.');
     });
 
     it('should succeed with --force when .ai exists', async () => {
-      const result = await init({ projectRoot: testDir, force: true });
+      const result = await init({ projectRoot: testDir, force: true, yes: true, updateGitignore: false });
 
       expect(result.success).toBe(true);
       expect(result.filesCreated.length).toBeGreaterThan(0);
@@ -139,7 +139,7 @@ describe('Init Command', () => {
       await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR), { recursive: true });
       await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), 'old: content');
 
-      await init({ projectRoot: testDir, force: true });
+      await init({ projectRoot: testDir, force: true, yes: true, updateGitignore: false });
 
       const contentResult = await readFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'));
       expect(contentResult.ok).toBe(true);
@@ -150,10 +150,63 @@ describe('Init Command', () => {
     });
   });
 
+  describe('gitignore handling', () => {
+    it('should create .gitignore when updateGitignore is true', async () => {
+      const result = await init({ projectRoot: testDir, yes: true, updateGitignore: true });
+
+      expect(result.success).toBe(true);
+      expect(result.gitignoreUpdated).toBe(true);
+      expect(await fileExists(path.join(testDir, '.gitignore'))).toBe(true);
+
+      const content = await readFile(path.join(testDir, '.gitignore'));
+      expect(content.ok).toBe(true);
+      if (content.ok) {
+        expect(content.value).toContain('AI Tool Sync Generated');
+        expect(content.value).toContain('.cursor/rules/');
+        expect(content.value).toContain('CLAUDE.md');
+      }
+    });
+
+    it('should not create .gitignore when updateGitignore is false', async () => {
+      const result = await init({ projectRoot: testDir, yes: true, updateGitignore: false });
+
+      expect(result.success).toBe(true);
+      expect(result.gitignoreUpdated).toBe(false);
+      expect(await fileExists(path.join(testDir, '.gitignore'))).toBe(false);
+    });
+
+    it('should update existing .gitignore', async () => {
+      // Create existing .gitignore
+      await fs.writeFile(path.join(testDir, '.gitignore'), 'node_modules/\ndist/\n');
+
+      const result = await init({ projectRoot: testDir, yes: true, updateGitignore: true });
+
+      expect(result.success).toBe(true);
+      expect(result.gitignoreUpdated).toBe(true);
+
+      const content = await readFile(path.join(testDir, '.gitignore'));
+      expect(content.ok).toBe(true);
+      if (content.ok) {
+        // Should preserve existing entries
+        expect(content.value).toContain('node_modules/');
+        expect(content.value).toContain('dist/');
+        // Should have managed section
+        expect(content.value).toContain('AI Tool Sync Generated');
+      }
+    });
+
+    it('should use --yes flag defaults (updateGitignore true)', async () => {
+      const result = await init({ projectRoot: testDir, yes: true });
+
+      expect(result.success).toBe(true);
+      expect(result.gitignoreUpdated).toBe(true);
+    });
+  });
+
   describe('error handling', () => {
     it('should handle non-existent project root gracefully', async () => {
       const nonExistentDir = path.join(testDir, 'does-not-exist');
-      const result = await init({ projectRoot: nonExistentDir });
+      const result = await init({ projectRoot: nonExistentDir, yes: true, updateGitignore: false });
 
       // It should create the directory structure
       expect(result.success).toBe(true);

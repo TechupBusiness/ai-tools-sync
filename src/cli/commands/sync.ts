@@ -32,7 +32,14 @@ import {
   getLoadResultStats,
 } from '../../loaders/base.js';
 import { createLocalLoader } from '../../loaders/local.js';
+import { updateGitignore } from '../../utils/gitignore.js';
 import { logger } from '../../utils/logger.js';
+import {
+  collectGeneratedPaths,
+  createManifest,
+  MANIFEST_FILENAME,
+  writeManifest,
+} from '../../utils/manifest.js';
 import {
   printHeader,
   printSuccess,
@@ -48,6 +55,11 @@ import {
 import type { ResolvedConfig } from '../../config/types.js';
 
 /**
+ * Current version for manifest
+ */
+const MANIFEST_VERSION = '1.0.0';
+
+/**
  * Options for the sync command
  */
 export interface SyncOptions {
@@ -61,6 +73,8 @@ export interface SyncOptions {
   projectRoot?: string | undefined;
   /** Configuration directory name (relative to project root) */
   configDir?: string | undefined;
+  /** Update .gitignore with generated paths (overrides config) */
+  updateGitignore?: boolean | undefined;
 }
 
 /**
@@ -166,6 +180,21 @@ export async function sync(options: SyncOptions = {}): Promise<SyncResult> {
     printSubHeader('Generating subfolder contexts');
     const subfolderResult = await generateSubfolderContexts(config, resolvedContent, options);
     Object.assign(generateResult, mergeGenerateResults(generateResult, subfolderResult));
+  }
+
+  // Step 6: Generate manifest and update gitignore
+  if (!options.dryRun && generateResult.files.length > 0) {
+    const manifestResult = await generateManifestAndGitignore(
+      config,
+      generateResult.files,
+      options
+    );
+    if (manifestResult.manifestWritten) {
+      generateResult.files.push(MANIFEST_FILENAME);
+    }
+    if (manifestResult.gitignoreUpdated) {
+      generateResult.warnings.push(...manifestResult.warnings);
+    }
   }
 
   // Report results
@@ -383,5 +412,69 @@ async function generateSubfolderContexts(
       warnings: [`Subfolder context error: ${message}`],
     };
   }
+}
+
+/**
+ * Result of manifest and gitignore generation
+ */
+interface ManifestGitignoreResult {
+  manifestWritten: boolean;
+  gitignoreUpdated: boolean;
+  warnings: string[];
+}
+
+/**
+ * Generate manifest file and optionally update .gitignore
+ */
+async function generateManifestAndGitignore(
+  config: ResolvedConfig,
+  files: string[],
+  options: SyncOptions
+): Promise<ManifestGitignoreResult> {
+  const result: ManifestGitignoreResult = {
+    manifestWritten: false,
+    gitignoreUpdated: false,
+    warnings: [],
+  };
+
+  // Collect all generated paths
+  const { files: generatedFiles, directories } = collectGeneratedPaths(
+    files,
+    config.projectRoot
+  );
+
+  // Create and write manifest
+  const manifest = createManifest(generatedFiles, directories, MANIFEST_VERSION);
+  const manifestResult = await writeManifest(config.projectRoot, manifest);
+
+  if (manifestResult.ok) {
+    result.manifestWritten = true;
+    logger.debug(`Wrote manifest: ${MANIFEST_FILENAME}`);
+  } else {
+    result.warnings.push(`Failed to write manifest: ${manifestResult.error.message}`);
+    logger.warn(`Failed to write manifest: ${manifestResult.error.message}`);
+  }
+
+  // Update .gitignore if enabled
+  const shouldUpdateGitignore = options.updateGitignore ?? config.output?.update_gitignore ?? true;
+
+  if (shouldUpdateGitignore) {
+    const gitignoreResult = await updateGitignore(config.projectRoot, manifest, {
+      createIfMissing: false, // Don't create .gitignore if it doesn't exist during sync
+    });
+
+    if (gitignoreResult.ok) {
+      if (gitignoreResult.value.changed) {
+        result.gitignoreUpdated = true;
+        printSuccess('.gitignore updated with generated paths');
+        logger.debug('Updated .gitignore with managed section');
+      }
+    } else {
+      result.warnings.push(`Failed to update .gitignore: ${gitignoreResult.error.message}`);
+      logger.warn(`Failed to update .gitignore: ${gitignoreResult.error.message}`);
+    }
+  }
+
+  return result;
 }
 

@@ -13,12 +13,15 @@
  */
 
 import * as path from 'node:path';
+import * as readline from 'node:readline';
 
 import { getAiPaths, hasConfigDir, resolveConfigDir } from '../../config/loader.js';
 import { ensureDir, writeFile, fileExists } from '../../utils/fs.js';
+import { updateGitignore, getDefaultGitignorePaths } from '../../utils/gitignore.js';
 import { logger } from '../../utils/logger.js';
 import {
   printHeader,
+  printSuccess,
   printWarning,
   printError,
   printSummary,
@@ -38,6 +41,8 @@ export interface InitOptions {
   yes?: boolean | undefined;
   /** Configuration directory name (relative to project root) */
   configDir?: string | undefined;
+  /** Update .gitignore to exclude generated files */
+  updateGitignore?: boolean | undefined;
 }
 
 /**
@@ -47,6 +52,32 @@ export interface InitResult {
   success: boolean;
   filesCreated: string[];
   errors: string[];
+  gitignoreUpdated: boolean;
+}
+
+/**
+ * Prompt user for yes/no confirmation
+ */
+async function promptYesNo(question: string, defaultYes = true): Promise<boolean> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  const hint = defaultYes ? '(Y/n)' : '(y/N)';
+
+  return new Promise((resolve) => {
+    rl.question(`${question} ${hint} `, (answer) => {
+      rl.close();
+      const normalizedAnswer = answer.trim().toLowerCase();
+
+      if (!normalizedAnswer) {
+        resolve(defaultYes);
+      } else {
+        resolve(normalizedAnswer === 'y' || normalizedAnswer === 'yes');
+      }
+    });
+  });
 }
 
 /**
@@ -206,6 +237,7 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
         success: false,
         filesCreated: [],
         errors: ['Configuration already exists. Use --force to overwrite.'],
+        gitignoreUpdated: false,
       };
     }
     printWarning('Overwriting existing configuration (--force)');
@@ -274,6 +306,45 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
       }
     }
 
+    // Handle .gitignore update
+    let gitignoreUpdated = false;
+    let shouldUpdateGitignore = options.updateGitignore;
+
+    // If not specified, ask user (unless --yes flag is set)
+    if (shouldUpdateGitignore === undefined) {
+      if (options.yes) {
+        // Default to true when using --yes
+        shouldUpdateGitignore = true;
+      } else {
+        // Interactive prompt
+        printNewLine();
+        shouldUpdateGitignore = await promptYesNo(
+          'Update .gitignore to exclude generated files?',
+          true
+        );
+      }
+    }
+
+    if (shouldUpdateGitignore) {
+      const gitignoreResult = await updateGitignore(projectRoot, null, {
+        createIfMissing: true,
+      });
+
+      if (gitignoreResult.ok) {
+        gitignoreUpdated = gitignoreResult.value.changed;
+        if (gitignoreResult.value.created) {
+          printGeneratedFile('.gitignore', 'created');
+          filesCreated.push('.gitignore');
+        } else if (gitignoreResult.value.changed) {
+          printSuccess('.gitignore updated with generated paths');
+        }
+        logger.debug(`Gitignore paths: ${getDefaultGitignorePaths().join(', ')}`);
+      } else {
+        errors.push(`Failed to update .gitignore: ${gitignoreResult.error.message}`);
+        logger.warn(`Failed to update .gitignore: ${gitignoreResult.error.message}`);
+      }
+    }
+
     const success = errors.length === 0;
 
     printSummary({
@@ -295,6 +366,7 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
       success,
       filesCreated,
       errors,
+      gitignoreUpdated,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -303,6 +375,7 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
       success: false,
       filesCreated,
       errors: [message],
+      gitignoreUpdated: false,
     };
   }
 }

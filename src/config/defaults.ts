@@ -11,6 +11,7 @@ import type { Config, OutputConfig } from './types.js';
 export const DEFAULT_OUTPUT: Required<OutputConfig> = {
   clean_before_sync: true,
   add_do_not_edit_headers: true,
+  update_gitignore: true,
 };
 
 /**

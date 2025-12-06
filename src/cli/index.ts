@@ -31,12 +31,15 @@ program
   .option('-v, --verbose', 'Enable verbose output')
   .option('-d, --dry-run', 'Show what would be generated without writing files')
   .option('--no-clean', 'Do not clean output directories before generating')
+  .option('--update-gitignore', 'Update .gitignore with generated paths (default: true)')
+  .option('--no-update-gitignore', 'Do not update .gitignore')
   .option('-p, --project <path>', 'Project root directory')
   .option('-c, --config-dir <path>', 'Configuration directory name (default: .ai-tool-sync)')
   .action(async (options: {
     verbose?: boolean;
     dryRun?: boolean;
     clean?: boolean;
+    updateGitignore?: boolean;
     project?: string;
     configDir?: string;
   }) => {
@@ -49,6 +52,7 @@ program
         verbose: options.verbose,
         dryRun: options.dryRun,
         clean: options.clean,
+        updateGitignore: options.updateGitignore,
         projectRoot: options.project,
         configDir: options.configDir,
       });
@@ -72,11 +76,14 @@ program
   .description('Initialize configuration directory with template configuration')
   .option('-f, --force', 'Overwrite existing configuration')
   .option('-y, --yes', 'Skip prompts and use defaults')
+  .option('--update-gitignore', 'Update .gitignore with generated paths')
+  .option('--no-update-gitignore', 'Do not update .gitignore')
   .option('-p, --project <path>', 'Project root directory')
   .option('-c, --config-dir <path>', 'Configuration directory name (default: .ai-tool-sync)')
   .action(async (options: {
     force?: boolean;
     yes?: boolean;
+    updateGitignore?: boolean;
     project?: string;
     configDir?: string;
   }) => {
@@ -84,6 +91,7 @@ program
       const result = await init({
         force: options.force,
         yes: options.yes,
+        updateGitignore: options.updateGitignore,
         projectRoot: options.project,
         configDir: options.configDir,
       });

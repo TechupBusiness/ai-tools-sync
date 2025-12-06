@@ -61,6 +61,7 @@ export interface HookConfig {
 export interface OutputConfig {
   clean_before_sync?: boolean;
   add_do_not_edit_headers?: boolean;
+  update_gitignore?: boolean;
 }
 
 /**

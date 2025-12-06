@@ -82,6 +82,11 @@
           "type": "boolean",
           "description": "Add 'do not edit' headers to generated files",
           "default": true
+        },
+        "update_gitignore": {
+          "type": "boolean",
+          "description": "Automatically update .gitignore with generated paths",
+          "default": true
         }
       },
       "additionalProperties": false
