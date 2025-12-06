@@ -237,6 +237,56 @@ Content`;
       }
     });
 
+    it('should parse platform-specific extensions', () => {
+      const content = `---
+name: cross-platform-rule
+description: Rule with platform overrides
+cursor:
+  alwaysApply: true
+  globs:
+    - "**/*.ts"
+claude:
+  import_as_skill: true
+factory:
+  allowed-tools:
+    - read
+    - edit
+---
+
+# Cross-Platform Rule`;
+
+      const result = parseRule(content);
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.frontmatter.cursor).toEqual({
+          alwaysApply: true,
+          globs: ['**/*.ts'],
+        });
+        expect(result.value.frontmatter.claude).toEqual({
+          import_as_skill: true,
+        });
+        expect(result.value.frontmatter.factory).toEqual({
+          'allowed-tools': ['read', 'edit'],
+        });
+      }
+    });
+
+    it('should return error for invalid platform extension (non-object)', () => {
+      const content = `---
+name: test
+cursor: not-an-object
+---
+Content`;
+
+      const result = parseRule(content);
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        expect(result.error.validationErrors?.some((e) => e.path === 'cursor')).toBe(true);
+      }
+    });
+
     it('should collect all validation errors', () => {
       const content = `---
 description: No name

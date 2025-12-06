@@ -282,6 +282,108 @@ No frontmatter`;
       }
     });
 
+    it('should parse allowedTools field', () => {
+      const content = `---
+name: refactor
+description: Safe refactoring command
+allowedTools:
+  - read
+  - edit
+---
+# Refactor Command`;
+
+      const result = parseCommand(content);
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.frontmatter.allowedTools).toEqual(['read', 'edit']);
+      }
+    });
+
+    it('should parse globs field', () => {
+      const content = `---
+name: typescript-help
+description: TypeScript assistance
+globs:
+  - "**/*.ts"
+  - "**/*.tsx"
+---
+# TypeScript Help`;
+
+      const result = parseCommand(content);
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.frontmatter.globs).toEqual(['**/*.ts', '**/*.tsx']);
+      }
+    });
+
+    it('should parse platform-specific extensions', () => {
+      const content = `---
+name: cross-platform
+description: Command with platform overrides
+cursor:
+  allowedTools:
+    - Read
+    - Edit
+  globs:
+    - "**/*.ts"
+claude:
+  tools:
+    - Bash
+factory:
+  tools:
+    - execute
+---
+# Cross-Platform Command`;
+
+      const result = parseCommand(content);
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.frontmatter.cursor).toEqual({
+          allowedTools: ['Read', 'Edit'],
+          globs: ['**/*.ts'],
+        });
+        expect(result.value.frontmatter.claude).toEqual({
+          tools: ['Bash'],
+        });
+        expect(result.value.frontmatter.factory).toEqual({
+          tools: ['execute'],
+        });
+      }
+    });
+
+    it('should return error for non-array allowedTools', () => {
+      const content = `---
+name: test
+allowedTools: read
+---
+Content`;
+
+      const result = parseCommand(content);
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        expect(result.error.validationErrors?.some((e) => e.path === 'allowedTools')).toBe(true);
+      }
+    });
+
+    it('should return error for invalid platform extension (non-object)', () => {
+      const content = `---
+name: test
+cursor: not-an-object
+---
+Content`;
+
+      const result = parseCommand(content);
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        expect(result.error.validationErrors?.some((e) => e.path === 'cursor')).toBe(true);
+      }
+    });
+
     it('should validate multiple args', () => {
       const content = `---
 name: test

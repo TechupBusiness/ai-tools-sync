@@ -8,7 +8,10 @@ import { type Result, err, ok } from '../utils/result.js';
 import { parseFrontmatter } from './frontmatter.js';
 import {
   type BaseFrontmatter,
+  type ClaudeExtension,
   type ContentValidationError,
+  type CursorExtension,
+  type FactoryExtension,
   type ParseError,
   type ParsedContent,
   type TargetType,
@@ -35,6 +38,10 @@ export interface Persona extends BaseFrontmatter {
   model?: string;
   /** Additional persona traits/characteristics */
   traits?: Record<string, unknown>;
+  /** Platform-specific extensions */
+  cursor?: CursorExtension;
+  claude?: ClaudeExtension;
+  factory?: FactoryExtension;
 }
 
 /**
@@ -144,6 +151,19 @@ function validatePersonaFields(data: Record<string, unknown>): ContentValidation
     }
   }
 
+  // Validate platform extensions (must be objects if present)
+  for (const platform of ['cursor', 'claude', 'factory'] as const) {
+    if (data[platform] !== undefined) {
+      if (typeof data[platform] !== 'object' || data[platform] === null || Array.isArray(data[platform])) {
+        errors.push({
+          path: platform,
+          message: `${platform} extension must be an object`,
+          value: data[platform],
+        });
+      }
+    }
+  }
+
   return errors;
 }
 
@@ -166,6 +186,17 @@ function applyPersonaDefaults(data: Record<string, unknown>): Persona {
   }
   if (data.traits !== undefined) {
     persona.traits = data.traits as Record<string, unknown>;
+  }
+
+  // Platform-specific extensions
+  if (data.cursor !== undefined) {
+    persona.cursor = data.cursor as CursorExtension;
+  }
+  if (data.claude !== undefined) {
+    persona.claude = data.claude as ClaudeExtension;
+  }
+  if (data.factory !== undefined) {
+    persona.factory = data.factory as FactoryExtension;
   }
 
   return persona;

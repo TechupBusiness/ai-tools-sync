@@ -8,7 +8,10 @@ import { type Result, err, ok } from '../utils/result.js';
 import { parseFrontmatter } from './frontmatter.js';
 import {
   type BaseFrontmatter,
+  type ClaudeExtension,
   type ContentValidationError,
+  type CursorExtension,
+  type FactoryExtension,
   type ParseError,
   type ParsedContent,
   type TargetType,
@@ -44,6 +47,10 @@ export interface Rule extends BaseFrontmatter {
   category?: RuleCategory;
   /** Priority level for rule ordering */
   priority?: RulePriority;
+  /** Platform-specific extensions */
+  cursor?: CursorExtension;
+  claude?: ClaudeExtension;
+  factory?: FactoryExtension;
 }
 
 /**
@@ -198,6 +205,19 @@ function validateRuleFields(data: Record<string, unknown>): ContentValidationErr
     }
   }
 
+  // Validate platform extensions (must be objects if present)
+  for (const platform of ['cursor', 'claude', 'factory'] as const) {
+    if (data[platform] !== undefined) {
+      if (typeof data[platform] !== 'object' || data[platform] === null || Array.isArray(data[platform])) {
+        errors.push({
+          path: platform,
+          message: `${platform} extension must be an object`,
+          value: data[platform],
+        });
+      }
+    }
+  }
+
   return errors;
 }
 
@@ -222,6 +242,17 @@ function applyRuleDefaults(data: Record<string, unknown>): Rule {
   }
   if (data.category !== undefined) {
     rule.category = data.category as RuleCategory;
+  }
+
+  // Platform-specific extensions
+  if (data.cursor !== undefined) {
+    rule.cursor = data.cursor as CursorExtension;
+  }
+  if (data.claude !== undefined) {
+    rule.claude = data.claude as ClaudeExtension;
+  }
+  if (data.factory !== undefined) {
+    rule.factory = data.factory as FactoryExtension;
   }
 
   return rule;

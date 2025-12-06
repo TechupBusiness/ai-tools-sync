@@ -34,14 +34,55 @@
     },
     "targets": {
       "type": "array",
-      "description": "Target tools for this hook (usually only Claude supports hooks)",
+      "description": "Target tools for this hook",
       "items": {
         "type": "string",
         "enum": ["cursor", "claude", "factory"]
       },
-      "default": ["claude"]
-    }
+      "default": ["cursor", "claude", "factory"]
+    },
+    "cursor": { "$ref": "#/$defs/cursorExtension" },
+    "claude": { "$ref": "#/$defs/claudeExtension" },
+    "factory": { "$ref": "#/$defs/factoryExtension" }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$defs": {
+    "cursorExtension": {
+      "type": "object",
+      "description": "Cursor-specific overrides",
+      "properties": {
+        "event": {
+          "type": "string",
+          "description": "Cursor-specific event name",
+          "enum": ["beforeSubmitPrompt", "beforeShellExecution", "beforeMCPExecution", "beforeReadFile", "afterFileEdit", "stop"]
+        }
+      },
+      "additionalProperties": true
+    },
+    "claudeExtension": {
+      "type": "object",
+      "description": "Claude Code-specific overrides",
+      "properties": {
+        "event": {
+          "type": "string",
+          "description": "Claude-specific event name",
+          "enum": ["PreToolUse", "PostToolUse", "UserPromptSubmit", "Notification", "Stop", "SubagentStop", "SessionStart", "SessionEnd", "PreCompact"]
+        },
+        "match": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "factoryExtension": {
+      "type": "object",
+      "description": "Factory-specific overrides",
+      "properties": {
+        "event": {
+          "type": "string",
+          "description": "Factory-specific event name"
+        },
+        "matcher": { "type": "string" }
+      },
+      "additionalProperties": true
+    }
+  }
 }
-

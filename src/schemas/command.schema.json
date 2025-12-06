@@ -28,6 +28,16 @@
       "description": "Command arguments",
       "items": { "$ref": "#/$defs/arg" }
     },
+    "globs": {
+      "type": "array",
+      "description": "Glob patterns where command is relevant",
+      "items": { "type": "string" }
+    },
+    "allowedTools": {
+      "type": "array",
+      "description": "Tool restrictions for Cursor commands",
+      "items": { "type": "string" }
+    },
     "targets": {
       "type": "array",
       "description": "Target tools for this command",
@@ -36,7 +46,10 @@
         "enum": ["cursor", "claude", "factory"]
       },
       "default": ["cursor", "claude", "factory"]
-    }
+    },
+    "cursor": { "$ref": "#/$defs/cursorExtension" },
+    "claude": { "$ref": "#/$defs/claudeExtension" },
+    "factory": { "$ref": "#/$defs/factoryExtension" }
   },
   "additionalProperties": false,
   "$defs": {
@@ -72,7 +85,38 @@
         }
       },
       "additionalProperties": false
+    },
+    "cursorExtension": {
+      "type": "object",
+      "description": "Cursor-specific overrides",
+      "properties": {
+        "alwaysApply": { "type": "boolean" },
+        "globs": { "type": "array", "items": { "type": "string" } },
+        "description": { "type": "string" },
+        "allowedTools": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": true
+    },
+    "claudeExtension": {
+      "type": "object",
+      "description": "Claude Code-specific overrides",
+      "properties": {
+        "import_as_skill": { "type": "boolean" },
+        "tools": { "type": "array", "items": { "type": "string" } },
+        "model": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "factoryExtension": {
+      "type": "object",
+      "description": "Factory-specific overrides",
+      "properties": {
+        "allowed-tools": { "type": "array", "items": { "type": "string" } },
+        "tools": { "type": "array", "items": { "type": "string" } },
+        "model": { "type": "string" },
+        "reasoningEffort": { "type": "string", "enum": ["low", "medium", "high"] }
+      },
+      "additionalProperties": true
     }
   }
 }
-

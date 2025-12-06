@@ -243,7 +243,7 @@ describe('CursorGenerator', () => {
   });
 
   describe('generate() - commands', () => {
-    it('should generate command files', async () => {
+    it('should generate command files with frontmatter', async () => {
       const content = createMockContent({
         projectRoot: tempDir,
         commands: [
@@ -262,9 +262,54 @@ describe('CursorGenerator', () => {
         path.join(tempDir, '.cursor/commands/deploy.md'),
         'utf-8'
       );
-      expect(cmdContent).toContain('# deploy');
-      expect(cmdContent).toContain('> Deploy to production');
+      // Commands now use YAML frontmatter for description
+      expect(cmdContent).toContain('---');
+      expect(cmdContent).toContain('description: Deploy to production');
       expect(cmdContent).toContain('npm run deploy');
+    });
+
+    it('should include allowedTools in frontmatter when specified', async () => {
+      const content = createMockContent({
+        projectRoot: tempDir,
+        commands: [
+          createMockCommand('refactor', {
+            description: 'Safe refactor without terminal',
+            allowedTools: ['read', 'edit'],
+          }),
+        ],
+      });
+
+      const result = await generator.generate(content);
+
+      expect(result.files).toContain('.cursor/commands/refactor.md');
+
+      const cmdContent = await fs.readFile(
+        path.join(tempDir, '.cursor/commands/refactor.md'),
+        'utf-8'
+      );
+      expect(cmdContent).toContain('allowedTools: ["Read", "Edit"]');
+    });
+
+    it('should include globs in frontmatter when specified', async () => {
+      const content = createMockContent({
+        projectRoot: tempDir,
+        commands: [
+          createMockCommand('typescript', {
+            description: 'TypeScript help',
+            globs: ['**/*.ts', '**/*.tsx'],
+          }),
+        ],
+      });
+
+      const result = await generator.generate(content);
+
+      expect(result.files).toContain('.cursor/commands/typescript.md');
+
+      const cmdContent = await fs.readFile(
+        path.join(tempDir, '.cursor/commands/typescript.md'),
+        'utf-8'
+      );
+      expect(cmdContent).toContain('globs: ["**/*.ts", "**/*.tsx"]');
     });
 
     it('should include arguments section when args are defined', async () => {
@@ -294,17 +339,38 @@ describe('CursorGenerator', () => {
   });
 
   describe('generate() - hooks', () => {
-    it('should warn and skip hooks (not supported)', async () => {
+    it('should generate .cursor/hooks.json for hooks (v1.7+)', async () => {
       const content = createMockContent({
         projectRoot: tempDir,
-        hooks: [createMockHook('pre-commit')],
+        hooks: [createMockHook('format-on-edit', 'PostToolUse', ['cursor'])],
       });
 
       const result = await generator.generate(content);
 
-      expect(result.warnings).toHaveLength(1);
-      expect(result.warnings[0]).toContain('does not support hooks');
-      expect(result.warnings[0]).toContain('1 hook(s) will be skipped');
+      expect(result.files).toContain('.cursor/hooks.json');
+      
+      const hooksContent = await fs.readFile(
+        path.join(tempDir, '.cursor/hooks.json'),
+        'utf-8'
+      );
+      const hooksJson = JSON.parse(hooksContent);
+      expect(hooksJson.version).toBe(1);
+      expect(hooksJson.hooks).toBeDefined();
+      expect(hooksJson.hooks.afterFileEdit).toBeDefined();
+      expect(hooksJson.hooks.afterFileEdit).toHaveLength(1);
+    });
+
+    it('should not generate hooks.json when no hooks map to Cursor events', async () => {
+      // Hook with event that doesn't map to Cursor
+      const content = createMockContent({
+        projectRoot: tempDir,
+        hooks: [createMockHook('pre-commit', 'PreCommit', ['cursor'])],
+      });
+
+      const result = await generator.generate(content);
+
+      // PreCommit doesn't map to a Cursor event, so hooks.json shouldn't be generated
+      expect(result.files).not.toContain('.cursor/hooks.json');
     });
   });
 

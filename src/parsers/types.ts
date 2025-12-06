@@ -4,6 +4,60 @@
  */
 
 /**
+ * Supported target types
+ */
+export type TargetType = 'cursor' | 'claude' | 'factory';
+
+/**
+ * Platform-specific extension for Cursor
+ */
+export interface CursorExtension {
+  /** Override alwaysApply for Cursor */
+  alwaysApply?: boolean;
+  /** Override globs for Cursor */
+  globs?: string[];
+  /** Override description for Cursor */
+  description?: string;
+  /** Tool restrictions for commands */
+  allowedTools?: string[];
+}
+
+/**
+ * Platform-specific extension for Claude Code
+ */
+export interface ClaudeExtension {
+  /** Import as skill in CLAUDE.md */
+  import_as_skill?: boolean;
+  /** Tool restrictions for agents */
+  tools?: string[];
+  /** Model override for agents */
+  model?: string;
+}
+
+/**
+ * Platform-specific extension for Factory
+ */
+export interface FactoryExtension {
+  /** Tool restrictions for droids/skills */
+  'allowed-tools'?: string[];
+  /** Tool restrictions (alias) */
+  tools?: string[];
+  /** Model override for droids */
+  model?: string;
+  /** Reasoning effort for droids */
+  reasoningEffort?: 'low' | 'medium' | 'high';
+}
+
+/**
+ * Platform-specific extensions map
+ */
+export interface PlatformExtensions {
+  cursor?: CursorExtension;
+  claude?: ClaudeExtension;
+  factory?: FactoryExtension;
+}
+
+/**
  * Base frontmatter fields shared by all content types
  */
 export interface BaseFrontmatter {
@@ -15,12 +69,11 @@ export interface BaseFrontmatter {
   version?: string;
   /** Target tools this content applies to */
   targets?: TargetType[];
+  /** Platform-specific extensions */
+  cursor?: CursorExtension;
+  claude?: ClaudeExtension;
+  factory?: FactoryExtension;
 }
-
-/**
- * Supported target types
- */
-export type TargetType = 'cursor' | 'claude' | 'factory';
 
 /**
  * Default targets if none specified

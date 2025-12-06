@@ -8,7 +8,10 @@ import { type Result, err, ok } from '../utils/result.js';
 import { parseFrontmatter } from './frontmatter.js';
 import {
   type BaseFrontmatter,
+  type ClaudeExtension,
   type ContentValidationError,
+  type CursorExtension,
+  type FactoryExtension,
   type ParseError,
   type ParsedContent,
   type TargetType,
@@ -51,6 +54,14 @@ export interface Command extends BaseFrontmatter {
   execute?: string;
   /** Command arguments */
   args?: CommandArg[];
+  /** Glob patterns where command is relevant */
+  globs?: string[];
+  /** Tool restrictions (used by Cursor) */
+  allowedTools?: string[];
+  /** Platform-specific extensions */
+  cursor?: CursorExtension;
+  claude?: ClaudeExtension;
+  factory?: FactoryExtension;
 }
 
 /**
@@ -271,6 +282,61 @@ function validateCommandFields(data: Record<string, unknown>): ContentValidation
     }
   }
 
+  // Validate globs
+  if (data.globs !== undefined) {
+    if (!Array.isArray(data.globs)) {
+      errors.push({
+        path: 'globs',
+        message: 'Globs must be an array',
+        value: data.globs,
+      });
+    } else {
+      for (const [i, glob] of data.globs.entries()) {
+        if (typeof glob !== 'string') {
+          errors.push({
+            path: `globs[${i}]`,
+            message: 'Glob pattern must be a string',
+            value: glob,
+          });
+        }
+      }
+    }
+  }
+
+  // Validate allowedTools
+  if (data.allowedTools !== undefined) {
+    if (!Array.isArray(data.allowedTools)) {
+      errors.push({
+        path: 'allowedTools',
+        message: 'allowedTools must be an array',
+        value: data.allowedTools,
+      });
+    } else {
+      for (const [i, tool] of data.allowedTools.entries()) {
+        if (typeof tool !== 'string') {
+          errors.push({
+            path: `allowedTools[${i}]`,
+            message: 'Tool must be a string',
+            value: tool,
+          });
+        }
+      }
+    }
+  }
+
+  // Validate platform extensions (must be objects if present)
+  for (const platform of ['cursor', 'claude', 'factory'] as const) {
+    if (data[platform] !== undefined) {
+      if (typeof data[platform] !== 'object' || data[platform] === null || Array.isArray(data[platform])) {
+        errors.push({
+          path: platform,
+          message: `${platform} extension must be an object`,
+          value: data[platform],
+        });
+      }
+    }
+  }
+
   return errors;
 }
 
@@ -292,6 +358,23 @@ function applyCommandDefaults(data: Record<string, unknown>): Command {
   }
   if (data.execute !== undefined) {
     command.execute = data.execute as string;
+  }
+  if (data.globs !== undefined) {
+    command.globs = data.globs as string[];
+  }
+  if (data.allowedTools !== undefined) {
+    command.allowedTools = data.allowedTools as string[];
+  }
+
+  // Platform-specific extensions
+  if (data.cursor !== undefined) {
+    command.cursor = data.cursor as CursorExtension;
+  }
+  if (data.claude !== undefined) {
+    command.claude = data.claude as ClaudeExtension;
+  }
+  if (data.factory !== undefined) {
+    command.factory = data.factory as FactoryExtension;
   }
 
   return command;

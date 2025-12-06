@@ -5,8 +5,8 @@
  * Cursor IDE format:
  * - Rules: .cursor/rules/*.mdc with YAML frontmatter (alwaysApply, globs, description)
  * - Personas: .cursor/commands/roles/*.md
- * - Commands: .cursor/commands/*.md
- * - Hooks: NOT supported (skipped)
+ * - Commands: .cursor/commands/*.md with frontmatter (description, allowedTools, globs)
+ * - Hooks: .cursor/hooks.json (v1.7+)
  * - Entry point: AGENTS.md (if personas/commands exist)
  * - MCP: mcp.json in project root
  */
@@ -48,6 +48,7 @@ import {
 } from './base.js';
 
 import type { ParsedCommand } from '../parsers/command.js';
+import type { ParsedHook, HookEvent } from '../parsers/hook.js';
 import type { ParsedPersona } from '../parsers/persona.js';
 import type { ParsedRule } from '../parsers/rule.js';
 
@@ -59,6 +60,31 @@ const CURSOR_DIRS = {
   commands: '.cursor/commands',
   roles: '.cursor/commands/roles',
 } as const;
+
+/**
+ * Cursor hooks file path
+ */
+const CURSOR_HOOKS_FILE = '.cursor/hooks.json';
+
+/**
+ * Mapping from generic hook events to Cursor events
+ */
+const HOOK_EVENT_MAP: Partial<Record<HookEvent, CursorHookEvent>> = {
+  PreToolUse: 'beforeShellExecution',
+  PostToolUse: 'afterFileEdit',
+  PreMessage: 'beforeSubmitPrompt',
+};
+
+/**
+ * Cursor hook event types
+ */
+type CursorHookEvent =
+  | 'beforeSubmitPrompt'
+  | 'beforeShellExecution'
+  | 'beforeMCPExecution'
+  | 'beforeReadFile'
+  | 'afterFileEdit'
+  | 'stop';
 
 /**
  * Generator for Cursor IDE output
@@ -76,13 +102,6 @@ export class CursorGenerator implements Generator {
 
     // Filter content for cursor target
     const cursorContent = filterContentByTarget(content, 'cursor');
-
-    // Handle hooks - warn and skip
-    if (cursorContent.hooks.length > 0) {
-      result.warnings.push(
-        `Cursor does not support hooks. ${cursorContent.hooks.length} hook(s) will be skipped.`
-      );
-    }
 
     // Clean if requested
     if (options.clean && !options.dryRun) {
@@ -113,6 +132,14 @@ export class CursorGenerator implements Generator {
       options
     );
     generated.push(...commandFiles);
+
+    // Generate hooks.json if we have hooks
+    if (cursorContent.hooks.length > 0) {
+      const hooksJson = this.generateHooksJson(cursorContent.hooks, options);
+      if (hooksJson) {
+        generated.push(hooksJson);
+      }
+    }
 
     // Generate AGENTS.md entry point if we have personas or commands
     if (cursorContent.personas.length > 0 || cursorContent.commands.length > 0) {
@@ -341,6 +368,7 @@ export class CursorGenerator implements Generator {
 
   /**
    * Generate a single command file for Cursor
+   * Cursor commands support frontmatter with: description, allowedTools, globs
    */
   private generateCommandFile(command: ParsedCommand, options: GeneratorOptions): GeneratedFile {
     const filename = `${toSafeFilename(command.frontmatter.name)}.md`;
@@ -355,13 +383,18 @@ export class CursorGenerator implements Generator {
       parts.push('');
     }
 
-    // Add title
-    parts.push(`# ${command.frontmatter.name}`);
-    parts.push('');
+    // Build frontmatter for Cursor command
+    const frontmatter = this.buildCommandFrontmatter(command);
+    if (Object.keys(frontmatter).length > 0) {
+      parts.push('---');
+      parts.push(serializeFrontmatter(frontmatter));
+      parts.push('---');
+      parts.push('');
+    }
 
-    // Add description if present
-    if (command.frontmatter.description) {
-      parts.push(`> ${command.frontmatter.description}`);
+    // Add body content (which includes instructions)
+    if (command.content.trim()) {
+      parts.push(command.content.trim());
       parts.push('');
     }
 
@@ -394,17 +427,43 @@ export class CursorGenerator implements Generator {
       parts.push('');
     }
 
-    // Add body content
-    if (command.content.trim()) {
-      parts.push(command.content.trim());
-      parts.push('');
-    }
-
     return {
       path: filePath,
       content: parts.join('\n'),
       type: 'command',
     };
+  }
+
+  /**
+   * Build frontmatter for Cursor command
+   * Supports: description, allowedTools, globs
+   */
+  private buildCommandFrontmatter(command: ParsedCommand): Record<string, unknown> {
+    const frontmatter: Record<string, unknown> = {};
+
+    // Get cursor-specific extension values or fall back to base values
+    const cursorExt = command.frontmatter.cursor;
+
+    // Description
+    const description = cursorExt?.description ?? command.frontmatter.description;
+    if (description) {
+      frontmatter.description = description;
+    }
+
+    // Allowed tools (Cursor-specific feature)
+    const allowedTools = cursorExt?.allowedTools ?? command.frontmatter.allowedTools;
+    if (allowedTools && allowedTools.length > 0) {
+      // Map generic tool names to Cursor-specific names
+      frontmatter.allowedTools = mapTools(allowedTools, 'cursor');
+    }
+
+    // Globs
+    const globs = cursorExt?.globs ?? command.frontmatter.globs;
+    if (globs && globs.length > 0) {
+      frontmatter.globs = globs;
+    }
+
+    return frontmatter;
   }
 
   /**
@@ -471,6 +530,114 @@ export class CursorGenerator implements Generator {
       content: parts.join('\n'),
       type: 'entrypoint',
     };
+  }
+
+  /**
+   * Generate .cursor/hooks.json for Cursor hooks (v1.7+)
+   *
+   * Format:
+   * {
+   *   "version": 1,
+   *   "hooks": {
+   *     "afterFileEdit": [
+   *       { "command": "sh -lc '.cursor/hooks/format.sh'" }
+   *     ]
+   *   }
+   * }
+   */
+  private generateHooksJson(
+    hooks: ParsedHook[],
+    options: GeneratorOptions
+  ): GeneratedFile | null {
+    if (hooks.length === 0) {
+      return null;
+    }
+
+    // Group hooks by Cursor event
+    const hooksByEvent: Record<CursorHookEvent, CursorHookEntry[]> = {
+      beforeSubmitPrompt: [],
+      beforeShellExecution: [],
+      beforeMCPExecution: [],
+      beforeReadFile: [],
+      afterFileEdit: [],
+      stop: [],
+    };
+
+    for (const hook of hooks) {
+      // Get cursor-specific event or map from generic event
+      const cursorEvent = this.mapHookEvent(hook);
+      if (!cursorEvent) {
+        continue; // Skip hooks that don't map to Cursor events
+      }
+
+      const entry: CursorHookEntry = {
+        command: hook.frontmatter.execute ?? `sh -lc 'echo "Hook: ${hook.frontmatter.name}"'`,
+      };
+
+      hooksByEvent[cursorEvent].push(entry);
+    }
+
+    // Filter out empty event arrays
+    const hooksConfig: Partial<Record<CursorHookEvent, CursorHookEntry[]>> = {};
+    for (const [event, entries] of Object.entries(hooksByEvent) as [CursorHookEvent, CursorHookEntry[]][]) {
+      if (entries.length > 0) {
+        hooksConfig[event] = entries;
+      }
+    }
+
+    // Don't generate if no hooks mapped
+    if (Object.keys(hooksConfig).length === 0) {
+      return null;
+    }
+
+    // Build the hooks.json structure
+    const hooksJson: CursorHooksConfig = {
+      version: 1,
+      hooks: hooksConfig,
+    };
+
+    // Add generated marker if headers enabled
+    const output: Record<string, unknown> = { ...hooksJson };
+    if (options.addHeaders) {
+      Object.assign(output, DO_NOT_EDIT_COMMENT_JSON);
+    }
+
+    return {
+      path: CURSOR_HOOKS_FILE,
+      content: JSON.stringify(output, null, 2) + '\n',
+      type: 'config',
+    };
+  }
+
+  /**
+   * Map a hook to a Cursor event
+   */
+  private mapHookEvent(hook: ParsedHook): CursorHookEvent | null {
+    // Check for cursor-specific event override
+    const cursorExt = hook.frontmatter.cursor as { event?: string } | undefined;
+    if (cursorExt?.event) {
+      const event = cursorExt.event as CursorHookEvent;
+      if (this.isValidCursorEvent(event)) {
+        return event;
+      }
+    }
+
+    // Map generic event to Cursor event
+    return HOOK_EVENT_MAP[hook.frontmatter.event] ?? null;
+  }
+
+  /**
+   * Check if event is a valid Cursor hook event
+   */
+  private isValidCursorEvent(event: string): event is CursorHookEvent {
+    return [
+      'beforeSubmitPrompt',
+      'beforeShellExecution',
+      'beforeMCPExecution',
+      'beforeReadFile',
+      'afterFileEdit',
+      'stop',
+    ].includes(event);
   }
 
   /**
@@ -550,6 +717,21 @@ interface CursorMcpServerUrl {
  * Cursor MCP server union type
  */
 type CursorMcpServer = CursorMcpServerCommand | CursorMcpServerUrl;
+
+/**
+ * Cursor hook entry
+ */
+interface CursorHookEntry {
+  command: string;
+}
+
+/**
+ * Cursor hooks.json configuration
+ */
+interface CursorHooksConfig {
+  version: number;
+  hooks: Partial<Record<CursorHookEvent, CursorHookEntry[]>>;
+}
 
 /**
  * Create a new Cursor generator instance

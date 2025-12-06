@@ -53,8 +53,43 @@
       "description": "Priority level for rule ordering",
       "enum": ["low", "medium", "high"],
       "default": "medium"
-    }
+    },
+    "cursor": { "$ref": "#/$defs/cursorExtension" },
+    "claude": { "$ref": "#/$defs/claudeExtension" },
+    "factory": { "$ref": "#/$defs/factoryExtension" }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$defs": {
+    "cursorExtension": {
+      "type": "object",
+      "description": "Cursor-specific overrides",
+      "properties": {
+        "alwaysApply": { "type": "boolean" },
+        "globs": { "type": "array", "items": { "type": "string" } },
+        "description": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "claudeExtension": {
+      "type": "object",
+      "description": "Claude Code-specific overrides",
+      "properties": {
+        "import_as_skill": { "type": "boolean" },
+        "tools": { "type": "array", "items": { "type": "string" } },
+        "model": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "factoryExtension": {
+      "type": "object",
+      "description": "Factory-specific overrides",
+      "properties": {
+        "allowed-tools": { "type": "array", "items": { "type": "string" } },
+        "tools": { "type": "array", "items": { "type": "string" } },
+        "model": { "type": "string" },
+        "reasoningEffort": { "type": "string", "enum": ["low", "medium", "high"] }
+      },
+      "additionalProperties": true
+    }
+  }
 }
-

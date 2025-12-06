@@ -369,8 +369,8 @@ version: 2.0.0
       expect(settings.hooks).toBeDefined();
     });
 
-    it('should skip hooks for cursor generator (not supported)', async () => {
-      // Create a hook that targets cursor to test the warning
+    it('should generate hooks.json for cursor (v1.7+)', async () => {
+      // Create a hook that targets cursor
       await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'hooks'), { recursive: true });
       await fs.writeFile(
         path.join(testDir, DEFAULT_CONFIG_DIR, 'hooks', 'cursor-hook.md'),
@@ -403,8 +403,17 @@ targets: [cursor]
         outputDir: testDir,
       });
 
-      // Should have warning about hooks
-      expect(result.warnings.some((w) => w.toLowerCase().includes('hook'))).toBe(true);
+      // Should generate .cursor/hooks.json (Cursor v1.7+)
+      expect(await fileExists(path.join(testDir, '.cursor', 'hooks.json'))).toBe(true);
+
+      const hooksContent = await readFile(path.join(testDir, '.cursor', 'hooks.json'));
+      expect(hooksContent.ok).toBe(true);
+
+      const hooksJson = JSON.parse(hooksContent.value as string);
+      expect(hooksJson.version).toBe(1);
+      expect(hooksJson.hooks).toBeDefined();
+      // PreToolUse maps to beforeShellExecution in Cursor
+      expect(hooksJson.hooks.beforeShellExecution).toBeDefined();
     });
   });
 

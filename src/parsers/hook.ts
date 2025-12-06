@@ -8,7 +8,10 @@ import { type Result, err, ok } from '../utils/result.js';
 import { parseFrontmatter } from './frontmatter.js';
 import {
   type BaseFrontmatter,
+  type ClaudeExtension,
   type ContentValidationError,
+  type CursorExtension,
+  type FactoryExtension,
   type ParseError,
   type ParsedContent,
   type TargetType,
@@ -29,6 +32,7 @@ export type HookEvent =
 
 /**
  * Hook frontmatter structure
+ * Note: Inherits cursor, claude, factory extensions from BaseFrontmatter
  */
 export interface Hook extends BaseFrontmatter {
   /** Unique identifier for the hook */
@@ -147,6 +151,19 @@ function validateHookFields(data: Record<string, unknown>): ContentValidationErr
     }
   }
 
+  // Validate platform extensions (must be objects if present)
+  for (const platform of ['cursor', 'claude', 'factory'] as const) {
+    if (data[platform] !== undefined) {
+      if (typeof data[platform] !== 'object' || data[platform] === null || Array.isArray(data[platform])) {
+        errors.push({
+          path: platform,
+          message: `${platform} extension must be an object`,
+          value: data[platform],
+        });
+      }
+    }
+  }
+
   return errors;
 }
 
@@ -172,6 +189,19 @@ function applyHookDefaults(data: Record<string, unknown>): Hook {
   if (data.execute !== undefined) {
     hook.execute = data.execute as string;
   }
+
+  // Platform-specific extensions (validated as objects in validateHookFields)
+  /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+  if (data.cursor !== undefined) {
+    hook.cursor = data.cursor as CursorExtension;
+  }
+  if (data.claude !== undefined) {
+    hook.claude = data.claude as ClaudeExtension;
+  }
+  if (data.factory !== undefined) {
+    hook.factory = data.factory as FactoryExtension;
+  }
+  /* eslint-enable @typescript-eslint/no-unsafe-assignment */
 
   return hook;
 }
