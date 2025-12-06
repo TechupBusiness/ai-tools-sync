@@ -98,7 +98,11 @@ export interface ConfigOptions {
   projectRoot?: string;
 
   /**
-   * Path to the .ai directory (defaults to projectRoot/.ai)
+   * Path to the .ai directory (defaults to projectRoot/.ai-tool-sync)
+   * Can also be set via:
+   * - CLI flag: --config-dir=<path>
+   * - Environment variable: AI_TOOL_SYNC_DIR
+   * - package.json: "ai-tool-sync": { "configDir": ".ai" }
    */
   aiDir?: string;
 
@@ -106,6 +110,27 @@ export interface ConfigOptions {
    * Path to config.yaml (defaults to aiDir/config.yaml)
    */
   configPath?: string;
+
+  /**
+   * Custom config directory name (relative to project root)
+   * Priority: CLI flag > ENV var > package.json > default (.ai-tool-sync)
+   */
+  configDir?: string | undefined;
+}
+
+/**
+ * Options for resolving config directory
+ */
+export interface ConfigDirResolutionOptions {
+  /**
+   * Path to the project root (defaults to cwd)
+   */
+  projectRoot?: string | undefined;
+
+  /**
+   * Explicit config directory (highest priority, from CLI flag)
+   */
+  configDir?: string | undefined;
 }
 
 /**

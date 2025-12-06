@@ -14,11 +14,12 @@ import { fileURLToPath } from 'node:url';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { sync } from '../../src/cli/commands/sync.js';
+import { DEFAULT_CONFIG_DIR } from '../../src/config/loader.js';
 import { fileExists, dirExists, readFile } from '../../src/utils/fs.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TESTS_TMP_DIR = path.resolve(__dirname, '..', '.tmp');
-const DEFAULTS_DIR = path.resolve(__dirname, '..', '..', 'defaults');
+const _DEFAULTS_DIR = path.resolve(__dirname, '..', '..', 'defaults');
 
 // Mock logger to suppress output
 vi.mock('../../src/utils/logger.js', () => ({
@@ -95,11 +96,11 @@ describe('E2E Scenarios', () => {
       await fs.mkdir(path.join(testDir, 'tests'), { recursive: true });
 
       // Create .ai configuration
-      await fs.mkdir(path.join(testDir, '.ai', 'rules'), { recursive: true });
-      await fs.mkdir(path.join(testDir, '.ai', 'personas'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'personas'), { recursive: true });
 
       await fs.writeFile(
-        path.join(testDir, '.ai', 'config.yaml'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
         `
 version: "1.0.0"
 project_name: my-nodejs-project
@@ -115,7 +116,7 @@ output:
 
       // Create project-specific rules
       await fs.writeFile(
-        path.join(testDir, '.ai', 'rules', '_core.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', '_core.md'),
         `---
 name: _core
 description: Core project context
@@ -136,7 +137,7 @@ This is a TypeScript Node.js application.
       );
 
       await fs.writeFile(
-        path.join(testDir, '.ai', 'rules', 'testing.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'testing.md'),
         `---
 name: testing
 description: Testing guidelines
@@ -204,16 +205,16 @@ Use Vitest for unit tests.
 
   describe('Minimal Config Scenario', () => {
     beforeEach(async () => {
-      await fs.mkdir(path.join(testDir, '.ai', 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
 
       // Minimal config with just version
       await fs.writeFile(
-        path.join(testDir, '.ai', 'config.yaml'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
         `version: "1.0.0"`
       );
 
       await fs.writeFile(
-        path.join(testDir, '.ai', 'rules', 'core.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'core.md'),
         `---
 name: core
 description: Core rules
@@ -243,14 +244,14 @@ Basic rules.
   describe('Full Config Scenario', () => {
     beforeEach(async () => {
       // Create comprehensive .ai structure
-      await fs.mkdir(path.join(testDir, '.ai', 'rules', 'domain'), { recursive: true });
-      await fs.mkdir(path.join(testDir, '.ai', 'personas'), { recursive: true });
-      await fs.mkdir(path.join(testDir, '.ai', 'commands'), { recursive: true });
-      await fs.mkdir(path.join(testDir, '.ai', 'hooks'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'domain'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'personas'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'commands'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'hooks'), { recursive: true });
 
       // Full config with all options
       await fs.writeFile(
-        path.join(testDir, '.ai', 'config.yaml'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
         `
 version: "1.0.0"
 project_name: full-config-project
@@ -282,7 +283,7 @@ output:
 
       // Create rules
       await fs.writeFile(
-        path.join(testDir, '.ai', 'rules', '_core.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', '_core.md'),
         `---
 name: _core
 description: Core context
@@ -295,7 +296,7 @@ always_apply: true
       );
 
       await fs.writeFile(
-        path.join(testDir, '.ai', 'rules', 'domain', 'core.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'domain', 'core.md'),
         `---
 name: domain-core
 description: Domain core rules
@@ -311,7 +312,7 @@ globs:
 
       // Create personas
       await fs.writeFile(
-        path.join(testDir, '.ai', 'personas', 'architect.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'personas', 'architect.md'),
         `---
 name: architect
 description: System architect
@@ -326,7 +327,7 @@ tools:
       );
 
       await fs.writeFile(
-        path.join(testDir, '.ai', 'personas', 'implementer.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'personas', 'implementer.md'),
         `---
 name: implementer
 description: Code implementer
@@ -343,7 +344,7 @@ tools:
 
       // Create commands
       await fs.writeFile(
-        path.join(testDir, '.ai', 'commands', 'deploy.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'commands', 'deploy.md'),
         `---
 name: deploy
 description: Deploy application
@@ -357,7 +358,7 @@ execute: scripts/deploy.sh
 
       // Create hooks
       await fs.writeFile(
-        path.join(testDir, '.ai', 'hooks', 'pre-commit.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'hooks', 'pre-commit.md'),
         `---
 name: pre-commit
 description: Pre-commit checks
@@ -436,10 +437,10 @@ targets: [claude]
       await fs.mkdir(path.join(testDir, 'apps', 'web', 'src'), { recursive: true });
 
       // Root .ai configuration
-      await fs.mkdir(path.join(testDir, '.ai', 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
 
       await fs.writeFile(
-        path.join(testDir, '.ai', 'config.yaml'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
         `
 version: "1.0.0"
 project_name: my-monorepo
@@ -461,7 +462,7 @@ subfolder_contexts:
       );
 
       await fs.writeFile(
-        path.join(testDir, '.ai', 'rules', 'core.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'core.md'),
         `---
 name: core
 description: Core shared rules
@@ -476,7 +477,7 @@ Shared across all packages.
       );
 
       await fs.writeFile(
-        path.join(testDir, '.ai', 'rules', 'backend.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'backend.md'),
         `---
 name: backend
 description: Backend rules
@@ -492,7 +493,7 @@ Node.js backend guidelines.
       );
 
       await fs.writeFile(
-        path.join(testDir, '.ai', 'rules', 'frontend.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'frontend.md'),
         `---
 name: frontend
 description: Frontend rules
@@ -550,10 +551,10 @@ React frontend guidelines.
 
   describe('Empty Project Scenario', () => {
     it('should handle empty .ai directory gracefully', async () => {
-      await fs.mkdir(path.join(testDir, '.ai'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR), { recursive: true });
       // Explicitly set loaders to empty to avoid loading ai-tool-sync defaults
       await fs.writeFile(
-        path.join(testDir, '.ai', 'config.yaml'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
         `version: "1.0.0"
 loaders: []`
       );
@@ -567,10 +568,10 @@ loaders: []`
 
   describe('Single Target Scenario', () => {
     beforeEach(async () => {
-      await fs.mkdir(path.join(testDir, '.ai', 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
 
       await fs.writeFile(
-        path.join(testDir, '.ai', 'config.yaml'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
         `
 version: "1.0.0"
 targets:
@@ -579,7 +580,7 @@ targets:
       );
 
       await fs.writeFile(
-        path.join(testDir, '.ai', 'rules', 'test.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'test.md'),
         `---
 name: test
 description: Test rule
@@ -608,9 +609,9 @@ always_apply: true
 
   describe('Error Handling Scenarios', () => {
     it('should fail gracefully when config is invalid', async () => {
-      await fs.mkdir(path.join(testDir, '.ai'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR), { recursive: true });
       await fs.writeFile(
-        path.join(testDir, '.ai', 'config.yaml'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
         `
 invalid: yaml: structure
   - this is not valid
@@ -624,15 +625,15 @@ invalid: yaml: structure
     });
 
     it('should continue on rule parse errors and report them', async () => {
-      await fs.mkdir(path.join(testDir, '.ai', 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
       await fs.writeFile(
-        path.join(testDir, '.ai', 'config.yaml'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
         `version: "1.0.0"`
       );
 
       // Valid rule
       await fs.writeFile(
-        path.join(testDir, '.ai', 'rules', 'valid.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'valid.md'),
         `---
 name: valid
 description: Valid rule
@@ -645,7 +646,7 @@ version: 1.0.0
 
       // Invalid rule (missing required fields)
       await fs.writeFile(
-        path.join(testDir, '.ai', 'rules', 'invalid.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'invalid.md'),
         `---
 not_a_name: invalid
 ---

@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-import { loadConfig, getAiPaths } from '../../src/config/loader.js';
+import { loadConfig, getAiPaths, DEFAULT_CONFIG_DIR } from '../../src/config/loader.js';
 import { createResolvedContent, filterContentByTarget } from '../../src/generators/base.js';
 import { createCursorGenerator } from '../../src/generators/cursor.js';
 import { createLocalLoader } from '../../src/loaders/local.js';
@@ -56,9 +56,9 @@ describe('Config Resolution Integration', () => {
   describe('config loading', () => {
     it('should load config and provide resolved paths', async () => {
       // Setup
-      await fs.mkdir(path.join(testDir, '.ai'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR), { recursive: true });
       await fs.writeFile(
-        path.join(testDir, '.ai', 'config.yaml'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
         `
 version: "1.0.0"
 project_name: test-project
@@ -79,9 +79,9 @@ targets:
     });
 
     it('should apply default values for missing config options', async () => {
-      await fs.mkdir(path.join(testDir, '.ai'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR), { recursive: true });
       await fs.writeFile(
-        path.join(testDir, '.ai', 'config.yaml'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
         `
 version: "1.0.0"
 `
@@ -100,9 +100,9 @@ version: "1.0.0"
     });
 
     it('should resolve project root correctly', async () => {
-      await fs.mkdir(path.join(testDir, '.ai'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR), { recursive: true });
       await fs.writeFile(
-        path.join(testDir, '.ai', 'config.yaml'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
         `version: "1.0.0"`
       );
 
@@ -111,23 +111,23 @@ version: "1.0.0"
       expect(result.ok).toBe(true);
       if (result.ok) {
         const paths = getAiPaths(result.value.projectRoot);
-        expect(paths.aiDir).toBe(path.join(testDir, '.ai'));
+        expect(paths.aiDir).toBe(path.join(testDir, DEFAULT_CONFIG_DIR));
         // configPath is in the resolved config, not getAiPaths
-        expect(result.value.configPath).toBe(path.join(testDir, '.ai', 'config.yaml'));
+        expect(result.value.configPath).toBe(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'));
       }
     });
   });
 
   describe('rules resolution', () => {
     it('should load rules from .ai/rules directory', async () => {
-      await fs.mkdir(path.join(testDir, '.ai', 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
       await fs.writeFile(
-        path.join(testDir, '.ai', 'config.yaml'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
         `version: "1.0.0"`
       );
 
       await fs.writeFile(
-        path.join(testDir, '.ai', 'rules', 'core.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'core.md'),
         `---
 name: core
 description: Core rules
@@ -142,7 +142,7 @@ Important core rules.
       );
 
       await fs.writeFile(
-        path.join(testDir, '.ai', 'rules', 'testing.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'testing.md'),
         `---
 name: testing
 description: Testing rules
@@ -159,7 +159,7 @@ Rules for tests.
       );
 
       const loader = createLocalLoader();
-      const loadResult = await loader.load(path.join(testDir, '.ai'), {
+      const loadResult = await loader.load(path.join(testDir, DEFAULT_CONFIG_DIR), {
         basePath: testDir,
       });
 
@@ -169,14 +169,14 @@ Rules for tests.
     });
 
     it('should load nested rules from subdirectories', async () => {
-      await fs.mkdir(path.join(testDir, '.ai', 'rules', 'domain'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'domain'), { recursive: true });
       await fs.writeFile(
-        path.join(testDir, '.ai', 'config.yaml'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
         `version: "1.0.0"`
       );
 
       await fs.writeFile(
-        path.join(testDir, '.ai', 'rules', 'domain', 'core.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'domain', 'core.md'),
         `---
 name: domain-core
 description: Domain core rules
@@ -188,7 +188,7 @@ version: 1.0.0
       );
 
       await fs.writeFile(
-        path.join(testDir, '.ai', 'rules', 'domain', 'testing.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'domain', 'testing.md'),
         `---
 name: domain-testing
 description: Domain testing rules
@@ -200,7 +200,7 @@ version: 1.0.0
       );
 
       const loader = createLocalLoader();
-      const loadResult = await loader.load(path.join(testDir, '.ai'), {
+      const loadResult = await loader.load(path.join(testDir, DEFAULT_CONFIG_DIR), {
         basePath: testDir,
       });
 
@@ -212,9 +212,9 @@ version: 1.0.0
 
   describe('target filtering in config', () => {
     it('should only generate for targets specified in config', async () => {
-      await fs.mkdir(path.join(testDir, '.ai', 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
       await fs.writeFile(
-        path.join(testDir, '.ai', 'config.yaml'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
         `
 version: "1.0.0"
 targets:
@@ -223,7 +223,7 @@ targets:
       );
 
       await fs.writeFile(
-        path.join(testDir, '.ai', 'rules', 'test.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'test.md'),
         `---
 name: test
 description: Test rule
@@ -244,15 +244,15 @@ always_apply: true
     });
 
     it('should filter rules by their target specification', async () => {
-      await fs.mkdir(path.join(testDir, '.ai', 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
       await fs.writeFile(
-        path.join(testDir, '.ai', 'config.yaml'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
         `version: "1.0.0"`
       );
 
       // Rule only for cursor
       await fs.writeFile(
-        path.join(testDir, '.ai', 'rules', 'cursor-specific.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'cursor-specific.md'),
         `---
 name: cursor-specific
 description: Only for cursor
@@ -266,7 +266,7 @@ targets: [cursor]
 
       // Rule only for claude
       await fs.writeFile(
-        path.join(testDir, '.ai', 'rules', 'claude-specific.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'claude-specific.md'),
         `---
 name: claude-specific
 description: Only for claude
@@ -279,7 +279,7 @@ targets: [claude]
       );
 
       const loader = createLocalLoader();
-      const loadResult = await loader.load(path.join(testDir, '.ai'), {
+      const loadResult = await loader.load(path.join(testDir, DEFAULT_CONFIG_DIR), {
         basePath: testDir,
       });
 
@@ -299,9 +299,9 @@ targets: [claude]
 
   describe('use config filtering', () => {
     it('should filter personas by use.personas config', async () => {
-      await fs.mkdir(path.join(testDir, '.ai', 'personas'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'personas'), { recursive: true });
       await fs.writeFile(
-        path.join(testDir, '.ai', 'config.yaml'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
         `
 version: "1.0.0"
 use:
@@ -312,7 +312,7 @@ use:
 
       // Create two personas
       await fs.writeFile(
-        path.join(testDir, '.ai', 'personas', 'architect.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'personas', 'architect.md'),
         `---
 name: architect
 description: System architect
@@ -324,7 +324,7 @@ version: 1.0.0
       );
 
       await fs.writeFile(
-        path.join(testDir, '.ai', 'personas', 'implementer.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'personas', 'implementer.md'),
         `---
 name: implementer
 description: Code implementer
@@ -344,9 +344,9 @@ version: 1.0.0
     });
 
     it('should filter commands by use.commands config', async () => {
-      await fs.mkdir(path.join(testDir, '.ai', 'commands'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'commands'), { recursive: true });
       await fs.writeFile(
-        path.join(testDir, '.ai', 'config.yaml'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
         `
 version: "1.0.0"
 use:
@@ -356,7 +356,7 @@ use:
       );
 
       await fs.writeFile(
-        path.join(testDir, '.ai', 'commands', 'deploy.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'commands', 'deploy.md'),
         `---
 name: deploy
 description: Deploy command
@@ -368,7 +368,7 @@ version: 1.0.0
       );
 
       await fs.writeFile(
-        path.join(testDir, '.ai', 'commands', 'test.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'commands', 'test.md'),
         `---
 name: test
 description: Test command
@@ -390,9 +390,9 @@ version: 1.0.0
 
   describe('subfolder contexts', () => {
     it('should parse subfolder_contexts from config', async () => {
-      await fs.mkdir(path.join(testDir, '.ai'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR), { recursive: true });
       await fs.writeFile(
-        path.join(testDir, '.ai', 'config.yaml'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
         `
 version: "1.0.0"
 subfolder_contexts:
@@ -427,9 +427,9 @@ subfolder_contexts:
 
   describe('output settings', () => {
     it('should respect clean_before_sync setting', async () => {
-      await fs.mkdir(path.join(testDir, '.ai', 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
       await fs.writeFile(
-        path.join(testDir, '.ai', 'config.yaml'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
         `
 version: "1.0.0"
 output:
@@ -438,7 +438,7 @@ output:
       );
 
       await fs.writeFile(
-        path.join(testDir, '.ai', 'rules', 'test.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'test.md'),
         `---
 name: test
 description: Test
@@ -464,7 +464,7 @@ description: Existing file
 
       if (configResult.ok) {
         const loader = createLocalLoader();
-        const loadResult = await loader.load(path.join(testDir, '.ai'), {
+        const loadResult = await loader.load(path.join(testDir, DEFAULT_CONFIG_DIR), {
           basePath: testDir,
         });
 
@@ -483,9 +483,9 @@ description: Existing file
     });
 
     it('should respect add_do_not_edit_headers setting', async () => {
-      await fs.mkdir(path.join(testDir, '.ai', 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
       await fs.writeFile(
-        path.join(testDir, '.ai', 'config.yaml'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
         `
 version: "1.0.0"
 output:
@@ -494,7 +494,7 @@ output:
       );
 
       await fs.writeFile(
-        path.join(testDir, '.ai', 'rules', 'test.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'test.md'),
         `---
 name: test
 description: Test
@@ -509,7 +509,7 @@ version: 1.0.0
 
       if (configResult.ok) {
         const loader = createLocalLoader();
-        const loadResult = await loader.load(path.join(testDir, '.ai'), {
+        const loadResult = await loader.load(path.join(testDir, DEFAULT_CONFIG_DIR), {
           basePath: testDir,
         });
 
@@ -530,9 +530,9 @@ version: 1.0.0
 
   describe('loaders configuration', () => {
     it('should parse loaders from config', async () => {
-      await fs.mkdir(path.join(testDir, '.ai'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR), { recursive: true });
       await fs.writeFile(
-        path.join(testDir, '.ai', 'config.yaml'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
         `
 version: "1.0.0"
 loaders:

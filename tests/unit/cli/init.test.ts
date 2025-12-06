@@ -11,6 +11,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 
 import { init } from '../../../src/cli/commands/init.js';
+import { DEFAULT_CONFIG_DIR } from '../../../src/config/loader.js';
 import { dirExists, fileExists, readFile } from '../../../src/utils/fs.js';
 
 // Mock logger to suppress output during tests
@@ -66,17 +67,17 @@ describe('Init Command', () => {
       const result = await init({ projectRoot: testDir });
 
       expect(result.success).toBe(true);
-      expect(await dirExists(path.join(testDir, '.ai'))).toBe(true);
-      expect(await dirExists(path.join(testDir, '.ai', 'rules'))).toBe(true);
-      expect(await dirExists(path.join(testDir, '.ai', 'personas'))).toBe(true);
-      expect(await dirExists(path.join(testDir, '.ai', 'commands'))).toBe(true);
-      expect(await dirExists(path.join(testDir, '.ai', 'hooks'))).toBe(true);
+      expect(await dirExists(path.join(testDir, DEFAULT_CONFIG_DIR))).toBe(true);
+      expect(await dirExists(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'))).toBe(true);
+      expect(await dirExists(path.join(testDir, DEFAULT_CONFIG_DIR, 'personas'))).toBe(true);
+      expect(await dirExists(path.join(testDir, DEFAULT_CONFIG_DIR, 'commands'))).toBe(true);
+      expect(await dirExists(path.join(testDir, DEFAULT_CONFIG_DIR, 'hooks'))).toBe(true);
     });
 
     it('should create config.yaml with template content', async () => {
       await init({ projectRoot: testDir });
 
-      const configPath = path.join(testDir, '.ai', 'config.yaml');
+      const configPath = path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml');
       expect(await fileExists(configPath)).toBe(true);
 
       const contentResult = await readFile(configPath);
@@ -93,7 +94,7 @@ describe('Init Command', () => {
     it('should create _core.md rule with template content', async () => {
       await init({ projectRoot: testDir });
 
-      const corePath = path.join(testDir, '.ai', 'rules', '_core.md');
+      const corePath = path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', '_core.md');
       expect(await fileExists(corePath)).toBe(true);
 
       const contentResult = await readFile(corePath);
@@ -108,15 +109,15 @@ describe('Init Command', () => {
     it('should return list of created files', async () => {
       const result = await init({ projectRoot: testDir });
 
-      expect(result.filesCreated).toContain('.ai/config.yaml');
-      expect(result.filesCreated).toContain('.ai/rules/_core.md');
+      expect(result.filesCreated).toContain(`${DEFAULT_CONFIG_DIR}/config.yaml`);
+      expect(result.filesCreated).toContain(`${DEFAULT_CONFIG_DIR}/rules/_core.md`);
     });
   });
 
   describe('existing configuration', () => {
     beforeEach(async () => {
       // Pre-create .ai directory
-      await fs.mkdir(path.join(testDir, '.ai'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR), { recursive: true });
     });
 
     it('should fail without --force when .ai exists', async () => {
@@ -135,12 +136,12 @@ describe('Init Command', () => {
 
     it('should overwrite existing config.yaml with --force', async () => {
       // Create existing config
-      await fs.mkdir(path.join(testDir, '.ai'), { recursive: true });
-      await fs.writeFile(path.join(testDir, '.ai', 'config.yaml'), 'old: content');
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR), { recursive: true });
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), 'old: content');
 
       await init({ projectRoot: testDir, force: true });
 
-      const contentResult = await readFile(path.join(testDir, '.ai', 'config.yaml'));
+      const contentResult = await readFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'));
       expect(contentResult.ok).toBe(true);
       if (contentResult.ok) {
         expect(contentResult.value).not.toContain('old: content');

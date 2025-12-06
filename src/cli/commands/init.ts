@@ -1,9 +1,9 @@
 /**
  * @file Init Command
- * @description Initialize .ai/ directory with template configuration
+ * @description Initialize configuration directory with template configuration
  *
  * Creates the following structure:
- * .ai/
+ * .ai-tool-sync/ (or custom directory name)
  * ├── config.yaml       # Main configuration
  * ├── rules/            # Project-specific rules
  * │   └── _core.md      # Example core rule
@@ -14,7 +14,7 @@
 
 import * as path from 'node:path';
 
-import { getAiPaths, hasConfigDir } from '../../config/loader.js';
+import { getAiPaths, hasConfigDir, resolveConfigDir } from '../../config/loader.js';
 import { ensureDir, writeFile, fileExists } from '../../utils/fs.js';
 import { logger } from '../../utils/logger.js';
 import {
@@ -36,6 +36,8 @@ export interface InitOptions {
   projectRoot?: string | undefined;
   /** Skip interactive prompts (use defaults) */
   yes?: boolean | undefined;
+  /** Configuration directory name (relative to project root) */
+  configDir?: string | undefined;
 }
 
 /**
@@ -135,9 +137,10 @@ output:
 `;
 
 /**
- * Template for _core.md rule
+ * Get the template for _core.md rule with the correct directory name
  */
-const CORE_RULE_TEMPLATE = `---
+function getCoreRuleTemplate(configDirName: string): string {
+  return `---
 name: _core
 description: Core project context and guidelines
 version: 1.0.0
@@ -160,7 +163,7 @@ This is the core context for the project. Edit this file to add:
 ## Getting Started
 
 1. Edit this file to describe your project
-2. Add more rules in \`.ai/rules/\` for specific topics
+2. Add more rules in \`${configDirName}/rules/\` for specific topics
 3. Run \`ai-sync\` to generate tool-specific configurations
 
 ## Example Content
@@ -177,22 +180,26 @@ Important patterns:
 - [Pattern 2]
 \`\`\`
 `;
+}
 
 /**
  * Execute the init command
  */
 export async function init(options: InitOptions = {}): Promise<InitResult> {
   const projectRoot = path.resolve(options.projectRoot ?? process.cwd());
-  const paths = getAiPaths(projectRoot);
+
+  // Resolve the config directory name
+  const configDirName = options.configDir ?? await resolveConfigDir({ projectRoot });
+  const paths = getAiPaths(projectRoot, configDirName);
   const filesCreated: string[] = [];
   const errors: string[] = [];
 
   printHeader('Initialize AI Configuration');
 
-  // Check if .ai/ already exists
-  if (await hasConfigDir(projectRoot)) {
+  // Check if config directory already exists
+  if (await hasConfigDir(projectRoot, configDirName)) {
     if (!options.force) {
-      printWarning('Configuration directory already exists: .ai/');
+      printWarning(`Configuration directory already exists: ${configDirName}/`);
       printNewLine();
       printError('Use --force to overwrite existing configuration');
       return {
@@ -230,27 +237,27 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
     if (options.force || !(await fileExists(configPath))) {
       const result = await writeFile(configPath, CONFIG_TEMPLATE);
       if (result.ok) {
-        filesCreated.push('.ai/config.yaml');
-        printGeneratedFile('.ai/config.yaml', 'created');
+        filesCreated.push(`${configDirName}/config.yaml`);
+        printGeneratedFile(`${configDirName}/config.yaml`, 'created');
       } else {
         errors.push(`Failed to create config.yaml: ${result.error.message}`);
       }
     } else {
-      printGeneratedFile('.ai/config.yaml', 'skipped');
+      printGeneratedFile(`${configDirName}/config.yaml`, 'skipped');
     }
 
     // Create _core.md rule
     const corePath = path.join(paths.rulesDir, '_core.md');
     if (options.force || !(await fileExists(corePath))) {
-      const result = await writeFile(corePath, CORE_RULE_TEMPLATE);
+      const result = await writeFile(corePath, getCoreRuleTemplate(configDirName));
       if (result.ok) {
-        filesCreated.push('.ai/rules/_core.md');
-        printGeneratedFile('.ai/rules/_core.md', 'created');
+        filesCreated.push(`${configDirName}/rules/_core.md`);
+        printGeneratedFile(`${configDirName}/rules/_core.md`, 'created');
       } else {
         errors.push(`Failed to create _core.md: ${result.error.message}`);
       }
     } else {
-      printGeneratedFile('.ai/rules/_core.md', 'skipped');
+      printGeneratedFile(`${configDirName}/rules/_core.md`, 'skipped');
     }
 
     // Create .gitkeep files for empty directories
@@ -272,15 +279,15 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
     printSummary({
       success,
       message: success
-        ? `Created ${filesCreated.length} files in .ai/`
+        ? `Created ${filesCreated.length} files in ${configDirName}/`
         : `Initialization completed with ${errors.length} errors`,
     });
 
     if (success) {
       printNewLine();
       logger.info('Next steps:');
-      logger.list('Edit .ai/config.yaml to configure your project');
-      logger.list('Edit .ai/rules/_core.md with your project context');
+      logger.list(`Edit ${configDirName}/config.yaml to configure your project`);
+      logger.list(`Edit ${configDirName}/rules/_core.md with your project context`);
       logger.list('Run ai-sync to generate tool configurations');
     }
 

@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { sync } from '../../../src/cli/commands/sync.js';
+import { DEFAULT_CONFIG_DIR } from '../../../src/config/loader.js';
 import { dirExists, fileExists, readFile } from '../../../src/utils/fs.js';
 
 // Use a temp directory within the workspace to avoid sandbox issues
@@ -71,7 +72,7 @@ describe('Sync Command', () => {
   });
 
   describe('missing configuration', () => {
-    it('should fail when .ai directory does not exist', async () => {
+    it('should fail when config directory does not exist', async () => {
       const result = await sync({ projectRoot: testDir });
 
       expect(result.success).toBe(false);
@@ -79,7 +80,7 @@ describe('Sync Command', () => {
     });
 
     it('should fail when config.yaml does not exist', async () => {
-      await fs.mkdir(path.join(testDir, '.ai'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR), { recursive: true });
 
       const result = await sync({ projectRoot: testDir });
 
@@ -89,10 +90,10 @@ describe('Sync Command', () => {
 
   describe('basic sync', () => {
     beforeEach(async () => {
-      // Create valid .ai structure
-      await fs.mkdir(path.join(testDir, '.ai', 'rules'), { recursive: true });
-      await fs.mkdir(path.join(testDir, '.ai', 'personas'), { recursive: true });
-      await fs.mkdir(path.join(testDir, '.ai', 'commands'), { recursive: true });
+      // Create valid config structure
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'personas'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'commands'), { recursive: true });
 
       // Create valid config
       const config = `
@@ -106,7 +107,7 @@ output:
   clean_before_sync: true
   add_do_not_edit_headers: true
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'config.yaml'), config);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), config);
     });
 
     it('should sync with no content (empty result)', async () => {
@@ -123,7 +124,7 @@ output:
   clean_before_sync: true
   add_do_not_edit_headers: true
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'config.yaml'), config);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), config);
 
       const result = await sync({ projectRoot: testDir });
 
@@ -145,7 +146,7 @@ targets: [cursor, claude, factory]
 
 This is the core project context.
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'rules', 'core.md'), rule);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'core.md'), rule);
 
       const result = await sync({ projectRoot: testDir });
 
@@ -167,7 +168,7 @@ targets: [cursor, claude, factory]
 
 # Core Context
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'rules', 'core.md'), rule);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'core.md'), rule);
 
       const result = await sync({ projectRoot: testDir });
 
@@ -189,7 +190,7 @@ targets: [cursor, claude, factory]
 
 # Core Context
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'rules', 'core.md'), rule);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'core.md'), rule);
 
       const result = await sync({ projectRoot: testDir });
 
@@ -209,7 +210,7 @@ always_apply: true
 ---
 # Core
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'rules', 'core.md'), rule);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'core.md'), rule);
 
       const result = await sync({ projectRoot: testDir });
 
@@ -234,7 +235,7 @@ tools:
 
 A system-level thinker.
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'personas', 'architect.md'), persona);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'personas', 'architect.md'), persona);
 
       const result = await sync({ projectRoot: testDir });
 
@@ -249,14 +250,14 @@ A system-level thinker.
 
   describe('dry run mode', () => {
     beforeEach(async () => {
-      await fs.mkdir(path.join(testDir, '.ai', 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
 
       const config = `
 version: "1.0.0"
 targets:
   - cursor
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'config.yaml'), config);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), config);
 
       const rule = `---
 name: test-rule
@@ -266,7 +267,7 @@ always_apply: true
 ---
 # Test
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'rules', 'test.md'), rule);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'test.md'), rule);
     });
 
     it('should not write files in dry run mode', async () => {
@@ -282,7 +283,7 @@ always_apply: true
 
   describe('target filtering', () => {
     beforeEach(async () => {
-      await fs.mkdir(path.join(testDir, '.ai', 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
     });
 
     it('should only generate for configured targets', async () => {
@@ -291,7 +292,7 @@ version: "1.0.0"
 targets:
   - cursor
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'config.yaml'), config);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), config);
 
       const rule = `---
 name: test
@@ -301,7 +302,7 @@ always_apply: true
 ---
 # Test
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'rules', 'test.md'), rule);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'test.md'), rule);
 
       const result = await sync({ projectRoot: testDir });
 
@@ -322,7 +323,7 @@ targets:
   - cursor
   - claude
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'config.yaml'), config);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), config);
 
       // Rule only for cursor
       const cursorRule = `---
@@ -334,7 +335,7 @@ targets: [cursor]
 ---
 # Cursor Only
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'rules', 'cursor-only.md'), cursorRule);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'cursor-only.md'), cursorRule);
 
       const result = await sync({ projectRoot: testDir });
 
@@ -350,7 +351,7 @@ targets: [cursor]
 
   describe('headers', () => {
     beforeEach(async () => {
-      await fs.mkdir(path.join(testDir, '.ai', 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
 
       const rule = `---
 name: test
@@ -360,7 +361,7 @@ always_apply: true
 ---
 # Test
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'rules', 'test.md'), rule);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'test.md'), rule);
     });
 
     it('should add headers when configured', async () => {
@@ -371,7 +372,7 @@ targets:
 output:
   add_do_not_edit_headers: true
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'config.yaml'), config);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), config);
 
       await sync({ projectRoot: testDir });
 
@@ -390,7 +391,7 @@ targets:
 output:
   add_do_not_edit_headers: false
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'config.yaml'), config);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), config);
 
       await sync({ projectRoot: testDir });
 
@@ -404,7 +405,7 @@ output:
 
   describe('subfolder contexts', () => {
     beforeEach(async () => {
-      await fs.mkdir(path.join(testDir, '.ai', 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
 
       const config = `
 version: "1.0.0"
@@ -416,7 +417,7 @@ subfolder_contexts:
     rules: [core]
     description: Backend context
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'config.yaml'), config);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), config);
 
       const rule = `---
 name: core
@@ -426,7 +427,7 @@ always_apply: true
 ---
 # Core
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'rules', 'core.md'), rule);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'core.md'), rule);
     });
 
     it('should generate subfolder context files', async () => {
@@ -462,14 +463,14 @@ always_apply: true
     });
 
     it('should report duration on success', async () => {
-      await fs.mkdir(path.join(testDir, '.ai', 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
 
       const config = `
 version: "1.0.0"
 targets:
   - cursor
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'config.yaml'), config);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), config);
 
       const result = await sync({ projectRoot: testDir });
 
@@ -479,14 +480,14 @@ targets:
 
   describe('verbose mode', () => {
     beforeEach(async () => {
-      await fs.mkdir(path.join(testDir, '.ai', 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
 
       const config = `
 version: "1.0.0"
 targets:
   - cursor
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'config.yaml'), config);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), config);
 
       const rule = `---
 name: test
@@ -496,7 +497,7 @@ always_apply: true
 ---
 # Test
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'rules', 'test.md'), rule);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'test.md'), rule);
     });
 
     it('should work with verbose flag', async () => {

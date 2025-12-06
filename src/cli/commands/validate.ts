@@ -11,7 +11,7 @@
 
 import * as path from 'node:path';
 
-import { loadConfig, getAiPaths } from '../../config/loader.js';
+import { loadConfig } from '../../config/loader.js';
 import {
   type LoadResult,
   getLoadResultStats,
@@ -41,6 +41,8 @@ export interface ValidateOptions {
   verbose?: boolean | undefined;
   /** Project root directory */
   projectRoot?: string | undefined;
+  /** Configuration directory name (relative to project root) */
+  configDir?: string | undefined;
 }
 
 /**
@@ -67,7 +69,7 @@ export async function validate(options: ValidateOptions = {}): Promise<ValidateR
   // Step 1: Validate config file
   printSubHeader('Checking configuration');
 
-  const configResult = await loadConfig({ projectRoot });
+  const configResult = await loadConfig({ projectRoot, configDir: options.configDir });
 
   if (!configResult.ok) {
     printError('Configuration validation failed');
@@ -198,11 +200,13 @@ export async function validate(options: ValidateOptions = {}): Promise<ValidateR
  */
 async function loadContent(config: ResolvedConfig, _options: ValidateOptions): Promise<LoadResult> {
   const localLoader = createLocalLoader();
-  const paths = getAiPaths(config.projectRoot);
 
-  // Load from .ai/ directory
-  logger.debug(`Loading from project: ${paths.aiDir}`);
-  const result = await localLoader.load(paths.aiDir, {
+  // Use the aiDir from resolved config (already has proper directory)
+  const aiDir = config.aiDir;
+
+  // Load from config directory
+  logger.debug(`Loading from project: ${aiDir}`);
+  const result = await localLoader.load(aiDir, {
     basePath: config.projectRoot,
     targets: config.targets as Array<'cursor' | 'claude' | 'factory'>,
     continueOnError: true, // Continue to find all errors

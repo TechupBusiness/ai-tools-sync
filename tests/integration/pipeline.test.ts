@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-import { loadConfig } from '../../src/config/loader.js';
+import { loadConfig, DEFAULT_CONFIG_DIR } from '../../src/config/loader.js';
 import {
   createResolvedContent,
   filterContentByTarget,
@@ -217,9 +217,9 @@ describe('Pipeline Integration', () => {
       );
 
       // Create inline content
-      await fs.mkdir(path.join(testDir, '.ai', 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
       await fs.writeFile(
-        path.join(testDir, '.ai', 'rules', 'project-specific.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'project-specific.md'),
         `---
 name: project-specific
 description: Project-specific rule
@@ -233,7 +233,7 @@ This rule is specific to the project.
 `
       );
 
-      const projectResult = await loader.load(path.join(testDir, '.ai'), {
+      const projectResult = await loader.load(path.join(testDir, DEFAULT_CONFIG_DIR), {
         basePath: testDir,
       });
 
@@ -371,9 +371,9 @@ version: 2.0.0
 
     it('should skip hooks for cursor generator (not supported)', async () => {
       // Create a hook that targets cursor to test the warning
-      await fs.mkdir(path.join(testDir, '.ai', 'hooks'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'hooks'), { recursive: true });
       await fs.writeFile(
-        path.join(testDir, '.ai', 'hooks', 'cursor-hook.md'),
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'hooks', 'cursor-hook.md'),
         `---
 name: cursor-hook
 description: Hook that targets cursor
@@ -388,7 +388,7 @@ targets: [cursor]
       );
 
       const loader = createLocalLoader();
-      const loadResult = await loader.load(path.join(testDir, '.ai'), {
+      const loadResult = await loader.load(path.join(testDir, DEFAULT_CONFIG_DIR), {
         basePath: testDir,
       });
 

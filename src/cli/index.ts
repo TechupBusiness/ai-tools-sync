@@ -26,16 +26,18 @@ program
 
 program
   .command('sync', { isDefault: true })
-  .description('Sync .ai/ configuration to tool-specific outputs')
+  .description('Sync configuration to tool-specific outputs')
   .option('-v, --verbose', 'Enable verbose output')
   .option('-d, --dry-run', 'Show what would be generated without writing files')
   .option('--no-clean', 'Do not clean output directories before generating')
   .option('-p, --project <path>', 'Project root directory')
+  .option('-c, --config-dir <path>', 'Configuration directory name (default: .ai-tool-sync)')
   .action(async (options: {
     verbose?: boolean;
     dryRun?: boolean;
     clean?: boolean;
     project?: string;
+    configDir?: string;
   }) => {
     if (options.verbose) {
       logger.setVerbose(true);
@@ -47,6 +49,7 @@ program
         dryRun: options.dryRun,
         clean: options.clean,
         projectRoot: options.project,
+        configDir: options.configDir,
       });
 
       // Exit with error code if sync failed
@@ -65,20 +68,23 @@ program
 
 program
   .command('init')
-  .description('Initialize .ai/ directory with template configuration')
+  .description('Initialize configuration directory with template configuration')
   .option('-f, --force', 'Overwrite existing configuration')
   .option('-y, --yes', 'Skip prompts and use defaults')
   .option('-p, --project <path>', 'Project root directory')
+  .option('-c, --config-dir <path>', 'Configuration directory name (default: .ai-tool-sync)')
   .action(async (options: {
     force?: boolean;
     yes?: boolean;
     project?: string;
+    configDir?: string;
   }) => {
     try {
       const result = await init({
         force: options.force,
         yes: options.yes,
         projectRoot: options.project,
+        configDir: options.configDir,
       });
 
       if (!result.success) {
@@ -96,9 +102,11 @@ program
   .description('Validate configuration without generating output')
   .option('-v, --verbose', 'Show detailed validation results')
   .option('-p, --project <path>', 'Project root directory')
+  .option('-c, --config-dir <path>', 'Configuration directory name (default: .ai-tool-sync)')
   .action(async (options: {
     verbose?: boolean;
     project?: string;
+    configDir?: string;
   }) => {
     if (options.verbose) {
       logger.setVerbose(true);
@@ -108,6 +116,7 @@ program
       const result = await validate({
         verbose: options.verbose,
         projectRoot: options.project,
+        configDir: options.configDir,
       });
 
       if (!result.success) {

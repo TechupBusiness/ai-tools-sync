@@ -16,11 +16,12 @@ import {
   getAiDir,
   getAiPaths,
   ConfigLoadError,
+  DEFAULT_CONFIG_DIR,
 } from '../../../src/config/loader.js';
 import { isOk, isErr } from '../../../src/utils/result.js';
 
 // Test fixtures directory
-const FIXTURES_DIR = path.join(__dirname, '../../fixtures/configs');
+const _FIXTURES_DIR = path.join(__dirname, '../../fixtures/configs');
 
 describe('Configuration Loader', () => {
   // Temporary directory for tests
@@ -40,9 +41,9 @@ describe('Configuration Loader', () => {
   });
 
   describe('loadConfig()', () => {
-    it('should load valid config from .ai/config.yaml', async () => {
-      // Create .ai directory and config
-      const aiDir = path.join(tempDir, '.ai');
+    it('should load valid config from default config directory', async () => {
+      // Create config directory
+      const aiDir = path.join(tempDir, DEFAULT_CONFIG_DIR);
       await fs.mkdir(aiDir, { recursive: true });
       await fs.writeFile(
         path.join(aiDir, 'config.yaml'),
@@ -67,7 +68,7 @@ targets:
     });
 
     it('should apply defaults to partial config', async () => {
-      const aiDir = path.join(tempDir, '.ai');
+      const aiDir = path.join(tempDir, DEFAULT_CONFIG_DIR);
       await fs.mkdir(aiDir, { recursive: true });
       await fs.writeFile(
         path.join(aiDir, 'config.yaml'),
@@ -84,7 +85,7 @@ targets:
     });
 
     it('should support .yml extension', async () => {
-      const aiDir = path.join(tempDir, '.ai');
+      const aiDir = path.join(tempDir, DEFAULT_CONFIG_DIR);
       await fs.mkdir(aiDir, { recursive: true });
       await fs.writeFile(
         path.join(aiDir, 'config.yml'),
@@ -96,7 +97,7 @@ targets:
       expect(isOk(result)).toBe(true);
     });
 
-    it('should return error if .ai directory does not exist', async () => {
+    it('should return error if config directory does not exist', async () => {
       const result = await loadConfig({ projectRoot: tempDir });
 
       expect(isErr(result)).toBe(true);
@@ -107,7 +108,7 @@ targets:
     });
 
     it('should return error if config file does not exist', async () => {
-      const aiDir = path.join(tempDir, '.ai');
+      const aiDir = path.join(tempDir, DEFAULT_CONFIG_DIR);
       await fs.mkdir(aiDir, { recursive: true });
 
       const result = await loadConfig({ projectRoot: tempDir });
@@ -119,7 +120,7 @@ targets:
     });
 
     it('should return error for invalid YAML', async () => {
-      const aiDir = path.join(tempDir, '.ai');
+      const aiDir = path.join(tempDir, DEFAULT_CONFIG_DIR);
       await fs.mkdir(aiDir, { recursive: true });
       await fs.writeFile(
         path.join(aiDir, 'config.yaml'),
@@ -136,7 +137,7 @@ invalid yaml [[[`
     });
 
     it('should return error for empty config file', async () => {
-      const aiDir = path.join(tempDir, '.ai');
+      const aiDir = path.join(tempDir, DEFAULT_CONFIG_DIR);
       await fs.mkdir(aiDir, { recursive: true });
       await fs.writeFile(path.join(aiDir, 'config.yaml'), '');
 
@@ -149,7 +150,7 @@ invalid yaml [[[`
     });
 
     it('should return error for invalid config', async () => {
-      const aiDir = path.join(tempDir, '.ai');
+      const aiDir = path.join(tempDir, DEFAULT_CONFIG_DIR);
       await fs.mkdir(aiDir, { recursive: true });
       await fs.writeFile(
         path.join(aiDir, 'config.yaml'),
@@ -186,7 +187,7 @@ targets:
     });
 
     it('should use custom configPath', async () => {
-      const aiDir = path.join(tempDir, '.ai');
+      const aiDir = path.join(tempDir, DEFAULT_CONFIG_DIR);
       await fs.mkdir(aiDir, { recursive: true });
       await fs.writeFile(
         path.join(aiDir, 'custom-config.yaml'),
@@ -203,7 +204,7 @@ targets:
   });
 
   describe('loadConfigWithDefaults()', () => {
-    it('should return default config when .ai directory does not exist', async () => {
+    it('should return default config when config directory does not exist', async () => {
       const config = await loadConfigWithDefaults({ projectRoot: tempDir });
 
       expect(config.version).toBe('1.0.0');
@@ -212,7 +213,7 @@ targets:
     });
 
     it('should return loaded config when it exists', async () => {
-      const aiDir = path.join(tempDir, '.ai');
+      const aiDir = path.join(tempDir, DEFAULT_CONFIG_DIR);
       await fs.mkdir(aiDir, { recursive: true });
       await fs.writeFile(
         path.join(aiDir, 'config.yaml'),
@@ -227,21 +228,21 @@ project_name: my-project`
   });
 
   describe('hasConfigDir()', () => {
-    it('should return true when .ai directory exists', async () => {
-      const aiDir = path.join(tempDir, '.ai');
+    it('should return true when config directory exists', async () => {
+      const aiDir = path.join(tempDir, DEFAULT_CONFIG_DIR);
       await fs.mkdir(aiDir, { recursive: true });
 
       expect(await hasConfigDir(tempDir)).toBe(true);
     });
 
-    it('should return false when .ai directory does not exist', async () => {
+    it('should return false when config directory does not exist', async () => {
       expect(await hasConfigDir(tempDir)).toBe(false);
     });
   });
 
   describe('hasConfigFile()', () => {
     it('should return true when config.yaml exists', async () => {
-      const aiDir = path.join(tempDir, '.ai');
+      const aiDir = path.join(tempDir, DEFAULT_CONFIG_DIR);
       await fs.mkdir(aiDir, { recursive: true });
       await fs.writeFile(path.join(aiDir, 'config.yaml'), 'version: "1.0.0"');
 
@@ -249,7 +250,7 @@ project_name: my-project`
     });
 
     it('should return true when config.yml exists', async () => {
-      const aiDir = path.join(tempDir, '.ai');
+      const aiDir = path.join(tempDir, DEFAULT_CONFIG_DIR);
       await fs.mkdir(aiDir, { recursive: true });
       await fs.writeFile(path.join(aiDir, 'config.yml'), 'version: "1.0.0"');
 
@@ -257,7 +258,7 @@ project_name: my-project`
     });
 
     it('should return false when no config file exists', async () => {
-      const aiDir = path.join(tempDir, '.ai');
+      const aiDir = path.join(tempDir, DEFAULT_CONFIG_DIR);
       await fs.mkdir(aiDir, { recursive: true });
 
       expect(await hasConfigFile(tempDir)).toBe(false);
@@ -265,30 +266,30 @@ project_name: my-project`
   });
 
   describe('getAiDir()', () => {
-    it('should return .ai path for project root', () => {
+    it('should return default config path for project root', () => {
       const aiDir = getAiDir(tempDir);
-      expect(aiDir).toBe(path.join(tempDir, '.ai'));
+      expect(aiDir).toBe(path.join(tempDir, DEFAULT_CONFIG_DIR));
     });
 
     it('should use cwd when no project root provided', () => {
       const aiDir = getAiDir();
-      expect(aiDir).toBe(path.join(process.cwd(), '.ai'));
+      expect(aiDir).toBe(path.join(process.cwd(), DEFAULT_CONFIG_DIR));
     });
   });
 
   describe('getAiPaths()', () => {
-    it('should return all .ai subdirectory paths', () => {
+    it('should return all config subdirectory paths', () => {
       const paths = getAiPaths(tempDir);
 
-      expect(paths.aiDir).toBe(path.join(tempDir, '.ai'));
-      expect(paths.rulesDir).toBe(path.join(tempDir, '.ai', 'rules'));
-      expect(paths.personasDir).toBe(path.join(tempDir, '.ai', 'personas'));
-      expect(paths.commandsDir).toBe(path.join(tempDir, '.ai', 'commands'));
-      expect(paths.hooksDir).toBe(path.join(tempDir, '.ai', 'hooks'));
-      expect(paths.pluginsDir).toBe(path.join(tempDir, '.ai', 'plugins'));
-      expect(paths.overridesDir).toBe(path.join(tempDir, '.ai', 'overrides'));
-      expect(paths.inputDir).toBe(path.join(tempDir, '.ai', 'input'));
-      expect(paths.targetsDir).toBe(path.join(tempDir, '.ai', 'targets'));
+      expect(paths.aiDir).toBe(path.join(tempDir, DEFAULT_CONFIG_DIR));
+      expect(paths.rulesDir).toBe(path.join(tempDir, DEFAULT_CONFIG_DIR, 'rules'));
+      expect(paths.personasDir).toBe(path.join(tempDir, DEFAULT_CONFIG_DIR, 'personas'));
+      expect(paths.commandsDir).toBe(path.join(tempDir, DEFAULT_CONFIG_DIR, 'commands'));
+      expect(paths.hooksDir).toBe(path.join(tempDir, DEFAULT_CONFIG_DIR, 'hooks'));
+      expect(paths.pluginsDir).toBe(path.join(tempDir, DEFAULT_CONFIG_DIR, 'plugins'));
+      expect(paths.overridesDir).toBe(path.join(tempDir, DEFAULT_CONFIG_DIR, 'overrides'));
+      expect(paths.inputDir).toBe(path.join(tempDir, DEFAULT_CONFIG_DIR, 'input'));
+      expect(paths.targetsDir).toBe(path.join(tempDir, DEFAULT_CONFIG_DIR, 'targets'));
     });
   });
 });

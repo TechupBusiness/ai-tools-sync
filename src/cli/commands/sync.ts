@@ -11,7 +11,7 @@
 
 import * as path from 'node:path';
 
-import { loadConfig, getAiPaths } from '../../config/loader.js';
+import { loadConfig } from '../../config/loader.js';
 import {
   type GenerateResult,
   type ResolvedContent,
@@ -59,6 +59,8 @@ export interface SyncOptions {
   clean?: boolean | undefined;
   /** Project root directory */
   projectRoot?: string | undefined;
+  /** Configuration directory name (relative to project root) */
+  configDir?: string | undefined;
 }
 
 /**
@@ -89,7 +91,7 @@ export async function sync(options: SyncOptions = {}): Promise<SyncResult> {
 
   // Step 1: Load configuration
   logger.debug('Loading configuration...');
-  const configResult = await loadConfig({ projectRoot });
+  const configResult = await loadConfig({ projectRoot, configDir: options.configDir });
 
   if (!configResult.ok) {
     printError(configResult.error.message);
@@ -212,11 +214,13 @@ export async function sync(options: SyncOptions = {}): Promise<SyncResult> {
 async function loadContent(config: ResolvedConfig, _options: SyncOptions): Promise<LoadResult> {
   const results: LoadResult[] = [];
   const localLoader = createLocalLoader();
-  const paths = getAiPaths(config.projectRoot);
 
-  // Load from .ai/ directory (project-specific content)
-  logger.debug(`Loading from project: ${paths.aiDir}`);
-  const projectResult = await localLoader.load(paths.aiDir, {
+  // Use the aiDir from resolved config (already has proper directory)
+  const aiDir = config.aiDir;
+
+  // Load from config directory (project-specific content)
+  logger.debug(`Loading from project: ${aiDir}`);
+  const projectResult = await localLoader.load(aiDir, {
     basePath: config.projectRoot,
     targets: config.targets as Array<'cursor' | 'claude' | 'factory'>,
   });

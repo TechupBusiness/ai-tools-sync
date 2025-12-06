@@ -11,6 +11,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 
 import { validate } from '../../../src/cli/commands/validate.js';
+import { DEFAULT_CONFIG_DIR } from '../../../src/config/loader.js';
 
 // Mock logger to suppress output during tests
 vi.mock('../../../src/utils/logger.js', () => ({
@@ -71,7 +72,7 @@ describe('Validate Command', () => {
     });
 
     it('should fail when config.yaml does not exist', async () => {
-      await fs.mkdir(path.join(testDir, '.ai'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR), { recursive: true });
 
       const result = await validate({ projectRoot: testDir });
 
@@ -83,10 +84,10 @@ describe('Validate Command', () => {
   describe('valid configuration', () => {
     beforeEach(async () => {
       // Create valid .ai structure
-      await fs.mkdir(path.join(testDir, '.ai', 'rules'), { recursive: true });
-      await fs.mkdir(path.join(testDir, '.ai', 'personas'), { recursive: true });
-      await fs.mkdir(path.join(testDir, '.ai', 'commands'), { recursive: true });
-      await fs.mkdir(path.join(testDir, '.ai', 'hooks'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'personas'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'commands'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'hooks'), { recursive: true });
 
       // Create valid config
       const config = `
@@ -95,7 +96,7 @@ targets:
   - cursor
   - claude
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'config.yaml'), config);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), config);
     });
 
     it('should validate a minimal config successfully', async () => {
@@ -118,7 +119,7 @@ always_apply: true
 
 This is a test rule.
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'rules', 'test-rule.md'), rule);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'test-rule.md'), rule);
 
       const result = await validate({ projectRoot: testDir });
 
@@ -141,7 +142,7 @@ tools:
 
 This is a test persona.
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'personas', 'tester.md'), persona);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'personas', 'tester.md'), persona);
 
       const result = await validate({ projectRoot: testDir });
 
@@ -152,7 +153,7 @@ This is a test persona.
 
   describe('invalid configuration', () => {
     beforeEach(async () => {
-      await fs.mkdir(path.join(testDir, '.ai', 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
     });
 
     it('should fail on invalid YAML syntax', async () => {
@@ -162,7 +163,7 @@ targets:
   - cursor
   invalid yaml here
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'config.yaml'), badConfig);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), badConfig);
 
       const result = await validate({ projectRoot: testDir });
 
@@ -175,7 +176,7 @@ targets:
 targets:
   - cursor
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'config.yaml'), badConfig);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), badConfig);
 
       const result = await validate({ projectRoot: testDir });
 
@@ -190,7 +191,7 @@ version: "1.0.0"
 targets:
   - cursor
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'config.yaml'), config);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), config);
 
       // Add an invalid rule (missing name)
       const badRule = `---
@@ -199,7 +200,7 @@ description: Missing name field
 
 # Bad Rule
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'rules', 'bad-rule.md'), badRule);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'bad-rule.md'), badRule);
 
       const result = await validate({ projectRoot: testDir });
 
@@ -218,7 +219,7 @@ description: Missing name field
 
   describe('reference validation', () => {
     beforeEach(async () => {
-      await fs.mkdir(path.join(testDir, '.ai', 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
 
       const config = `
 version: "1.0.0"
@@ -228,7 +229,7 @@ subfolder_contexts:
   packages/frontend:
     rules: [core, database]
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'config.yaml'), config);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), config);
     });
 
     it('should detect missing rule references in subfolder_contexts', async () => {
@@ -242,7 +243,7 @@ always_apply: true
 
 # Core
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'rules', 'core.md'), coreRule);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'core.md'), coreRule);
 
       const result = await validate({ projectRoot: testDir });
 
@@ -266,8 +267,8 @@ version: 1.0.0
 ---
 # Database
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'rules', 'core.md'), coreRule);
-      await fs.writeFile(path.join(testDir, '.ai', 'rules', 'database.md'), dbRule);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'core.md'), coreRule);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'database.md'), dbRule);
 
       const result = await validate({ projectRoot: testDir });
 
@@ -277,14 +278,14 @@ version: 1.0.0
 
   describe('warnings', () => {
     beforeEach(async () => {
-      await fs.mkdir(path.join(testDir, '.ai', 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
 
       const config = `
 version: "1.0.0"
 targets:
   - cursor
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'config.yaml'), config);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), config);
     });
 
     it('should warn about rules without always_apply or globs', async () => {
@@ -297,7 +298,7 @@ always_apply: false
 
 # Orphan Rule
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'rules', 'orphan.md'), rule);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'orphan.md'), rule);
 
       const result = await validate({ projectRoot: testDir });
 
@@ -321,8 +322,8 @@ always_apply: true
 ---
 # Second
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'rules', 'first.md'), rule1);
-      await fs.writeFile(path.join(testDir, '.ai', 'rules', 'second.md'), rule2);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'first.md'), rule1);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'second.md'), rule2);
 
       const result = await validate({ projectRoot: testDir });
 
@@ -332,7 +333,7 @@ always_apply: true
 
   describe('verbose mode', () => {
     beforeEach(async () => {
-      await fs.mkdir(path.join(testDir, '.ai', 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
 
       const config = `
 version: "1.0.0"
@@ -341,7 +342,7 @@ targets:
   - cursor
   - claude
 `;
-      await fs.writeFile(path.join(testDir, '.ai', 'config.yaml'), config);
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), config);
     });
 
     it('should include additional information in verbose mode', async () => {

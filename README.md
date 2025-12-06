@@ -21,10 +21,10 @@ Maintaining separate configurations leads to:
 
 ## The Solution
 
-`ai-tool-sync` provides a **single `.ai/` directory** as your source of truth. Write your rules, personas, and commands once using a generic format, then generate tool-specific outputs automatically.
+`ai-tool-sync` provides a **single `.ai-tool-sync/` directory** as your source of truth. Write your rules, personas, and commands once using a generic format, then generate tool-specific outputs automatically.
 
 ```
-.ai/                           # You maintain this
+.ai-tool-sync/                 # You maintain this (configurable)
 ├── config.yaml                # Configuration
 ├── rules/                     # Your project rules
 │   ├── _core.md
@@ -63,14 +63,17 @@ npm install --save-dev @anthropic/ai-tool-sync
 ### Initialize Your Project
 
 ```bash
-# Create .ai/ configuration
+# Create .ai-tool-sync/ configuration (default)
 ai-sync init
+
+# Or use a custom directory name
+ai-sync init --config-dir .ai
 ```
 
 This creates:
 
 ```
-.ai/
+.ai-tool-sync/
 ├── config.yaml       # Main configuration file
 ├── rules/
 │   └── _core.md      # Example core rule (edit this!)
@@ -81,7 +84,7 @@ This creates:
 
 ### Configure and Sync
 
-1. **Edit your configuration** — `.ai/config.yaml`
+1. **Edit your configuration** — `.ai-tool-sync/config.yaml`
 
 ```yaml
 version: "1.0.0"
@@ -104,7 +107,7 @@ targets:
   - factory
 ```
 
-2. **Write your project rules** — `.ai/rules/_core.md`
+2. **Write your project rules** — `.ai-tool-sync/rules/_core.md`
 
 ```markdown
 ---
@@ -131,16 +134,17 @@ That's it! Your rules are now available in all your AI tools.
 
 ### `ai-sync` (default command)
 
-Generate tool-specific configurations from `.ai/` sources.
+Generate tool-specific configurations from `.ai-tool-sync/` sources.
 
 ```bash
 ai-sync [options]
 
 Options:
-  -v, --verbose         Enable verbose output
-  -d, --dry-run         Preview changes without writing files
-  --no-clean            Keep existing generated files
-  -p, --project <path>  Use a different project root
+  -v, --verbose             Enable verbose output
+  -d, --dry-run             Preview changes without writing files
+  --no-clean                Keep existing generated files
+  -p, --project <path>      Use a different project root
+  -c, --config-dir <path>   Configuration directory name (default: .ai-tool-sync)
 ```
 
 **Examples:**
@@ -157,18 +161,22 @@ ai-sync --verbose
 
 # Sync a different project
 ai-sync --project /path/to/other/project
+
+# Use a custom config directory
+ai-sync --config-dir .ai
 ```
 
 ### `ai-sync init`
 
-Initialize a new `.ai/` configuration directory.
+Initialize a new configuration directory.
 
 ```bash
 ai-sync init [options]
 
 Options:
-  -f, --force           Overwrite existing configuration
-  -p, --project <path>  Use a different project root
+  -f, --force               Overwrite existing configuration
+  -p, --project <path>      Use a different project root
+  -c, --config-dir <path>   Configuration directory name (default: .ai-tool-sync)
 ```
 
 ### `ai-sync validate`
@@ -179,8 +187,9 @@ Validate configuration without generating output. Useful for CI/CD.
 ai-sync validate [options]
 
 Options:
-  -v, --verbose         Show detailed validation results
-  -p, --project <path>  Use a different project root
+  -v, --verbose             Show detailed validation results
+  -p, --project <path>      Use a different project root
+  -c, --config-dir <path>   Configuration directory name (default: .ai-tool-sync)
 ```
 
 **Validates:**
@@ -191,7 +200,23 @@ Options:
 
 ## Configuration
 
-### `.ai/config.yaml`
+### Configurable Directory Name
+
+By default, ai-tool-sync uses `.ai-tool-sync/` as the configuration directory. You can customize this using (in priority order):
+
+1. **CLI flag**: `--config-dir .ai`
+2. **Environment variable**: `AI_TOOL_SYNC_DIR=.ai`
+3. **package.json**:
+   ```json
+   {
+     "ai-tool-sync": {
+       "configDir": ".ai"
+     }
+   }
+   ```
+4. **Default**: `.ai-tool-sync`
+
+### `.ai-tool-sync/config.yaml`
 
 ```yaml
 version: "1.0.0"
@@ -252,7 +277,7 @@ subfolder_contexts:
     description: "Backend package context"
 ```
 
-### Rule Files (`.ai/rules/*.md`)
+### Rule Files (`.ai-tool-sync/rules/*.md`)
 
 ```yaml
 ---
@@ -281,7 +306,7 @@ requires: [_core]
 [Your rule content here...]
 ```
 
-### Persona Files (`.ai/personas/*.md`)
+### Persona Files (`.ai-tool-sync/personas/*.md`)
 
 ```yaml
 ---
@@ -305,7 +330,7 @@ targets: [cursor, claude, factory]
 [Persona instructions here...]
 ```
 
-### Command Files (`.ai/commands/*.md`)
+### Command Files (`.ai-tool-sync/commands/*.md`)
 
 ```yaml
 ---
@@ -326,7 +351,7 @@ args:
 [Command documentation...]
 ```
 
-### Hook Files (`.ai/hooks/*.md`)
+### Hook Files (`.ai-tool-sync/hooks/*.md`)
 
 ```yaml
 ---
@@ -450,7 +475,7 @@ ai-tool-sync includes 11 carefully crafted personas:
 ### Minimal Setup
 
 ```yaml
-# .ai/config.yaml
+# .ai-tool-sync/config.yaml
 version: "1.0.0"
 targets: [cursor]
 ```

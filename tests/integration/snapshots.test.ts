@@ -18,6 +18,7 @@ import {
   createClaudeGenerator,
   createFactoryGenerator,
 } from '../../src/generators/index.js';
+import { DEFAULT_CONFIG_DIR } from '../../src/config/loader.js';
 import { createLocalLoader } from '../../src/loaders/local.js';
 import { readFile } from '../../src/utils/fs.js';
 
@@ -60,14 +61,14 @@ describe('Output Snapshots', () => {
    * Helper to create test content
    */
   async function createTestContent() {
-    await fs.mkdir(path.join(testDir, '.ai', 'rules'), { recursive: true });
-    await fs.mkdir(path.join(testDir, '.ai', 'personas'), { recursive: true });
-    await fs.mkdir(path.join(testDir, '.ai', 'commands'), { recursive: true });
-    await fs.mkdir(path.join(testDir, '.ai', 'hooks'), { recursive: true });
+    await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
+    await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'personas'), { recursive: true });
+    await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'commands'), { recursive: true });
+    await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'hooks'), { recursive: true });
 
     // Create a comprehensive rule
     await fs.writeFile(
-      path.join(testDir, '.ai', 'rules', 'database.md'),
+      path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'database.md'),
       `---
 name: database
 description: Database rules for SQL and migrations
@@ -106,7 +107,7 @@ COMMIT;
 
     // Create always-apply rule
     await fs.writeFile(
-      path.join(testDir, '.ai', 'rules', 'core.md'),
+      path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'core.md'),
       `---
 name: core
 description: Core project context that applies to all files
@@ -122,7 +123,7 @@ This is the core project context.
 
     // Create persona
     await fs.writeFile(
-      path.join(testDir, '.ai', 'personas', 'architect.md'),
+      path.join(testDir, DEFAULT_CONFIG_DIR, 'personas', 'architect.md'),
       `---
 name: architect
 description: System architect for high-level design
@@ -152,7 +153,7 @@ You are a system architect focused on high-level design decisions.
 
     // Create command
     await fs.writeFile(
-      path.join(testDir, '.ai', 'commands', 'deploy.md'),
+      path.join(testDir, DEFAULT_CONFIG_DIR, 'commands', 'deploy.md'),
       `---
 name: deploy
 description: Deploy application to production
@@ -181,7 +182,7 @@ Run this command to deploy the application.
 
     // Create hook (Claude only)
     await fs.writeFile(
-      path.join(testDir, '.ai', 'hooks', 'pre-commit.md'),
+      path.join(testDir, DEFAULT_CONFIG_DIR, 'hooks', 'pre-commit.md'),
       `---
 name: pre-commit
 description: Run checks before committing
@@ -198,7 +199,7 @@ Runs linting and type checking before commits.
     );
 
     const loader = createLocalLoader();
-    const loadResult = await loader.load(path.join(testDir, '.ai'), { basePath: testDir });
+    const loadResult = await loader.load(path.join(testDir, DEFAULT_CONFIG_DIR), { basePath: testDir });
     return createResolvedContent(loadResult, testDir, 'snapshot-test-project');
   }
 
