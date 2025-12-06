@@ -9,6 +9,8 @@
  * - Summary statistics
  */
 
+/* eslint-disable no-console */
+
 import pc from 'picocolors';
 
 /**
@@ -187,8 +189,8 @@ export function formatDuration(ms: number): string {
 export function printSummary(options: {
   success: boolean;
   message: string;
-  duration?: number;
-  dryRun?: boolean;
+  duration?: number | undefined;
+  dryRun?: boolean | undefined;
 }): void {
   printNewLine();
 
@@ -244,18 +246,18 @@ export function printGeneratedFile(
 export function printTable(headers: string[], rows: string[][]): void {
   // Calculate column widths
   const widths = headers.map((h, i) => {
-    const maxRowWidth = Math.max(...rows.map((r) => (r[i] ?? '').length));
+    const maxRowWidth = Math.max(0, ...rows.map((r) => (r[i] ?? '').length));
     return Math.max(h.length, maxRowWidth);
   });
 
   // Print header
-  const headerRow = headers.map((h, i) => h.padEnd(widths[i])).join('  ');
+  const headerRow = headers.map((h, i) => h.padEnd(widths[i] ?? 0)).join('  ');
   console.log(`  ${pc.bold(headerRow)}`);
   console.log(`  ${widths.map((w) => '─'.repeat(w)).join('  ')}`);
 
   // Print rows
   for (const row of rows) {
-    const rowStr = row.map((cell, i) => (cell ?? '').padEnd(widths[i])).join('  ');
+    const rowStr = row.map((cell, i) => (cell ?? '').padEnd(widths[i] ?? 0)).join('  ');
     console.log(`  ${rowStr}`);
   }
 }

@@ -3,8 +3,8 @@
  * @description Tests for configuration loading
  */
 
-import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 

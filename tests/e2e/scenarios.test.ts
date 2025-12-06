@@ -7,9 +7,10 @@
  * configuration scenarios.
  */
 
-import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { sync } from '../../src/cli/commands/sync.js';

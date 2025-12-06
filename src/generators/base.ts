@@ -36,27 +36,27 @@ export interface GeneratorOptions {
   /**
    * Output directory (defaults to project root)
    */
-  outputDir?: string;
+  outputDir?: string | undefined;
 
   /**
    * Clean existing files before generating
    */
-  clean?: boolean;
+  clean?: boolean | undefined;
 
   /**
    * Add "do not edit" headers to generated files
    */
-  addHeaders?: boolean;
+  addHeaders?: boolean | undefined;
 
   /**
    * Dry run mode - don't write files
    */
-  dryRun?: boolean;
+  dryRun?: boolean | undefined;
 
   /**
    * Verbose output
    */
-  verbose?: boolean;
+  verbose?: boolean | undefined;
 }
 
 /**
@@ -109,9 +109,9 @@ export interface GenerateResult {
  */
 export interface Generator {
   /**
-   * Unique name for this generator (e.g., 'cursor', 'claude', 'factory')
+   * Unique name for this generator (e.g., 'cursor', 'claude', 'factory', 'subfolder')
    */
-  readonly name: TargetType;
+  readonly name: TargetType | 'subfolder';
 
   /**
    * Generate output files

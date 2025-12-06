@@ -126,9 +126,9 @@ export interface ParsedGitSource {
   /** Repository name */
   repo: string;
   /** Branch, tag, or commit reference */
-  ref?: string;
+  ref?: string | undefined;
   /** Subpath within the repository */
-  subpath?: string;
+  subpath?: string | undefined;
   /** Whether to use SSH for cloning */
   useSsh: boolean;
   /** Original source string */
@@ -144,13 +144,13 @@ interface GitCacheMetadata {
   /** Clone URL used */
   cloneUrl: string;
   /** Reference (branch/tag/commit) */
-  ref?: string;
+  ref?: string | undefined;
   /** Commit SHA at time of clone/fetch */
-  commitSha?: string;
+  commitSha?: string | undefined;
   /** Timestamp of last fetch */
   lastFetched: number;
   /** Version string from repo (if available) */
-  version?: string;
+  version?: string | undefined;
 }
 
 /**
@@ -388,15 +388,17 @@ export class GitLoader implements Loader {
   ): ParsedGitSource | null {
     // Format: github:owner/repo/subpath#ref
     const withoutPrefix = source.slice(prefix.length);
-    const [pathPart, ref] = withoutPrefix.split('#');
+    const splitResult = withoutPrefix.split('#');
+    const pathPart = splitResult[0] ?? '';
+    const ref = splitResult[1];
     const pathParts = pathPart.split('/');
 
     if (pathParts.length < 2) {
       return null;
     }
 
-    const owner = pathParts[0];
-    const repo = pathParts[1];
+    const owner = pathParts[0] ?? '';
+    const repo = pathParts[1] ?? '';
     const subpath = pathParts.length > 2 ? pathParts.slice(2).join('/') : undefined;
 
     const provider = getProvider(host);
@@ -434,16 +436,18 @@ export class GitLoader implements Loader {
     }
 
     // Parse host/owner/repo format
-    const [pathPart, ref] = withoutPrefix.split('#');
+    const splitResult = withoutPrefix.split('#');
+    const pathPart = splitResult[0] ?? '';
+    const ref = splitResult[1];
     const pathParts = pathPart.split('/');
 
     if (pathParts.length < 3) {
       return null;
     }
 
-    const host = pathParts[0];
-    const owner = pathParts[1];
-    const repo = pathParts[2].replace(/\.git$/, '');
+    const host = pathParts[0] ?? '';
+    const owner = pathParts[1] ?? '';
+    const repo = (pathParts[2] ?? '').replace(/\.git$/, '');
     const subpath = pathParts.length > 3 ? pathParts.slice(3).join('/') : undefined;
 
     const provider = getProvider(host);
@@ -476,14 +480,18 @@ export class GitLoader implements Loader {
    */
   private parseSshUrl(source: string): ParsedGitSource | null {
     // Format: git@github.com:owner/repo.git#ref
-    const [urlPart, ref] = source.split('#');
+    const splitResult = source.split('#');
+    const urlPart = splitResult[0] ?? '';
+    const ref = splitResult[1];
     const match = urlPart.match(/^git@([^:]+):([^/]+)\/(.+?)(?:\.git)?$/);
 
     if (!match) {
       return null;
     }
 
-    const [, host, owner, repo] = match;
+    const host = match[1] ?? '';
+    const owner = match[2] ?? '';
+    const repo = match[3] ?? '';
 
     return {
       cloneUrl: urlPart.endsWith('.git') ? urlPart : `${urlPart}.git`,
@@ -502,7 +510,9 @@ export class GitLoader implements Loader {
    */
   private parseHttpsUrl(source: string): ParsedGitSource | null {
     // Format: https://github.com/owner/repo.git#ref
-    const [urlPart, ref] = source.split('#');
+    const splitResult = source.split('#');
+    const urlPart = splitResult[0] ?? '';
+    const ref = splitResult[1];
 
     try {
       const url = new URL(urlPart);
@@ -512,8 +522,8 @@ export class GitLoader implements Loader {
         return null;
       }
 
-      const owner = pathParts[0];
-      const repo = pathParts[1].replace(/\.git$/, '');
+      const owner = pathParts[0] ?? '';
+      const repo = (pathParts[1] ?? '').replace(/\.git$/, '');
       const subpath = pathParts.length > 2 ? pathParts.slice(2).join('/') : undefined;
 
       return {

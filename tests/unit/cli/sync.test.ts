@@ -7,9 +7,10 @@
  * permissions: `npm test -- --run tests/unit/cli/sync.test.ts`
  */
 
-import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { sync } from '../../../src/cli/commands/sync.js';

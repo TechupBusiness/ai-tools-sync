@@ -10,11 +10,11 @@
 
 import { Command } from 'commander';
 
-import { logger } from '../utils/logger.js';
 import { VERSION } from '../index.js';
+import { logger } from '../utils/logger.js';
 
-import { sync } from './commands/sync.js';
 import { init } from './commands/init.js';
+import { sync } from './commands/sync.js';
 import { validate } from './commands/validate.js';
 
 const program = new Command();

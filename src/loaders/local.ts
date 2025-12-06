@@ -17,7 +17,6 @@ import { parseCommand } from '../parsers/command.js';
 import { parseHook } from '../parsers/hook.js';
 import { parsePersona } from '../parsers/persona.js';
 import { parseRule } from '../parsers/rule.js';
-import type { ParseError, TargetType } from '../parsers/types.js';
 import { dirExists, findMarkdownFiles, readFile } from '../utils/fs.js';
 import { logger } from '../utils/logger.js';
 
@@ -29,6 +28,8 @@ import {
   DEFAULT_DIRECTORIES,
   emptyLoadResultWithSource,
 } from './base.js';
+
+import type { ParseError, TargetType } from '../parsers/types.js';
 
 /**
  * Content type definitions for loading

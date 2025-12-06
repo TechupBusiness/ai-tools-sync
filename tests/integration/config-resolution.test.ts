@@ -6,15 +6,16 @@
  * resolved and filtered, and the sync pipeline respects configuration settings.
  */
 
-import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { loadConfig, getAiPaths } from '../../src/config/loader.js';
-import { createLocalLoader } from '../../src/loaders/local.js';
-import { createCursorGenerator } from '../../src/generators/cursor.js';
 import { createResolvedContent, filterContentByTarget } from '../../src/generators/base.js';
+import { createCursorGenerator } from '../../src/generators/cursor.js';
+import { createLocalLoader } from '../../src/loaders/local.js';
 import { fileExists, readFile } from '../../src/utils/fs.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

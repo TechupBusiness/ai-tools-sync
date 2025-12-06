@@ -3,6 +3,8 @@
  * @description Logging with levels, colors, and verbose mode support
  */
 
+/* eslint-disable no-console */
+
 import pc from 'picocolors';
 
 /**

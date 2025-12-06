@@ -229,7 +229,7 @@ export function createModelMapper(
  * @param target - Target platform
  * @returns true if the model appears valid
  */
-export function isValidModelForTarget(model: string, target: TargetType): boolean {
+export function isValidModelForTarget(model: string, _target: TargetType): boolean {
   // Generic models are always valid
   if (isGenericModel(model)) {
     return true;

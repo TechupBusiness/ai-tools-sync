@@ -9,10 +9,6 @@
 
 import * as path from 'node:path';
 
-import type { ParsedCommand } from '../parsers/command.js';
-import type { ParsedPersona } from '../parsers/persona.js';
-import type { ParsedRule } from '../parsers/rule.js';
-import type { TargetType } from '../parsers/types.js';
 import {
   ensureDir,
   joinPath,
@@ -27,12 +23,14 @@ import {
   type ResolvedContent,
   DO_NOT_EDIT_HEADER,
   emptyGenerateResult,
-  filterContentByTarget,
   sortCommandsByName,
   sortPersonasByName,
   sortRulesByPriority,
   toSafeFilename,
 } from './base.js';
+
+import type { TargetType } from '../parsers/types.js';
+
 
 /**
  * Configuration for a single subfolder context
@@ -46,27 +44,27 @@ export interface SubfolderContextConfig {
   /**
    * Rule names to include in this subfolder
    */
-  rules?: string[];
+  rules?: string[] | undefined;
 
   /**
    * Persona names to include in this subfolder
    */
-  personas?: string[];
+  personas?: string[] | undefined;
 
   /**
    * Command names to include in this subfolder
    */
-  commands?: string[];
+  commands?: string[] | undefined;
 
   /**
    * Description of this subfolder context
    */
-  description?: string;
+  description?: string | undefined;
 
   /**
    * Targets to generate for this subfolder (defaults to all)
    */
-  targets?: TargetType[];
+  targets?: TargetType[] | undefined;
 }
 
 /**

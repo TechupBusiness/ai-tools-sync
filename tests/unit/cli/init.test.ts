@@ -3,10 +3,12 @@
  * @description Tests for the init CLI command
  */
 
-import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { tmpdir } from 'node:os';
+import * as path from 'node:path';
+
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
 
 import { init } from '../../../src/cli/commands/init.js';
 import { dirExists, fileExists, readFile } from '../../../src/utils/fs.js';

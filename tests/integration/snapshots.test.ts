@@ -6,18 +6,19 @@
  * is correct and consistent across different generators.
  */
 
-import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-import { createLocalLoader } from '../../src/loaders/local.js';
+import { createResolvedContent } from '../../src/generators/base.js';
 import {
   createCursorGenerator,
   createClaudeGenerator,
   createFactoryGenerator,
 } from '../../src/generators/index.js';
-import { createResolvedContent } from '../../src/generators/base.js';
+import { createLocalLoader } from '../../src/loaders/local.js';
 import { readFile } from '../../src/utils/fs.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

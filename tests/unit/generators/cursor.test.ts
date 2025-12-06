@@ -3,18 +3,19 @@
  * @description Tests for Cursor IDE output generation
  */
 
-import * as path from 'node:path';
-import * as os from 'node:os';
 import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
+import * as path from 'node:path';
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 import { CursorGenerator, createCursorGenerator } from '../../../src/generators/cursor.js';
+
 import type { ResolvedContent } from '../../../src/generators/base.js';
-import type { ParsedRule } from '../../../src/parsers/rule.js';
-import type { ParsedPersona } from '../../../src/parsers/persona.js';
 import type { ParsedCommand } from '../../../src/parsers/command.js';
 import type { ParsedHook } from '../../../src/parsers/hook.js';
+import type { ParsedPersona } from '../../../src/parsers/persona.js';
+import type { ParsedRule } from '../../../src/parsers/rule.js';
 
 // Helper to create mock resolved content
 function createMockContent(overrides: Partial<ResolvedContent> = {}): ResolvedContent {

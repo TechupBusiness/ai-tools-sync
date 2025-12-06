@@ -10,10 +10,11 @@
  * Project overrides are in .ai/targets/
  */
 
-import type { TargetType } from '../parsers/types.js';
 import { fileExists, joinPath, readFile } from '../utils/fs.js';
-import { parseYaml } from '../utils/yaml.js';
 import { err, ok, type Result } from '../utils/result.js';
+import { parseYaml } from '../utils/yaml.js';
+
+import type { TargetType } from '../parsers/types.js';
 
 /**
  * Output configuration for a target

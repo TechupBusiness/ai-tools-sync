@@ -3,10 +3,12 @@
  * @description Tests for the validate CLI command
  */
 
-import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { tmpdir } from 'node:os';
+import * as path from 'node:path';
+
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
 
 import { validate } from '../../../src/cli/commands/validate.js';
 

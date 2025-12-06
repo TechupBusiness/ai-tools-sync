@@ -7,23 +7,24 @@
  * individual components in isolation.
  */
 
-import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-import { createLocalLoader } from '../../src/loaders/local.js';
+import { loadConfig } from '../../src/config/loader.js';
+import {
+  createResolvedContent,
+  filterContentByTarget,
+} from '../../src/generators/base.js';
 import {
   createCursorGenerator,
   createClaudeGenerator,
   createFactoryGenerator,
 } from '../../src/generators/index.js';
-import {
-  createResolvedContent,
-  filterContentByTarget,
-} from '../../src/generators/base.js';
 import { mergeLoadResults, getLoadResultStats } from '../../src/loaders/base.js';
-import { loadConfig } from '../../src/config/loader.js';
+import { createLocalLoader } from '../../src/loaders/local.js';
 import { fileExists, dirExists, readFile } from '../../src/utils/fs.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

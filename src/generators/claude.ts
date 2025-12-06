@@ -12,12 +12,8 @@
 
 import * as path from 'node:path';
 
-import type { ParsedCommand } from '../parsers/command.js';
-import type { ParsedHook } from '../parsers/hook.js';
-import type { ParsedPersona } from '../parsers/persona.js';
-import type { ParsedRule } from '../parsers/rule.js';
-import { mapTools } from '../transformers/tool-mapper.js';
 import { mapModel } from '../transformers/model-mapper.js';
+import { mapTools } from '../transformers/tool-mapper.js';
 import {
   dirExists,
   ensureDir,
@@ -42,6 +38,12 @@ import {
   sortRulesByPriority,
   toSafeFilename,
 } from './base.js';
+
+import type { ParsedCommand } from '../parsers/command.js';
+import type { ParsedHook } from '../parsers/hook.js';
+import type { ParsedPersona } from '../parsers/persona.js';
+import type { ParsedRule } from '../parsers/rule.js';
+
 
 /**
  * Output directories for Claude
@@ -385,7 +387,7 @@ export class ClaudeGenerator implements Generator {
           hookConfig.hooks.push(hook.frontmatter.execute);
         }
 
-        settings.hooks[event]!.push(hookConfig);
+        settings.hooks[event].push(hookConfig);
       }
     }
 

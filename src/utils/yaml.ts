@@ -3,7 +3,7 @@
  * @description YAML parsing and serialization with error handling
  */
 
-import yaml from 'js-yaml';
+import { dump, load, YAMLException } from 'js-yaml';
 
 import { type Result, err, ok } from './result.js';
 
@@ -26,10 +26,10 @@ export class YamlParseError extends Error {
  */
 export function parseYaml<T = unknown>(content: string): Result<T, YamlParseError> {
   try {
-    const result = yaml.load(content) as T;
+    const result = load(content) as T;
     return ok(result);
   } catch (e) {
-    if (e instanceof yaml.YAMLException) {
+    if (e instanceof YAMLException) {
       return err(
         new YamlParseError(
           e.message,
@@ -57,7 +57,7 @@ export function serializeYaml(
   }
 ): Result<string, Error> {
   try {
-    const result = yaml.dump(data, {
+    const result = dump(data, {
       indent: options?.indent ?? 2,
       lineWidth: options?.lineWidth ?? 120,
       noRefs: options?.noRefs ?? true,

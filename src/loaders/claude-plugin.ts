@@ -17,11 +17,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import type { ParsedCommand } from '../parsers/command.js';
-import type { ParsedHook, HookEvent } from '../parsers/hook.js';
-import type { ParsedPersona, PersonaTool } from '../parsers/persona.js';
-import type { ParsedRule, RuleCategory } from '../parsers/rule.js';
-import type { TargetType } from '../parsers/types.js';
 import { logger } from '../utils/logger.js';
 import { parseYaml } from '../utils/yaml.js';
 
@@ -32,6 +27,13 @@ import {
   type LoadResult,
   emptyLoadResultWithSource,
 } from './base.js';
+
+import type { ParsedCommand } from '../parsers/command.js';
+import type { ParsedHook, HookEvent } from '../parsers/hook.js';
+import type { ParsedPersona, PersonaTool } from '../parsers/persona.js';
+import type { ParsedRule, RuleCategory } from '../parsers/rule.js';
+import type { TargetType } from '../parsers/types.js';
+
 
 /**
  * Claude plugin prefix

@@ -16,7 +16,7 @@
  * - `!pattern` - Negate pattern (exclude matches)
  */
 
-import { minimatch, MinimatchOptions } from 'minimatch';
+import { minimatch, type MinimatchOptions } from 'minimatch';
 
 /**
  * Options for glob matching
@@ -303,7 +303,9 @@ export function expandAlternations(pattern: string): string[] {
     return [pattern];
   }
 
-  const [, prefix, alternations, suffix] = match;
+  const prefix = match[1] ?? '';
+  const alternations = match[2] ?? '';
+  const suffix = match[3] ?? '';
   const options = alternations.split(',').map((s) => s.trim());
 
   // Recursively expand in case there are more alternations

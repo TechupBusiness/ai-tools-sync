@@ -82,7 +82,12 @@ module.exports = {
   },
   overrides: [
     {
+      // Test files: disable type-aware rules (tests are excluded from tsconfig)
       files: ['tests/**/*.ts'],
+      extends: ['plugin:@typescript-eslint/disable-type-checked'],
+      parserOptions: {
+        project: null,
+      },
       rules: {
         '@typescript-eslint/no-explicit-any': 'off',
         '@typescript-eslint/no-unsafe-assignment': 'off',
@@ -91,12 +96,24 @@ module.exports = {
       },
     },
     {
-      files: ['*.cjs', '*.js'],
+      // CommonJS files: fix sourceType and disable type-aware rules
+      // (type-aware rules require tsconfig project, which JS files aren't in)
+      files: ['*.cjs'],
+      extends: ['plugin:@typescript-eslint/disable-type-checked'],
       parserOptions: {
+        sourceType: 'commonjs',
         project: null,
       },
       rules: {
         '@typescript-eslint/no-var-requires': 'off',
+      },
+    },
+    {
+      // ESM JavaScript files: disable type-aware rules (not in tsconfig)
+      files: ['*.js'],
+      extends: ['plugin:@typescript-eslint/disable-type-checked'],
+      parserOptions: {
+        project: null,
       },
     },
   ],

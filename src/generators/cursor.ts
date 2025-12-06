@@ -13,9 +13,6 @@
 
 import * as path from 'node:path';
 
-import type { ParsedCommand } from '../parsers/command.js';
-import type { ParsedPersona } from '../parsers/persona.js';
-import type { ParsedRule } from '../parsers/rule.js';
 import {
   serializeFrontmatter,
   transformForCursor,
@@ -44,6 +41,10 @@ import {
   sortRulesByPriority,
   toSafeFilename,
 } from './base.js';
+
+import type { ParsedCommand } from '../parsers/command.js';
+import type { ParsedPersona } from '../parsers/persona.js';
+import type { ParsedRule } from '../parsers/rule.js';
 
 /**
  * Output directories for Cursor

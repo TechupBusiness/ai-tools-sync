@@ -7,9 +7,10 @@
  * field renaming, value transformations, and field filtering.
  */
 
-import type { TargetType } from '../parsers/types.js';
-import { mapTools } from './tool-mapper.js';
 import { mapModel } from './model-mapper.js';
+import { mapTools } from './tool-mapper.js';
+
+import type { TargetType } from '../parsers/types.js';
 
 /**
  * Field transformation function type
@@ -93,6 +94,23 @@ export interface TargetFrontmatterConfig {
 }
 
 /**
+ * Safe string conversion for unknown values
+ */
+function safeString(value: unknown, defaultValue: string = ''): string {
+  if (value === null || value === undefined) return defaultValue;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) return value.map((v) => safeString(v)).join(', ');
+  // For objects, use JSON.stringify to avoid [object Object]
+  if (typeof value === 'object') return JSON.stringify(value);
+  // For remaining types (symbol, bigint, function), convert to string
+  if (typeof value === 'symbol') return value.toString();
+  if (typeof value === 'bigint') return value.toString();
+  if (typeof value === 'function') return '[Function]';
+  return defaultValue;
+}
+
+/**
  * Built-in transforms
  */
 export const transforms = {
@@ -103,7 +121,7 @@ export const transforms = {
     if (Array.isArray(value)) {
       return value.join(', ');
     }
-    return String(value ?? '');
+    return safeString(value);
   },
 
   /**
@@ -113,7 +131,7 @@ export const transforms = {
     if (Array.isArray(value)) {
       return value.join('\n');
     }
-    return String(value ?? '');
+    return safeString(value);
   },
 
   /**
@@ -151,7 +169,7 @@ export const transforms = {
    * Map model to target-specific name
    */
   mapModelForTarget: (value: unknown, context: TransformContext): string => {
-    return mapModel(String(value ?? 'default'), context.target);
+    return mapModel(safeString(value, 'default'), context.target);
   },
 
   /**
@@ -162,17 +180,17 @@ export const transforms = {
   /**
    * Convert to string
    */
-  toString: (value: unknown): string => String(value ?? ''),
+  toString: (value: unknown): string => safeString(value),
 
   /**
    * Convert to lowercase string
    */
-  toLowercase: (value: unknown): string => String(value ?? '').toLowerCase(),
+  toLowercase: (value: unknown): string => safeString(value).toLowerCase(),
 
   /**
    * Convert to uppercase string
    */
-  toUppercase: (value: unknown): string => String(value ?? '').toUpperCase(),
+  toUppercase: (value: unknown): string => safeString(value).toUpperCase(),
 };
 
 /**
@@ -420,7 +438,7 @@ export function serializeFrontmatter(frontmatter: Record<string, unknown>): stri
     } else if (typeof value === 'object') {
       lines.push(`${key}:`);
       for (const [subKey, subValue] of Object.entries(value as Record<string, unknown>)) {
-        lines.push(`  ${subKey}: ${subValue}`);
+        lines.push(`  ${subKey}: ${safeString(subValue)}`);
       }
     }
   }

@@ -24,12 +24,13 @@ export type {
 } from './subfolder-context.js';
 
 // Export generator factory functions
-import { createCursorGenerator, CursorGenerator } from './cursor.js';
 import { createClaudeGenerator, ClaudeGenerator } from './claude.js';
+import { createCursorGenerator, CursorGenerator } from './cursor.js';
 import { createFactoryGenerator, FactoryGenerator } from './factory.js';
 import { createSubfolderContextGenerator, SubfolderContextGenerator } from './subfolder-context.js';
-import type { TargetType } from '../parsers/types.js';
+
 import type { Generator } from './base.js';
+import type { TargetType } from '../parsers/types.js';
 
 export {
   createCursorGenerator,
@@ -53,8 +54,11 @@ export function createGenerator(target: TargetType): Generator {
       return createClaudeGenerator();
     case 'factory':
       return createFactoryGenerator();
-    default:
-      throw new Error(`Unknown target: ${target}`);
+    default: {
+      // Use explicit string conversion for template literal
+      const targetStr: string = target as string;
+      throw new Error(`Unknown target: ${targetStr}`);
+    }
   }
 }
 

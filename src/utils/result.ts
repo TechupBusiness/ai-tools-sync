@@ -63,7 +63,11 @@ export function unwrap<T, E>(result: Result<T, E>): T {
   if (isOk(result)) {
     return result.value;
   }
-  throw result.error;
+  // Throw Error object for ESLint only-throw-error rule compliance
+  if (result.error instanceof Error) {
+    throw result.error;
+  }
+  throw new Error(String(result.error));
 }
 
 /**

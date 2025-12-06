@@ -12,12 +12,11 @@
 import * as path from 'node:path';
 
 import { loadConfig, getAiPaths } from '../../config/loader.js';
-import type { ResolvedConfig } from '../../config/types.js';
-import { createLocalLoader } from '../../loaders/local.js';
 import {
   type LoadResult,
   getLoadResultStats,
 } from '../../loaders/base.js';
+import { createLocalLoader } from '../../loaders/local.js';
 import { logger } from '../../utils/logger.js';
 import {
   printHeader,
@@ -31,6 +30,8 @@ import {
   printSubHeader,
   printKeyValue,
 } from '../output.js';
+
+import type { ResolvedConfig } from '../../config/types.js';
 
 /**
  * Options for the validate command
