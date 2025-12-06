@@ -133,17 +133,17 @@ export interface TargetMapping {
   frontmatter: FrontmatterConfigs;
 
   /** Supported features */
-  supported?: string[];
+  supported?: string[] | undefined;
   /** Unsupported features */
   unsupported: string[];
   /** Behavior for unsupported features */
   unsupported_behavior: 'warn' | 'skip' | 'error';
 
   /** Hook events (if supported) */
-  hook_events?: string[];
+  hook_events?: string[] | undefined;
 
   /** Import syntax configuration */
-  import_syntax?: ImportSyntaxConfig;
+  import_syntax?: ImportSyntaxConfig | undefined;
 
   /** Terminology mapping */
   terminology: TerminologyMapping;
@@ -187,36 +187,40 @@ function getDefaultTargetsDir(): string {
 /**
  * Deep merge two objects
  */
-function deepMerge<T extends Record<string, unknown>>(base: T, override: Partial<T>): T {
-  const result = { ...base };
+function deepMerge<T extends object>(base: T, override: Partial<T>): T {
+  // Cast to allow dynamic property access
+  const result = { ...base } as Record<string, unknown>;
+  const overrideRecord = override as Record<string, unknown>;
 
-  for (const key of Object.keys(override) as (keyof T)[]) {
-    const overrideValue = override[key];
+  for (const key of Object.keys(override)) {
+    const overrideValue = overrideRecord[key];
 
     if (overrideValue === undefined) {
       continue;
     }
 
+    const baseValue = result[key];
+
     if (
       typeof overrideValue === 'object' &&
       overrideValue !== null &&
       !Array.isArray(overrideValue) &&
-      typeof result[key] === 'object' &&
-      result[key] !== null &&
-      !Array.isArray(result[key])
+      typeof baseValue === 'object' &&
+      baseValue !== null &&
+      !Array.isArray(baseValue)
     ) {
       // Deep merge objects
       result[key] = deepMerge(
-        result[key] as Record<string, unknown>,
+        baseValue as Record<string, unknown>,
         overrideValue as Record<string, unknown>
-      ) as T[keyof T];
+      );
     } else {
       // Direct assignment for primitives and arrays
-      result[key] = overrideValue as T[keyof T];
+      result[key] = overrideValue;
     }
   }
 
-  return result;
+  return result as T;
 }
 
 /**

@@ -16,7 +16,6 @@ import type { ResolvedConfig } from '../../config/types.js';
 import { createLocalLoader } from '../../loaders/local.js';
 import {
   type LoadResult,
-  isLoadResultEmpty,
   getLoadResultStats,
 } from '../../loaders/base.js';
 import { logger } from '../../utils/logger.js';
@@ -38,9 +37,9 @@ import {
  */
 export interface ValidateOptions {
   /** Enable verbose output */
-  verbose?: boolean;
+  verbose?: boolean | undefined;
   /** Project root directory */
-  projectRoot?: string;
+  projectRoot?: string | undefined;
 }
 
 /**
@@ -196,7 +195,7 @@ export async function validate(options: ValidateOptions = {}): Promise<ValidateR
 /**
  * Load content from configured sources
  */
-async function loadContent(config: ResolvedConfig, options: ValidateOptions): Promise<LoadResult> {
+async function loadContent(config: ResolvedConfig, _options: ValidateOptions): Promise<LoadResult> {
   const localLoader = createLocalLoader();
   const paths = getAiPaths(config.projectRoot);
 

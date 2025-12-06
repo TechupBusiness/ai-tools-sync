@@ -25,7 +25,6 @@ import {
   createResolvedContent,
   mergeGenerateResults,
   getGenerateResultStats,
-  getContentStats,
 } from '../../generators/base.js';
 import { createLocalLoader } from '../../loaders/local.js';
 import {
@@ -52,13 +51,13 @@ import {
  */
 export interface SyncOptions {
   /** Enable verbose output */
-  verbose?: boolean;
+  verbose?: boolean | undefined;
   /** Dry run mode - don't write files */
-  dryRun?: boolean;
+  dryRun?: boolean | undefined;
   /** Clean output directories before generating */
-  clean?: boolean;
+  clean?: boolean | undefined;
   /** Project root directory */
-  projectRoot?: string;
+  projectRoot?: string | undefined;
 }
 
 /**
@@ -209,7 +208,7 @@ export async function sync(options: SyncOptions = {}): Promise<SyncResult> {
 /**
  * Load content from all configured sources
  */
-async function loadContent(config: ResolvedConfig, options: SyncOptions): Promise<LoadResult> {
+async function loadContent(config: ResolvedConfig, _options: SyncOptions): Promise<LoadResult> {
   const results: LoadResult[] = [];
   const localLoader = createLocalLoader();
   const paths = getAiPaths(config.projectRoot);
@@ -320,7 +319,6 @@ async function runGenerators(
       const result = await generator.generate(content, generatorOptions);
       results.push(result);
 
-      const stats = getContentStats(content);
       printSuccess(`${target}: ${result.files.length} files`);
       logger.debug(`  Generated ${result.files.length} files, ${result.warnings.length} warnings`);
     } catch (error) {

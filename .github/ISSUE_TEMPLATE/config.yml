@@ -1,0 +1,9 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://github.com/anthropic/ai-tool-sync#readme
+    about: Please check the documentation before opening an issue.
+  - name: Discussions
+    url: https://github.com/anthropic/ai-tool-sync/discussions
+    about: Ask questions and discuss with the community.
+

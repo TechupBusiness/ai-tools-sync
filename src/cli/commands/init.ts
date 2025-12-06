@@ -14,12 +14,11 @@
 
 import * as path from 'node:path';
 
-import { getAiPaths, hasConfigDir, hasConfigFile } from '../../config/loader.js';
+import { getAiPaths, hasConfigDir } from '../../config/loader.js';
 import { ensureDir, writeFile, fileExists } from '../../utils/fs.js';
 import { logger } from '../../utils/logger.js';
 import {
   printHeader,
-  printSuccess,
   printWarning,
   printError,
   printSummary,
@@ -32,11 +31,11 @@ import {
  */
 export interface InitOptions {
   /** Overwrite existing configuration */
-  force?: boolean;
+  force?: boolean | undefined;
   /** Project root directory */
-  projectRoot?: string;
+  projectRoot?: string | undefined;
   /** Skip interactive prompts (use defaults) */
-  yes?: boolean;
+  yes?: boolean | undefined;
 }
 
 /**
