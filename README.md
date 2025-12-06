@@ -198,6 +198,48 @@ Options:
 - References between files
 - Common issues (missing globs, duplicates, etc.)
 
+### `ai-sync migrate`
+
+Discover and migrate existing AI tool configurations to ai-tool-sync format.
+
+```bash
+ai-sync migrate [options]
+
+Options:
+  -v, --verbose             Enable verbose output
+  -d, --dry-run             Show what would be migrated without changes
+  -b, --backup              Create backup before migration
+  -y, --yes                 Skip interactive prompts
+  --discovery-only          Only run discovery phase (no migration)
+  -p, --project <path>      Use a different project root
+  -c, --config-dir <path>   Configuration directory name (default: .ai-tool-sync)
+```
+
+**Discovers:**
+- `.cursor/rules/*.mdc` — Cursor rules
+- `.cursorrules` — Deprecated Cursor format
+- `CLAUDE.md` — Manual Claude instructions
+- `.claude/skills/`, `.claude/agents/` — Claude Code files
+- `.factory/skills/`, `.factory/droids/` — Factory files
+
+**Examples:**
+
+```bash
+# Discover existing files (report only, no changes)
+ai-sync migrate --discovery-only
+
+# Preview migration without making changes
+ai-sync migrate --dry-run
+
+# Migrate with backup
+ai-sync migrate --backup
+
+# Non-interactive migration (for CI/scripts)
+ai-sync migrate --yes
+```
+
+The migrate command helps you transition from existing tool-specific configurations to the unified ai-tool-sync format. It analyzes file contents, detects content types (rules, personas, commands), and can generate AI-assisted migration prompts for complex files that need manual review.
+
 ## Configuration
 
 ### Configurable Directory Name
@@ -418,7 +460,7 @@ See [docs/LOADERS.md](docs/LOADERS.md) for detailed configuration.
 ## Programmatic API
 
 ```typescript
-import { sync, init, validate } from '@anthropic/ai-tool-sync';
+import { sync, init, validate, migrate, discover } from '@anthropic/ai-tool-sync';
 
 // Sync configuration
 const result = await sync({
@@ -443,6 +485,19 @@ const validation = await validate({
 if (!validation.success) {
   console.error('Validation failed:', validation.errors);
 }
+
+// Discover existing AI tool configurations
+const discovery = await discover('/path/to/project');
+console.log(`Found ${discovery.stats.totalFiles} files from ${discovery.stats.platforms.join(', ')}`);
+
+// Migrate existing configurations
+const migration = await migrate({
+  projectRoot: '/path/to/project',
+  backup: true,
+  dryRun: false,
+});
+
+console.log(`Migrated ${migration.migratedFiles.length} files`);
 ```
 
 ## Documentation

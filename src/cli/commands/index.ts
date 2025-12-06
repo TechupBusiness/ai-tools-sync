@@ -12,3 +12,6 @@ export type { InitOptions, InitResult } from './init.js';
 export { validate } from './validate.js';
 export type { ValidateOptions, ValidateResult } from './validate.js';
 
+export { migrate, discover } from './migrate.js';
+export type { MigrateOptions, MigrateResult, DiscoveryResult, DiscoveredFile } from './migrate.js';
+

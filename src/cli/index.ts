@@ -14,6 +14,7 @@ import { VERSION } from '../index.js';
 import { logger } from '../utils/logger.js';
 
 import { init } from './commands/init.js';
+import { migrate } from './commands/migrate.js';
 import { sync } from './commands/sync.js';
 import { validate } from './commands/validate.js';
 
@@ -129,6 +130,53 @@ program
     }
   });
 
+program
+  .command('migrate')
+  .description('Discover and migrate existing AI tool configurations')
+  .option('-v, --verbose', 'Enable verbose output')
+  .option('-d, --dry-run', 'Show what would be migrated without making changes')
+  .option('-b, --backup', 'Create backup before migration')
+  .option('-y, --yes', 'Skip interactive prompts')
+  .option('--discovery-only', 'Only run discovery phase (no migration)')
+  .option('-p, --project <path>', 'Project root directory')
+  .option('-c, --config-dir <path>', 'Configuration directory name (default: .ai-tool-sync)')
+  .action(async (options: {
+    verbose?: boolean;
+    dryRun?: boolean;
+    backup?: boolean;
+    yes?: boolean;
+    discoveryOnly?: boolean;
+    project?: string;
+    configDir?: string;
+  }) => {
+    if (options.verbose) {
+      logger.setVerbose(true);
+    }
+
+    try {
+      const result = await migrate({
+        verbose: options.verbose,
+        dryRun: options.dryRun,
+        backup: options.backup,
+        yes: options.yes,
+        discoveryOnly: options.discoveryOnly,
+        projectRoot: options.project,
+        configDir: options.configDir,
+      });
+
+      if (!result.success) {
+        process.exit(1);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error(`Migration failed: ${message}`);
+      if (options.verbose && error instanceof Error && error.stack) {
+        console.error(error.stack);
+      }
+      process.exit(1);
+    }
+  });
+
 /**
  * Run the CLI
  */
@@ -142,10 +190,11 @@ export function run(): void {
 export default run;
 
 // Re-export commands for programmatic usage
-export { sync, init, validate };
+export { sync, init, validate, migrate };
 export type { SyncOptions, SyncResult } from './commands/sync.js';
 export type { InitOptions, InitResult } from './commands/init.js';
 export type { ValidateOptions, ValidateResult } from './commands/validate.js';
+export type { MigrateOptions, MigrateResult, DiscoveryResult, DiscoveredFile } from './commands/migrate.js';
 
 // Run if executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {
