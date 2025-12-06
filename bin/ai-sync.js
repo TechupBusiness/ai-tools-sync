@@ -13,6 +13,14 @@ import('../dist/cli/index.js')
       module.run();
     } else if (typeof module.default === 'function') {
       module.default();
+    } else {
+      console.error('Failed to start ai-sync: CLI module loaded but no entry point found');
+      console.error('');
+      console.error('Expected module.run or module.default to be a function.');
+      console.error('This may indicate a corrupted build. Try running:');
+      console.error('  npm run build');
+      console.error('');
+      process.exit(1);
     }
   })
   .catch((error) => {
