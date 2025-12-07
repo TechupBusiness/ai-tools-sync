@@ -436,6 +436,165 @@ Content`;
     });
   });
 
+  describe('variables field', () => {
+    it('should parse command with variables', () => {
+      const content = `---
+name: deploy
+variables:
+  - name: ARGUMENTS
+    description: User input after command name
+  - name: CUSTOM_VAR
+    description: Custom variable
+    default: defaultValue
+---
+Deploy with $ARGUMENTS`;
+
+      const result = parseCommand(content);
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.frontmatter.variables).toHaveLength(2);
+        expect(result.value.frontmatter.variables?.[0].name).toBe('ARGUMENTS');
+        expect(result.value.frontmatter.variables?.[0].description).toBe('User input after command name');
+        expect(result.value.frontmatter.variables?.[1].name).toBe('CUSTOM_VAR');
+        expect(result.value.frontmatter.variables?.[1].default).toBe('defaultValue');
+      }
+    });
+
+    it('should return error for variables that is not an array', () => {
+      const content = `---
+name: test
+variables: "not an array"
+---
+Content`;
+
+      const result = parseCommand(content);
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        expect(result.error.validationErrors?.some((e) => e.path === 'variables')).toBe(true);
+      }
+    });
+
+    it('should return error for variable without name', () => {
+      const content = `---
+name: test
+variables:
+  - description: Missing name
+---
+Content`;
+
+      const result = parseCommand(content);
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        expect(result.error.validationErrors?.some((e) => e.path === 'variables[0].name')).toBe(true);
+      }
+    });
+
+    it('should return error for variable with empty name', () => {
+      const content = `---
+name: test
+variables:
+  - name: ""
+    description: Empty name
+---
+Content`;
+
+      const result = parseCommand(content);
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        expect(result.error.validationErrors?.some((e) => e.path === 'variables[0].name')).toBe(true);
+      }
+    });
+
+    it('should return error for variable with non-string name', () => {
+      const content = `---
+name: test
+variables:
+  - name: 123
+    description: Numeric name
+---
+Content`;
+
+      const result = parseCommand(content);
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        expect(result.error.validationErrors?.some((e) => e.path === 'variables[0].name')).toBe(true);
+      }
+    });
+
+    it('should return error for variable with non-string description', () => {
+      const content = `---
+name: test
+variables:
+  - name: VAR
+    description: 123
+---
+Content`;
+
+      const result = parseCommand(content);
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        expect(result.error.validationErrors?.some((e) => e.path === 'variables[0].description')).toBe(true);
+      }
+    });
+
+    it('should return error for variable with non-string default', () => {
+      const content = `---
+name: test
+variables:
+  - name: VAR
+    default: 123
+---
+Content`;
+
+      const result = parseCommand(content);
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        expect(result.error.validationErrors?.some((e) => e.path === 'variables[0].default')).toBe(true);
+      }
+    });
+
+    it('should allow variables with only name', () => {
+      const content = `---
+name: test
+variables:
+  - name: SIMPLE_VAR
+---
+Content`;
+
+      const result = parseCommand(content);
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.frontmatter.variables).toHaveLength(1);
+        expect(result.value.frontmatter.variables?.[0].name).toBe('SIMPLE_VAR');
+        expect(result.value.frontmatter.variables?.[0].description).toBeUndefined();
+      }
+    });
+
+    it('should return error for non-object variable', () => {
+      const content = `---
+name: test
+variables:
+  - "string instead of object"
+---
+Content`;
+
+      const result = parseCommand(content);
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        expect(result.error.validationErrors?.some((e) => e.path === 'variables[0]')).toBe(true);
+      }
+    });
+  });
+
   describe('filterCommandsByTarget()', () => {
     const commands = [
       {

@@ -45,6 +45,18 @@ export interface CommandArg {
 }
 
 /**
+ * Command variable definition
+ */
+export interface CommandVariable {
+  /** Variable name (e.g., ARGUMENTS) */
+  name: string;
+  /** Variable description for documentation */
+  description?: string;
+  /** Default value if not provided */
+  default?: string;
+}
+
+/**
  * Command frontmatter structure
  */
 export interface Command extends BaseFrontmatter {
@@ -58,6 +70,8 @@ export interface Command extends BaseFrontmatter {
   globs?: string[];
   /** Tool restrictions (used by Cursor) */
   allowedTools?: string[];
+  /** Variable placeholders supported in command content */
+  variables?: CommandVariable[];
   /** Platform-specific extensions */
   cursor?: CursorExtension;
   claude?: ClaudeExtension;
@@ -218,6 +232,65 @@ function validateCommandArg(arg: unknown, index: number): ContentValidationError
 }
 
 /**
+ * Validate a single command variable
+ */
+function validateCommandVariable(variable: unknown, index: number): ContentValidationError[] {
+  const errors: ContentValidationError[] = [];
+  const prefix = `variables[${index}]`;
+
+  if (typeof variable !== 'object' || variable === null) {
+    errors.push({
+      path: prefix,
+      message: 'Variable must be an object',
+      value: variable,
+    });
+    return errors;
+  }
+
+  const varObj = variable as Record<string, unknown>;
+
+  // Validate name (required)
+  if (varObj.name === undefined || varObj.name === null) {
+    errors.push({
+      path: `${prefix}.name`,
+      message: 'Variable name is required',
+    });
+  } else if (typeof varObj.name !== 'string') {
+    errors.push({
+      path: `${prefix}.name`,
+      message: 'Variable name must be a string',
+      value: varObj.name,
+    });
+  } else if (varObj.name.trim() === '') {
+    errors.push({
+      path: `${prefix}.name`,
+      message: 'Variable name cannot be empty',
+      value: varObj.name,
+    });
+  }
+
+  // Validate description (optional)
+  if (varObj.description !== undefined && typeof varObj.description !== 'string') {
+    errors.push({
+      path: `${prefix}.description`,
+      message: 'Variable description must be a string',
+      value: varObj.description,
+    });
+  }
+
+  // Validate default (optional)
+  if (varObj.default !== undefined && typeof varObj.default !== 'string') {
+    errors.push({
+      path: `${prefix}.default`,
+      message: 'Variable default must be a string',
+      value: varObj.default,
+    });
+  }
+
+  return errors;
+}
+
+/**
  * Validate command-specific fields
  */
 function validateCommandFields(data: Record<string, unknown>): ContentValidationError[] {
@@ -324,6 +397,21 @@ function validateCommandFields(data: Record<string, unknown>): ContentValidation
     }
   }
 
+  // Validate variables
+  if (data.variables !== undefined) {
+    if (!Array.isArray(data.variables)) {
+      errors.push({
+        path: 'variables',
+        message: 'Variables must be an array',
+        value: data.variables,
+      });
+    } else {
+      for (const [i, variable] of data.variables.entries()) {
+        errors.push(...validateCommandVariable(variable, i));
+      }
+    }
+  }
+
   // Validate platform extensions (must be objects if present)
   for (const platform of ['cursor', 'claude', 'factory'] as const) {
     if (data[platform] !== undefined) {
@@ -364,6 +452,9 @@ function applyCommandDefaults(data: Record<string, unknown>): Command {
   }
   if (data.allowedTools !== undefined) {
     command.allowedTools = data.allowedTools as string[];
+  }
+  if (data.variables !== undefined) {
+    command.variables = data.variables as CommandVariable[];
   }
 
   // Platform-specific extensions

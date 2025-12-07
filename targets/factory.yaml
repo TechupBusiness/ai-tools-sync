@@ -102,8 +102,22 @@ frontmatter:
       - description
       - execute
       - args
+      - variables
     field_mappings: {}
     transforms: {}
+
+# =============================================================================
+# Command Variables
+# =============================================================================
+# Built-in variables supported in Factory commands
+command_variables:
+  built_in:
+    - name: ARGUMENTS
+      description: "Everything typed after the command name"
+      scope: commands
+    - name: FACTORY_PROJECT_DIR
+      description: "Project root directory (primarily for hooks)"
+      scope: hooks
 
 # =============================================================================
 # Unsupported Features

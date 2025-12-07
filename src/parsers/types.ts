@@ -52,6 +52,12 @@ export interface FactoryExtension {
   model?: string;
   /** Reasoning effort for droids */
   reasoningEffort?: 'low' | 'medium' | 'high';
+  /** Custom variables for this command (Factory-specific) */
+  variables?: Array<{
+    name: string;
+    description?: string;
+    default?: string;
+  }>;
 }
 
 /**

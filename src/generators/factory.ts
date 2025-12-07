@@ -48,6 +48,14 @@ import type { ParsedCommand } from '../parsers/command.js';
 import type { ParsedPersona } from '../parsers/persona.js';
 import type { ParsedRule } from '../parsers/rule.js';
 
+/**
+ * Detected variable in command content
+ */
+interface DetectedVariable {
+  name: string;
+  description?: string;
+}
+
 
 /**
  * Output directories for Factory
@@ -57,6 +65,14 @@ const FACTORY_DIRS = {
   skills: '.factory/skills',
   droids: '.factory/droids',
   commands: '.factory/commands',
+} as const;
+
+/**
+ * Factory built-in command variables
+ */
+const FACTORY_COMMAND_VARIABLES = {
+  ARGUMENTS: '$ARGUMENTS',
+  PROJECT_DIR: '$FACTORY_PROJECT_DIR',
 } as const;
 
 /**
@@ -408,6 +424,18 @@ export class FactoryGenerator implements Generator {
       parts.push('');
     }
 
+    // Add variables section if variables are detected
+    const variables = this.detectVariables(command);
+    if (variables.length > 0) {
+      parts.push('## Variables');
+      parts.push('');
+      for (const variable of variables) {
+        const desc = variable.description ? ` - ${variable.description}` : '';
+        parts.push(`- \`${variable.name}\`${desc}`);
+      }
+      parts.push('');
+    }
+
     // Add execute section if present
     if (command.frontmatter.execute) {
       parts.push('## Execute');
@@ -437,7 +465,7 @@ export class FactoryGenerator implements Generator {
       parts.push('');
     }
 
-    // Add body content
+    // Add body content (preserve variables as-is)
     if (command.content.trim()) {
       parts.push(command.content.trim());
       parts.push('');
@@ -448,6 +476,48 @@ export class FactoryGenerator implements Generator {
       content: parts.join('\n'),
       type: 'command',
     };
+  }
+
+  /**
+   * Detect variables used in command content and frontmatter
+   */
+  private detectVariables(command: ParsedCommand): DetectedVariable[] {
+    const variables: DetectedVariable[] = [];
+    const seenNames = new Set<string>();
+
+    // First, add explicitly declared variables
+    const declaredVars = command.frontmatter.variables ?? [];
+    for (const v of declaredVars) {
+      if (!seenNames.has(v.name)) {
+        const variable: DetectedVariable = { name: `$${v.name}` };
+        if (v.description !== undefined) {
+          variable.description = v.description;
+        }
+        variables.push(variable);
+        seenNames.add(v.name);
+      }
+    }
+
+    // Detect built-in variables in content and execute field
+    const content = command.content + (command.frontmatter.execute ?? '');
+    
+    if (content.includes(FACTORY_COMMAND_VARIABLES.ARGUMENTS) && !seenNames.has('ARGUMENTS')) {
+      variables.push({
+        name: FACTORY_COMMAND_VARIABLES.ARGUMENTS,
+        description: 'User input after command name',
+      });
+      seenNames.add('ARGUMENTS');
+    }
+
+    if (content.includes(FACTORY_COMMAND_VARIABLES.PROJECT_DIR) && !seenNames.has('FACTORY_PROJECT_DIR')) {
+      variables.push({
+        name: FACTORY_COMMAND_VARIABLES.PROJECT_DIR,
+        description: 'Project root directory',
+      });
+      seenNames.add('FACTORY_PROJECT_DIR');
+    }
+
+    return variables;
   }
 
   /**

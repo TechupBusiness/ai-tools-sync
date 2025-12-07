@@ -38,6 +38,11 @@
       "description": "Tool restrictions for Cursor commands",
       "items": { "type": "string" }
     },
+    "variables": {
+      "type": "array",
+      "description": "Variable placeholders supported in command content",
+      "items": { "$ref": "#/$defs/variable" }
+    },
     "targets": {
       "type": "array",
       "description": "Target tools for this command",
@@ -82,6 +87,25 @@
           "type": "boolean",
           "description": "Whether the argument is required",
           "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "variable": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Variable name (e.g., ARGUMENTS)"
+        },
+        "description": {
+          "type": "string",
+          "description": "Variable description for documentation"
+        },
+        "default": {
+          "type": "string",
+          "description": "Default value if not provided"
         }
       },
       "additionalProperties": false

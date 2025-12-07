@@ -410,6 +410,243 @@ describe('FactoryGenerator', () => {
   });
 });
 
+describe('generate() - command variables', () => {
+  let generator: FactoryGenerator;
+  let tempDir: string;
+
+  beforeEach(async () => {
+    generator = createFactoryGenerator();
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'factory-var-test-'));
+  });
+
+  afterEach(async () => {
+    try {
+      await fs.rm(tempDir, { recursive: true, force: true });
+    } catch {
+      // Ignore cleanup errors
+    }
+  });
+
+  it('should preserve $ARGUMENTS in command content', async () => {
+    const command = createMockCommand('deploy', {
+      description: 'Deploy application',
+    });
+    command.content = 'Deploy with: $ARGUMENTS\n\nExecute the deployment.';
+
+    const content = createMockContent({
+      projectRoot: tempDir,
+      commands: [command],
+    });
+
+    const result = await generator.generate(content);
+
+    const cmdContent = await fs.readFile(
+      path.join(tempDir, '.factory/commands/deploy.md'),
+      'utf-8'
+    );
+    expect(cmdContent).toContain('$ARGUMENTS');
+    expect(cmdContent).toContain('## Variables');
+    expect(cmdContent).toContain('User input after command name');
+  });
+
+  it('should detect $ARGUMENTS in execute field', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      commands: [
+        createMockCommand('run', {
+          execute: 'npm run $ARGUMENTS',
+        }),
+      ],
+    });
+
+    const result = await generator.generate(content);
+
+    const cmdContent = await fs.readFile(
+      path.join(tempDir, '.factory/commands/run.md'),
+      'utf-8'
+    );
+    expect(cmdContent).toContain('## Variables');
+    expect(cmdContent).toContain('$ARGUMENTS');
+    expect(cmdContent).toContain('User input after command name');
+  });
+
+  it('should document explicitly declared variables', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      commands: [
+        {
+          frontmatter: {
+            name: 'custom',
+            args: [],
+            targets: ['factory'],
+            variables: [
+              { name: 'ARGUMENTS', description: 'Custom description' },
+            ],
+          },
+          content: 'Run with $ARGUMENTS',
+        },
+      ],
+    });
+
+    const result = await generator.generate(content);
+
+    const cmdContent = await fs.readFile(
+      path.join(tempDir, '.factory/commands/custom.md'),
+      'utf-8'
+    );
+    expect(cmdContent).toContain('## Variables');
+    expect(cmdContent).toContain('$ARGUMENTS');
+    expect(cmdContent).toContain('Custom description');
+  });
+
+  it('should handle commands without variables', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      commands: [
+        createMockCommand('simple', {
+          description: 'A simple command',
+        }),
+      ],
+    });
+
+    const result = await generator.generate(content);
+
+    const cmdContent = await fs.readFile(
+      path.join(tempDir, '.factory/commands/simple.md'),
+      'utf-8'
+    );
+    expect(cmdContent).not.toContain('## Variables');
+  });
+
+  it('should detect $FACTORY_PROJECT_DIR', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      commands: [
+        {
+          frontmatter: {
+            name: 'build',
+            args: [],
+            targets: ['factory'],
+          },
+          content: 'Build from $FACTORY_PROJECT_DIR/src',
+        },
+      ],
+    });
+
+    const result = await generator.generate(content);
+
+    const cmdContent = await fs.readFile(
+      path.join(tempDir, '.factory/commands/build.md'),
+      'utf-8'
+    );
+    expect(cmdContent).toContain('## Variables');
+    expect(cmdContent).toContain('$FACTORY_PROJECT_DIR');
+    expect(cmdContent).toContain('Project root directory');
+  });
+
+  it('should detect both variables when present', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      commands: [
+        {
+          frontmatter: {
+            name: 'complex',
+            args: [],
+            targets: ['factory'],
+          },
+          content: 'Run $ARGUMENTS from $FACTORY_PROJECT_DIR',
+        },
+      ],
+    });
+
+    const result = await generator.generate(content);
+
+    const cmdContent = await fs.readFile(
+      path.join(tempDir, '.factory/commands/complex.md'),
+      'utf-8'
+    );
+    expect(cmdContent).toContain('## Variables');
+    expect(cmdContent).toContain('$ARGUMENTS');
+    expect(cmdContent).toContain('$FACTORY_PROJECT_DIR');
+    expect(cmdContent).toContain('User input after command name');
+    expect(cmdContent).toContain('Project root directory');
+  });
+
+  it('should not duplicate variables if declared and detected', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      commands: [
+        {
+          frontmatter: {
+            name: 'nodupe',
+            args: [],
+            targets: ['factory'],
+            variables: [
+              { name: 'ARGUMENTS', description: 'My custom description' },
+            ],
+          },
+          content: 'Execute $ARGUMENTS',
+        },
+      ],
+    });
+
+    const result = await generator.generate(content);
+
+    const cmdContent = await fs.readFile(
+      path.join(tempDir, '.factory/commands/nodupe.md'),
+      'utf-8'
+    );
+    
+    // Should only list the variable once in the Variables section (with custom description)
+    // Note: Body content will also contain $ARGUMENTS, but we're only checking the Variables list
+    const lines = cmdContent.split('\n');
+    const varStartIdx = lines.findIndex(l => l.trim() === '## Variables');
+    const varEndIdx = lines.findIndex((l, i) => i > varStartIdx && l.startsWith('##'));
+    const variablesLines = lines.slice(varStartIdx + 1, varEndIdx === -1 ? lines.length : varEndIdx);
+    const variablesSection = variablesLines.join('\n');
+    
+    // Count how many times the variable is listed in the Variables section
+    const variableListings = variablesSection.match(/^- `/gm) || [];
+    expect(variableListings.length).toBe(1);
+    expect(cmdContent).toContain('My custom description');
+    expect(cmdContent).toContain('Execute $ARGUMENTS'); // Body content preserved
+  });
+
+  it('should preserve variable order (declared first, then detected)', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      commands: [
+        {
+          frontmatter: {
+            name: 'order',
+            args: [],
+            targets: ['factory'],
+            variables: [
+              { name: 'CUSTOM', description: 'Custom var' },
+            ],
+          },
+          content: 'Run with $ARGUMENTS',
+        },
+      ],
+    });
+
+    const result = await generator.generate(content);
+
+    const cmdContent = await fs.readFile(
+      path.join(tempDir, '.factory/commands/order.md'),
+      'utf-8'
+    );
+    
+    const variablesSection = cmdContent.split('## Variables')[1]?.split('##')[0] || '';
+    const customIndex = variablesSection.indexOf('$CUSTOM');
+    const argumentsIndex = variablesSection.indexOf('$ARGUMENTS');
+    
+    expect(customIndex).toBeGreaterThan(-1);
+    expect(argumentsIndex).toBeGreaterThan(-1);
+    expect(customIndex).toBeLessThan(argumentsIndex);
+  });
+});
+
 describe('createFactoryGenerator', () => {
   it('should create a FactoryGenerator instance', () => {
     const generator = createFactoryGenerator();
