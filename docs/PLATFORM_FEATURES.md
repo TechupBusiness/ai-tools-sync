@@ -358,7 +358,7 @@ factory:
 | T201 | Tests for platform feature parity | ✅ Done |
 | T202 | Claude Code settings.json generation | ✅ Done |
 | T203 | Claude Code hooks support | ✅ Done |
-| T204 | Claude Code commands support | ❌ Pending |
+| T204 | Claude Code commands support | ✅ Done |
 | T205 | Claude Code agent tool restrictions | ❌ Pending |
 | T206 | Factory droids support | ❌ Pending |
 | T207 | Factory hooks support | ❌ Pending |

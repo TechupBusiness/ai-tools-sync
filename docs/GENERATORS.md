@@ -168,6 +168,8 @@ Generates configuration for [Claude Code](https://claude.ai/code).
 ├── agents/
 │   ├── architect.md
 │   └── implementer.md
+├── commands/
+│   └── deploy.md
 └── settings.json
 CLAUDE.md
 ```
@@ -237,6 +239,33 @@ model: claude-sonnet-4-20250514
 - `execute` → `Bash`
 - `search` → `Search`
 - `glob` → `Glob`
+
+### Command Files
+
+Commands are emitted to `.claude/commands/<name>.md` and become available as `/name` slash commands when present:
+
+```markdown
+# /deploy
+> Deploy application to the selected environment
+
+## Usage
+
+Use `$ARGUMENTS` to pass user input into the command execution.
+
+Arguments:
+- **environment** (string) (required) [default: staging]
+  Target environment for deployment. Choices: staging, production
+
+## Execute
+
+`npm run deploy $ARGUMENTS`
+
+# Deploy Command
+
+Runs the deployment script with the provided environment.
+```
+
+> Claude does not use tool mapping for commands; `$ARGUMENTS` is substituted directly into the `execute` string.
 
 ### Hooks Configuration
 

@@ -299,6 +299,20 @@ Runs linting and type checking before commits.
       expect(result.value).toMatchSnapshot('claude-agent');
     });
 
+    it('should match claude command snapshot', async () => {
+      const content = await createTestContent();
+      const generator = createClaudeGenerator();
+
+      await generator.generate(content, {
+        outputDir: testDir,
+        addHeaders: true,
+      });
+
+      const result = await readFile(path.join(testDir, '.claude', 'commands', 'deploy.md'));
+      expect(result.ok).toBe(true);
+      expect(result.value).toMatchSnapshot('claude-command');
+    });
+
     it('should match claude settings.json snapshot', async () => {
       const content = await createTestContent();
       const generator = createClaudeGenerator();

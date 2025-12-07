@@ -493,6 +493,42 @@ describe('ClaudeGenerator', () => {
       expect(settings.commands.deploy.description).toBe('Deploy command');
       expect(settings.commands.deploy.command).toBe('npm run deploy');
     });
+
+    it('should generate command files with usage and execute sections', async () => {
+      const content = createMockContent({
+        projectRoot: tempDir,
+        commands: [
+          createMockCommand('Deploy App', {
+            description: 'Deploy application to target environment',
+            execute: 'npm run deploy $ARGUMENTS',
+            args: [
+              {
+                name: 'environment',
+                type: 'string',
+                required: true,
+                description: 'Target environment',
+                choices: ['staging', 'production'],
+              },
+            ],
+          }),
+        ],
+      });
+
+      const result = await generator.generate(content);
+
+      expect(result.files).toContain('.claude/commands/deploy-app.md');
+
+      const commandContent = await fs.readFile(
+        path.join(tempDir, '.claude/commands/deploy-app.md'),
+        'utf-8'
+      );
+
+      expect(commandContent).toContain('# /deploy-app');
+      expect(commandContent).toContain('Deploy application to target environment');
+      expect(commandContent).toContain('$ARGUMENTS');
+      expect(commandContent).toContain('environment');
+      expect(commandContent).toContain('npm run deploy $ARGUMENTS');
+    });
   });
 
   describe('generate() - CLAUDE.md', () => {
@@ -605,6 +641,22 @@ describe('ClaudeGenerator', () => {
 
       expect(result.files).toContain('.claude/skills/new-rule/SKILL.md');
       expect(result.deleted.length).toBeGreaterThan(0);
+    });
+
+    it('should clean existing commands when clean option is true', async () => {
+      const commandsDir = path.join(tempDir, '.claude/commands');
+      await fs.mkdir(commandsDir, { recursive: true });
+      await fs.writeFile(path.join(commandsDir, 'old.md'), 'old command');
+
+      const content = createMockContent({
+        projectRoot: tempDir,
+        commands: [createMockCommand('new-command', { execute: 'echo test' })],
+      });
+
+      const result = await generator.generate(content, { clean: true });
+
+      expect(result.files).toContain('.claude/commands/new-command.md');
+      expect(result.deleted).toContain('.claude/commands/old.md');
     });
   });
 

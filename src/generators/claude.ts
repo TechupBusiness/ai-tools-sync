@@ -59,6 +59,7 @@ const CLAUDE_DIRS = {
   root: '.claude',
   skills: '.claude/skills',
   agents: '.claude/agents',
+  commands: '.claude/commands',
 } as const;
 
 /**
@@ -169,6 +170,14 @@ export class ClaudeGenerator implements Generator {
     );
     generated.push(...agentFiles);
 
+    // Generate commands
+    const commandFiles = await this.generateCommands(
+      claudeContent.commands,
+      outputDir,
+      options
+    );
+    generated.push(...commandFiles);
+
     // Generate settings.json with hooks, commands, permissions, and env
     const hasSettings =
       claudeContent.hooks.length > 0 ||
@@ -236,6 +245,14 @@ export class ClaudeGenerator implements Generator {
       const files = await glob('*.md', { cwd: agentsDir, absolute: false });
       await removeDir(agentsDir);
       deleted.push(...files.map((f) => joinPath(CLAUDE_DIRS.agents, f)));
+    }
+
+    // Clean commands directory
+    const commandsDir = joinPath(outputDir, CLAUDE_DIRS.commands);
+    if (await dirExists(commandsDir)) {
+      const files = await glob('*.md', { cwd: commandsDir, absolute: false });
+      await removeDir(commandsDir);
+      deleted.push(...files.map((f) => joinPath(CLAUDE_DIRS.commands, f)));
     }
 
     return deleted;
@@ -413,6 +430,103 @@ export class ClaudeGenerator implements Generator {
       path: filePath,
       content: parts.join('\n'),
       type: 'persona',
+    };
+  }
+
+  /**
+   * Generate command files for Claude
+   */
+  private async generateCommands(
+    commands: ParsedCommand[],
+    outputDir: string,
+    options: GeneratorOptions
+  ): Promise<GeneratedFile[]> {
+    const generated: GeneratedFile[] = [];
+    const sortedCommands = sortCommandsByName(commands);
+
+    if (sortedCommands.length === 0) {
+      return generated;
+    }
+
+    // Ensure commands directory exists
+    if (!options.dryRun) {
+      await ensureDir(joinPath(outputDir, CLAUDE_DIRS.commands));
+    }
+
+    for (const command of sortedCommands) {
+      const file = this.generateCommandFile(command, options);
+      generated.push(file);
+    }
+
+    return generated;
+  }
+
+  /**
+   * Generate a single command file for Claude
+   */
+  private generateCommandFile(command: ParsedCommand, options: GeneratorOptions): GeneratedFile {
+    const commandName = toSafeFilename(command.frontmatter.name);
+    const filePath = joinPath(CLAUDE_DIRS.commands, `${commandName}.md`);
+
+    const parts: string[] = [];
+
+    // Add header if requested
+    if (options.addHeaders) {
+      parts.push(DO_NOT_EDIT_HEADER.trim());
+      parts.push('');
+    }
+
+    // Title
+    parts.push(`# /${commandName}`);
+    parts.push('');
+
+    // Description
+    if (command.frontmatter.description) {
+      parts.push(`> ${command.frontmatter.description}`);
+      parts.push('');
+    }
+
+    // Usage with $ARGUMENTS note
+    parts.push('## Usage');
+    parts.push('');
+    parts.push('Use `$ARGUMENTS` to pass user-provided input when invoking this command.');
+    parts.push('');
+
+    const args = command.frontmatter.args ?? [];
+    if (args.length > 0) {
+      parts.push('Arguments:');
+      for (const arg of args) {
+        const required = arg.required ? ' (required)' : '';
+        const defaultVal = arg.default !== undefined ? ` [default: ${arg.default}]` : '';
+        const choices = arg.choices && arg.choices.length > 0 ? ` Choices: ${arg.choices.join(', ')}` : '';
+        parts.push(`- **${arg.name}** (${arg.type})${required}${defaultVal}${choices}`);
+        if (arg.description) {
+          parts.push(`  ${arg.description}`);
+        }
+      }
+      parts.push('');
+    }
+
+    // Execute section
+    if (command.frontmatter.execute) {
+      parts.push('## Execute');
+      parts.push('');
+      parts.push('```bash');
+      parts.push(command.frontmatter.execute);
+      parts.push('```');
+      parts.push('');
+    }
+
+    // Original body/instructions
+    if (command.content.trim()) {
+      parts.push(command.content.trim());
+      parts.push('');
+    }
+
+    return {
+      path: filePath,
+      content: parts.join('\n'),
+      type: 'command',
     };
   }
 
