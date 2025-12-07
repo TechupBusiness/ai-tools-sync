@@ -25,6 +25,13 @@ export interface LoadResult {
   errors?: LoadError[];
   /** Source identifier (e.g., path or URL) */
   source?: string;
+  /** Optional metadata from loader (e.g., plugin info) */
+  metadata?: {
+    pluginName?: string;
+    pluginVersion?: string;
+    pluginDescription?: string;
+    [key: string]: unknown;
+  };
 }
 
 /**

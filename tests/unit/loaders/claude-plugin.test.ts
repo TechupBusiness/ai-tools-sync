@@ -286,6 +286,77 @@ describe('ClaudePluginLoader', () => {
       expect(getClaudePluginCacheEntries().size).toBe(0);
     });
   });
+
+  describe('load() - plugin.json manifest', () => {
+    const manifestPluginPath = path.join(FIXTURES_PATH, 'manifest-plugin');
+
+    it('should load manifest and use custom paths', async () => {
+      const result = await loader.load(`claude-plugin:${manifestPluginPath}`);
+
+      expect(result.errors).toBeUndefined();
+      expect(result.rules.length).toBe(1);
+      expect(result.personas.length).toBe(1);
+      expect(result.commands.length).toBe(1);
+    });
+
+    it('should populate metadata from manifest', async () => {
+      const result = await loader.load(`claude-plugin:${manifestPluginPath}`);
+
+      expect(result.metadata).toBeDefined();
+      expect(result.metadata?.pluginName).toBe('manifest-test-plugin');
+      expect(result.metadata?.pluginVersion).toBe('1.2.3');
+      expect(result.metadata?.pluginDescription).toBe('A plugin for testing manifest support');
+    });
+
+    it('should load content from custom paths specified in manifest', async () => {
+      const result = await loader.load(`claude-plugin:${manifestPluginPath}`);
+
+      // Should find rule in custom-skills/
+      const rule = result.rules.find((r) => r.frontmatter.name === 'python-advanced');
+      expect(rule).toBeDefined();
+      expect(rule!.frontmatter.description).toBe('Advanced Python techniques');
+
+      // Should find persona in custom-agents/
+      const persona = result.personas.find((p) => p.frontmatter.name === 'debugger');
+      expect(persona).toBeDefined();
+      expect(persona!.frontmatter.description).toBe('Expert debugging agent');
+
+      // Should find command in custom-commands/
+      const command = result.commands.find((c) => c.frontmatter.name === 'analyze');
+      expect(command).toBeDefined();
+      expect(command!.frontmatter.description).toBe('Analyze code quality');
+    });
+
+    it('should resolve ${CLAUDE_PLUGIN_ROOT} in manifest paths', async () => {
+      const pluginRootVarPath = path.join(FIXTURES_PATH, 'plugin-root-var');
+      const result = await loader.load(`claude-plugin:${pluginRootVarPath}`);
+
+      expect(result.errors).toBeUndefined();
+      expect(result.rules.length).toBe(1);
+      expect(result.rules[0].frontmatter.name).toBe('typescript');
+    });
+
+    it('should fall back to convention paths when manifest paths missing', async () => {
+      // Create a test case where manifest only specifies some paths
+      // The basic-plugin doesn't have a manifest, so it should use conventions
+      const basicPluginPath = path.join(FIXTURES_PATH, 'basic-plugin');
+      const result = await loader.load(`claude-plugin:${basicPluginPath}`);
+
+      // Should still work even without manifest
+      expect(result.errors).toBeUndefined();
+      expect(result.rules.length).toBe(2);
+    });
+
+    it('should work without manifest using conventions', async () => {
+      // Plugin without manifest should use convention paths
+      const basicPluginPath = path.join(FIXTURES_PATH, 'basic-plugin');
+      const result = await loader.load(`claude-plugin:${basicPluginPath}`);
+
+      // Should still load via convention
+      expect(result.rules.length).toBe(2);
+      expect(result.metadata).toBeUndefined(); // No manifest = no metadata
+    });
+  });
 });
 
 describe('createClaudePluginLoader()', () => {

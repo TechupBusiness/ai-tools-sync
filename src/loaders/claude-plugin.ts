@@ -92,6 +92,61 @@ export interface ClaudeHook {
 }
 
 /**
+ * Plugin manifest structure (plugin.json)
+ */
+export interface ClaudePluginManifest {
+  /** Plugin name (required) */
+  name: string;
+
+  /** Plugin version (semver format) */
+  version?: string;
+
+  /** Plugin description */
+  description?: string;
+
+  /** Plugin author */
+  author?:
+    | string
+    | {
+        name: string;
+        email?: string;
+        url?: string;
+      };
+
+  /** Plugin homepage URL */
+  homepage?: string;
+
+  /** Repository URL or object */
+  repository?:
+    | string
+    | {
+        type: string;
+        url: string;
+      };
+
+  /** License identifier (SPDX) */
+  license?: string;
+
+  /** Keywords for discovery */
+  keywords?: string[];
+
+  /** Path to skills directory (→ rules) */
+  skills?: string;
+
+  /** Path to commands directory */
+  commands?: string;
+
+  /** Path to agents directory (→ personas) */
+  agents?: string;
+
+  /** Path to hooks.json file */
+  hooks?: string;
+
+  /** Path to .mcp.json file */
+  mcpServers?: string;
+}
+
+/**
  * Claude plugin metadata
  */
 export interface ClaudePluginInfo {
@@ -99,10 +154,16 @@ export interface ClaudePluginInfo {
   name: string;
   /** Plugin version (if available) */
   version?: string;
+  /** Plugin description */
+  description?: string;
   /** Path to the plugin directory */
   path: string;
   /** Whether this is a native Claude plugin format */
   isNative: boolean;
+  /** Whether plugin has a manifest file */
+  hasManifest: boolean;
+  /** Raw manifest data (if present) */
+  manifest?: ClaudePluginManifest;
 }
 
 /**
@@ -192,25 +253,50 @@ export class ClaudePluginLoader implements Loader {
       return result;
     }
 
-    // Load skills (transform to rules)
-    const skillsResult = await this.loadSkills(pluginPath, options);
-    result.rules = skillsResult.items;
-    errors.push(...skillsResult.errors);
+    // Load manifest if available
+    const manifestResult = await this.loadManifest(pluginPath);
+    const manifest = manifestResult.ok ? manifestResult.value : null;
 
-    // Load agents (transform to personas)
-    const agentsResult = await this.loadAgents(pluginPath, options);
-    result.personas = agentsResult.items;
-    errors.push(...agentsResult.errors);
+    // Store plugin info for metadata
+    if (manifest) {
+      result.metadata = {
+        pluginName: manifest.name,
+        ...(manifest.version && { pluginVersion: manifest.version }),
+        ...(manifest.description && { pluginDescription: manifest.description }),
+      };
+    }
 
-    // Load hooks from settings.json
-    const hooksResult = await this.loadHooks(pluginPath, options);
-    result.hooks = hooksResult.items;
-    errors.push(...hooksResult.errors);
+    // Load skills using manifest path or convention
+    const skillsPath = this.resolveComponentPath(pluginPath, manifest?.skills, 'skills');
+    if (skillsPath) {
+      const skillsResult = await this.loadSkillsFromPath(skillsPath, pluginPath, options);
+      result.rules = skillsResult.items;
+      errors.push(...skillsResult.errors);
+    }
 
-    // Load commands (if any)
-    const commandsResult = await this.loadCommands(pluginPath, options);
-    result.commands = commandsResult.items;
-    errors.push(...commandsResult.errors);
+    // Load agents using manifest path or convention
+    const agentsPath = this.resolveComponentPath(pluginPath, manifest?.agents, 'agents');
+    if (agentsPath) {
+      const agentsResult = await this.loadAgentsFromPath(agentsPath, pluginPath, options);
+      result.personas = agentsResult.items;
+      errors.push(...agentsResult.errors);
+    }
+
+    // Load commands using manifest path or convention
+    const commandsPath = this.resolveComponentPath(pluginPath, manifest?.commands, 'commands');
+    if (commandsPath) {
+      const commandsResult = await this.loadCommandsFromPath(commandsPath, pluginPath, options);
+      result.commands = commandsResult.items;
+      errors.push(...commandsResult.errors);
+    }
+
+    // Load hooks - from manifest path, settings.json, or hooks/hooks.json
+    const hooksPath = manifest?.hooks ?? this.findHooksFile(pluginPath);
+    if (hooksPath) {
+      const hooksResult = await this.loadHooksFromPath(hooksPath, pluginPath, options);
+      result.hooks = hooksResult.items;
+      errors.push(...hooksResult.errors);
+    }
 
     // Filter by target if specified
     if (options?.targets && options.targets.length > 0) {
@@ -449,16 +535,124 @@ export class ClaudePluginLoader implements Loader {
   }
 
   /**
-   * Load skills from Claude plugin and transform to rules
+   * Load and parse plugin.json manifest
+   *
+   * Looks for manifest in:
+   * 1. <pluginPath>/plugin.json
+   * 2. <pluginPath>/.claude-plugin/plugin.json
+   *
+   * @param pluginPath - Root path of the plugin
+   * @returns Parsed manifest or null if not found
    */
-  private async loadSkills(
+  private async loadManifest(
+    pluginPath: string
+  ): Promise<{ ok: true; value: ClaudePluginManifest } | { ok: false; value: null }> {
+    const possiblePaths = [
+      path.join(pluginPath, 'plugin.json'),
+      path.join(pluginPath, '.claude-plugin', 'plugin.json'),
+    ];
+
+    for (const manifestPath of possiblePaths) {
+      if (!this.fileExists(manifestPath)) {
+        continue;
+      }
+
+      try {
+        const content = await fs.promises.readFile(manifestPath, 'utf-8');
+
+        // Resolve ${CLAUDE_PLUGIN_ROOT} in the entire manifest
+        const resolvedContent = resolvePluginRootVariable(content, pluginPath);
+        const manifest = JSON.parse(resolvedContent) as ClaudePluginManifest;
+
+        // Validate required field
+        if (!manifest.name || typeof manifest.name !== 'string') {
+          logger.warn(`Invalid plugin.json at ${manifestPath}: missing 'name' field`);
+          continue;
+        }
+
+        logger.debug(`Loaded plugin manifest: ${manifest.name} from ${manifestPath}`);
+        return { ok: true, value: manifest };
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        logger.warn(`Failed to parse plugin.json at ${manifestPath}: ${errorMsg}`);
+      }
+    }
+
+    return { ok: false, value: null };
+  }
+
+  /**
+   * Resolve component directory path from manifest or convention
+   *
+   * Priority:
+   * 1. Explicit path in manifest (already resolved with ${CLAUDE_PLUGIN_ROOT})
+   * 2. Convention-based path (e.g., <pluginPath>/skills)
+   *
+   * @param pluginPath - Plugin root directory
+   * @param manifestPath - Path from manifest (may be undefined)
+   * @param conventionDir - Conventional directory name (e.g., 'skills')
+   * @returns Resolved absolute path or null if neither exists
+   */
+  private resolveComponentPath(
     pluginPath: string,
+    manifestPath: string | undefined,
+    conventionDir: string
+  ): string | null {
+    // Try manifest path first
+    if (manifestPath) {
+      const resolved = path.isAbsolute(manifestPath)
+        ? manifestPath
+        : path.join(pluginPath, manifestPath);
+
+      if (this.directoryExists(resolved) || this.fileExists(resolved)) {
+        return resolved;
+      }
+      logger.debug(`Manifest path not found: ${resolved}, falling back to convention`);
+    }
+
+    // Fall back to convention
+    const conventionPath = path.join(pluginPath, conventionDir);
+    if (this.directoryExists(conventionPath)) {
+      return conventionPath;
+    }
+
+    return null;
+  }
+
+  /**
+   * Find hooks configuration file using convention paths
+   *
+   * Looks for:
+   * 1. <pluginPath>/hooks/hooks.json
+   * 2. <pluginPath>/settings.json (legacy)
+   *
+   * @returns Path to hooks file or undefined
+   */
+  private findHooksFile(pluginPath: string): string | undefined {
+    const candidates = [
+      path.join(pluginPath, 'hooks', 'hooks.json'),
+      path.join(pluginPath, 'settings.json'),
+    ];
+
+    for (const candidate of candidates) {
+      if (this.fileExists(candidate)) {
+        return candidate;
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Load skills from a specific directory
+   */
+  private async loadSkillsFromPath(
+    skillsDir: string,
+    pluginRoot: string,
     options?: ClaudePluginLoaderOptions
   ): Promise<{ items: ParsedRule[]; errors: LoadError[] }> {
     const items: ParsedRule[] = [];
     const errors: LoadError[] = [];
-
-    const skillsDir = path.join(pluginPath, 'skills');
 
     if (!this.directoryExists(skillsDir)) {
       return { items, errors };
@@ -472,7 +666,7 @@ export class ClaudePluginLoader implements Loader {
           // Claude skills are in subdirectories with SKILL.md
           const skillFile = path.join(skillsDir, entry.name, 'SKILL.md');
           if (this.fileExists(skillFile)) {
-            const result = await this.parseSkillFile(skillFile, entry.name, options);
+            const result = await this.parseSkillFile(skillFile, entry.name, pluginRoot, options);
             if (result.ok) {
               items.push(result.value);
             } else {
@@ -483,7 +677,7 @@ export class ClaudePluginLoader implements Loader {
           // Also support flat .md files
           const skillFile = path.join(skillsDir, entry.name);
           const skillName = entry.name.replace(/\.md$/, '');
-          const result = await this.parseSkillFile(skillFile, skillName, options);
+          const result = await this.parseSkillFile(skillFile, skillName, pluginRoot, options);
           if (result.ok) {
             items.push(result.value);
           } else {
@@ -508,25 +702,13 @@ export class ClaudePluginLoader implements Loader {
   private async parseSkillFile(
     filePath: string,
     skillName: string,
+    pluginRoot: string,
     _options?: ClaudePluginLoaderOptions
   ): Promise<{ ok: true; value: ParsedRule } | { ok: false; error: LoadError }> {
     try {
       let content = await fs.promises.readFile(filePath, 'utf-8');
       
-      // Resolve ${CLAUDE_PLUGIN_ROOT} variable
-      // For skills/<name>/SKILL.md, go up 3 levels; for flat skills/skill.md, go up 2 levels
-      const dirname = path.dirname(filePath);
-      const parentDirName = path.basename(dirname);
-      let pluginRoot: string;
-      
-      if (parentDirName === 'skills') {
-        // Flat structure: skills/skill.md -> go up 2 levels
-        pluginRoot = path.dirname(dirname);
-      } else {
-        // Nested structure: skills/<name>/SKILL.md -> go up 3 levels
-        pluginRoot = path.dirname(path.dirname(dirname));
-      }
-      
+      // Resolve ${CLAUDE_PLUGIN_ROOT} variable using provided pluginRoot
       content = resolvePluginRootVariable(content, pluginRoot);
       
       const { frontmatter, body } = this.extractFrontmatter<ClaudeSkillFrontmatter>(content);
@@ -568,16 +750,15 @@ export class ClaudePluginLoader implements Loader {
   }
 
   /**
-   * Load agents from Claude plugin and transform to personas
+   * Load agents from a specific directory
    */
-  private async loadAgents(
-    pluginPath: string,
+  private async loadAgentsFromPath(
+    agentsDir: string,
+    pluginRoot: string,
     options?: ClaudePluginLoaderOptions
   ): Promise<{ items: ParsedPersona[]; errors: LoadError[] }> {
     const items: ParsedPersona[] = [];
     const errors: LoadError[] = [];
-
-    const agentsDir = path.join(pluginPath, 'agents');
 
     if (!this.directoryExists(agentsDir)) {
       return { items, errors };
@@ -590,7 +771,7 @@ export class ClaudePluginLoader implements Loader {
         if (entry.isFile() && entry.name.endsWith('.md')) {
           const agentFile = path.join(agentsDir, entry.name);
           const agentName = entry.name.replace(/\.md$/, '');
-          const result = await this.parseAgentFile(agentFile, agentName, options);
+          const result = await this.parseAgentFile(agentFile, agentName, pluginRoot, options);
           if (result.ok) {
             items.push(result.value);
           } else {
@@ -615,14 +796,13 @@ export class ClaudePluginLoader implements Loader {
   private async parseAgentFile(
     filePath: string,
     agentName: string,
+    pluginRoot: string,
     _options?: ClaudePluginLoaderOptions
   ): Promise<{ ok: true; value: ParsedPersona } | { ok: false; error: LoadError }> {
     try {
       let content = await fs.promises.readFile(filePath, 'utf-8');
       
-      // Resolve ${CLAUDE_PLUGIN_ROOT} variable
-      // Plugin root is typically 2 levels up from agents/<name>.md
-      const pluginRoot = path.dirname(path.dirname(filePath));
+      // Resolve ${CLAUDE_PLUGIN_ROOT} variable using provided pluginRoot
       content = resolvePluginRootVariable(content, pluginRoot);
       
       const { frontmatter, body } = this.extractFrontmatter<ClaudeAgentFrontmatter>(content);
@@ -655,23 +835,22 @@ export class ClaudePluginLoader implements Loader {
   }
 
   /**
-   * Load hooks from settings.json
+   * Load hooks from a specific file path
    */
-  private async loadHooks(
-    pluginPath: string,
+  private async loadHooksFromPath(
+    hooksPath: string,
+    _pluginRoot: string,
     _options?: ClaudePluginLoaderOptions
   ): Promise<{ items: ParsedHook[]; errors: LoadError[] }> {
     const items: ParsedHook[] = [];
     const errors: LoadError[] = [];
 
-    const settingsPath = path.join(pluginPath, 'settings.json');
-
-    if (!this.fileExists(settingsPath)) {
+    if (!this.fileExists(hooksPath)) {
       return { items, errors };
     }
 
     try {
-      const content = await fs.promises.readFile(settingsPath, 'utf-8');
+      const content = await fs.promises.readFile(hooksPath, 'utf-8');
       const settings = JSON.parse(content) as ClaudeSettings;
 
       if (settings.hooks) {
@@ -680,7 +859,7 @@ export class ClaudePluginLoader implements Loader {
           if (!Array.isArray(hooks)) continue;
 
           for (const hook of hooks) {
-            const parsedHook = this.transformHook(hook, eventType, settingsPath);
+            const parsedHook = this.transformHook(hook, eventType, hooksPath);
             items.push(parsedHook);
           }
         }
@@ -688,8 +867,8 @@ export class ClaudePluginLoader implements Loader {
     } catch (error) {
       errors.push({
         type: 'hook',
-        path: settingsPath,
-        message: `Failed to parse settings.json: ${error instanceof Error ? error.message : String(error)}`,
+        path: hooksPath,
+        message: `Failed to parse hooks file: ${error instanceof Error ? error.message : String(error)}`,
       });
     }
 
@@ -740,16 +919,15 @@ export class ClaudePluginLoader implements Loader {
   }
 
   /**
-   * Load commands from Claude plugin
+   * Load commands from a specific directory
    */
-  private async loadCommands(
-    pluginPath: string,
+  private async loadCommandsFromPath(
+    commandsDir: string,
+    pluginRoot: string,
     _options?: ClaudePluginLoaderOptions
   ): Promise<{ items: ParsedCommand[]; errors: LoadError[] }> {
     const items: ParsedCommand[] = [];
     const errors: LoadError[] = [];
-
-    const commandsDir = path.join(pluginPath, 'commands');
 
     if (!this.directoryExists(commandsDir)) {
       return { items, errors };
@@ -762,7 +940,7 @@ export class ClaudePluginLoader implements Loader {
         if (entry.isFile() && entry.name.endsWith('.md')) {
           const commandFile = path.join(commandsDir, entry.name);
           const commandName = entry.name.replace(/\.md$/, '');
-          const result = await this.parseCommandFile(commandFile, commandName);
+          const result = await this.parseCommandFile(commandFile, commandName, pluginRoot);
           if (result.ok) {
             items.push(result.value);
           } else {
@@ -786,14 +964,13 @@ export class ClaudePluginLoader implements Loader {
    */
   private async parseCommandFile(
     filePath: string,
-    commandName: string
+    commandName: string,
+    pluginRoot: string
   ): Promise<{ ok: true; value: ParsedCommand } | { ok: false; error: LoadError }> {
     try {
       let content = await fs.promises.readFile(filePath, 'utf-8');
       
-      // Resolve ${CLAUDE_PLUGIN_ROOT} variable
-      // Plugin root is typically 2 levels up from commands/<name>.md
-      const pluginRoot = path.dirname(path.dirname(filePath));
+      // Resolve ${CLAUDE_PLUGIN_ROOT} variable using provided pluginRoot
       content = resolvePluginRootVariable(content, pluginRoot);
       
       const { frontmatter, body } = this.extractFrontmatter<Record<string, unknown>>(content);

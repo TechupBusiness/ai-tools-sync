@@ -1,0 +1,13 @@
+{
+  "name": "manifest-test-plugin",
+  "version": "1.2.3",
+  "description": "A plugin for testing manifest support",
+  "author": "Test Author",
+  "homepage": "https://example.com/plugin",
+  "repository": "https://github.com/test/manifest-plugin",
+  "license": "MIT",
+  "keywords": ["testing", "manifest"],
+  "skills": "custom-skills",
+  "agents": "custom-agents",
+  "commands": "custom-commands"
+}
