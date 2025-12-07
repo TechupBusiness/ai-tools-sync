@@ -160,7 +160,7 @@ describe('CursorGenerator', () => {
         rules: [createMockRule('styles', { globs: ['**/*.css', '**/*.scss'] })],
       });
 
-      const result = await generator.generate(content);
+      await generator.generate(content);
 
       const fileContent = await fs.readFile(path.join(tempDir, '.cursor/rules/styles.mdc'), 'utf-8');
       expect(fileContent).toContain('globs: **/*.css, **/*.scss');
@@ -230,7 +230,7 @@ describe('CursorGenerator', () => {
         personas: [createMockPersona('dev', { tools: ['read', 'write', 'execute'] })],
       });
 
-      const result = await generator.generate(content);
+      await generator.generate(content);
 
       const fileContent = await fs.readFile(
         path.join(tempDir, '.cursor/commands/roles/dev.md'),
@@ -324,7 +324,7 @@ describe('CursorGenerator', () => {
         ],
       });
 
-      const result = await generator.generate(content);
+      await generator.generate(content);
 
       const cmdContent = await fs.readFile(
         path.join(tempDir, '.cursor/commands/build.md'),
@@ -415,7 +415,7 @@ describe('CursorGenerator', () => {
         rules: [createMockRule('test-rule')],
       });
 
-      const result = await generator.generate(content, { addHeaders: true });
+      await generator.generate(content, { addHeaders: true });
 
       const fileContent = await fs.readFile(
         path.join(tempDir, '.cursor/rules/test-rule.mdc'),

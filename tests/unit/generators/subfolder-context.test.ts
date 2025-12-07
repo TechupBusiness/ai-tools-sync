@@ -165,7 +165,7 @@ describe('SubfolderContextGenerator', () => {
         ],
       });
 
-      const result = await generator.generate(content);
+      await generator.generate(content);
 
       const claudeContent = await fs.readFile(
         path.join(tempDir, 'apps/web/CLAUDE.md'),
@@ -194,7 +194,7 @@ describe('SubfolderContextGenerator', () => {
         ],
       });
 
-      const result = await generator.generate(content);
+      await generator.generate(content);
 
       const claudeContent = await fs.readFile(
         path.join(tempDir, 'apps/mobile/CLAUDE.md'),
@@ -220,7 +220,7 @@ describe('SubfolderContextGenerator', () => {
         rules: [createMockRule('trading')],
       });
 
-      const result = await generator.generate(content);
+      await generator.generate(content);
 
       const claudeContent = await fs.readFile(
         path.join(tempDir, 'packages/trade-engine/CLAUDE.md'),
@@ -244,7 +244,7 @@ describe('SubfolderContextGenerator', () => {
         rules: [createMockRule('nested-rule')],
       });
 
-      const result = await generator.generate(content);
+      await generator.generate(content);
 
       const claudeContent = await fs.readFile(
         path.join(tempDir, 'packages/deep/nested/folder/CLAUDE.md'),
@@ -344,7 +344,7 @@ describe('SubfolderContextGenerator', () => {
         rules: [createMockRule('rule')],
       });
 
-      const result = await generator.generate(content, { addHeaders: true });
+      await generator.generate(content, { addHeaders: true });
 
       const claudeContent = await fs.readFile(
         path.join(tempDir, 'test-folder/CLAUDE.md'),
@@ -410,7 +410,7 @@ describe('SubfolderContextGenerator', () => {
         ],
       });
 
-      const result = await generator.generate(content);
+      await generator.generate(content);
 
       const claudeContent = await fs.readFile(
         path.join(tempDir, 'with-commands/CLAUDE.md'),

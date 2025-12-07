@@ -174,7 +174,7 @@ describe('ClaudeGenerator', () => {
         rules: [createMockRule('styles', { globs: ['**/*.css', '**/*.scss'] })],
       });
 
-      const result = await generator.generate(content);
+      await generator.generate(content);
 
       const fileContent = await fs.readFile(
         path.join(tempDir, '.claude/skills/styles/SKILL.md'),
@@ -230,7 +230,7 @@ describe('ClaudeGenerator', () => {
         personas: [createMockPersona('dev', { tools: ['read', 'write', 'execute'] })],
       });
 
-      const result = await generator.generate(content);
+      await generator.generate(content);
 
       const fileContent = await fs.readFile(
         path.join(tempDir, '.claude/agents/dev.md'),
@@ -274,7 +274,7 @@ describe('ClaudeGenerator', () => {
         personas: [createMockPersona('fast-dev', { model: 'fast' })],
       });
 
-      const result = await generator.generate(content);
+      await generator.generate(content);
 
       const fileContent = await fs.readFile(
         path.join(tempDir, '.claude/agents/fast-dev.md'),
@@ -596,7 +596,7 @@ describe('ClaudeGenerator', () => {
         rules: [createMockRule('core', { always_apply: true })],
       });
 
-      const result = await generator.generate(content);
+      await generator.generate(content);
 
       const claudeContent = await fs.readFile(path.join(tempDir, 'CLAUDE.md'), 'utf-8');
       expect(claudeContent).toContain('@import');
@@ -610,7 +610,7 @@ describe('ClaudeGenerator', () => {
         rules: [createMockRule('test-rule')],
       });
 
-      const result = await generator.generate(content, { addHeaders: true });
+      await generator.generate(content, { addHeaders: true });
 
       const fileContent = await fs.readFile(
         path.join(tempDir, '.claude/skills/test-rule/SKILL.md'),
@@ -626,7 +626,7 @@ describe('ClaudeGenerator', () => {
         hooks: [createMockHook('test-hook')],
       });
 
-      const result = await generator.generate(content, { addHeaders: true });
+      await generator.generate(content, { addHeaders: true });
 
       const settingsContent = await fs.readFile(
         path.join(tempDir, '.claude/settings.json'),
@@ -771,7 +771,7 @@ describe('generate() - permissions', () => {
       },
     });
 
-    const result = await generator.generate(content);
+    await generator.generate(content);
 
     const settingsContent = await fs.readFile(
       path.join(tempDir, '.claude/settings.json'),
@@ -797,7 +797,7 @@ describe('generate() - permissions', () => {
       },
     });
 
-    const result = await generator.generate(content);
+    await generator.generate(content);
 
     const settingsContent = await fs.readFile(
       path.join(tempDir, '.claude/settings.json'),
@@ -897,7 +897,7 @@ describe('generate() - combined settings', () => {
       commands: [createMockCommand('test-cmd')],
     });
 
-    const result = await generator.generate(content);
+    await generator.generate(content);
 
     const settingsContent = await fs.readFile(
       path.join(tempDir, '.claude/settings.json'),

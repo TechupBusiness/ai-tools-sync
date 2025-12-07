@@ -146,7 +146,7 @@ describe('FactoryGenerator', () => {
         rules: [createMockRule('core', { always_apply: true })],
       });
 
-      const result = await generator.generate(content);
+      await generator.generate(content);
 
       const fileContent = await fs.readFile(
         path.join(tempDir, '.factory/skills/core/SKILL.md'),
@@ -200,7 +200,7 @@ describe('FactoryGenerator', () => {
         personas: [createMockPersona('dev', { tools: ['read', 'write', 'execute', 'ls'] })],
       });
 
-      const result = await generator.generate(content);
+      await generator.generate(content);
 
       const fileContent = await fs.readFile(
         path.join(tempDir, '.factory/droids/dev.md'),
@@ -250,7 +250,7 @@ describe('FactoryGenerator', () => {
         ],
       });
 
-      const result = await generator.generate(content);
+      await generator.generate(content);
 
       const cmdContent = await fs.readFile(
         path.join(tempDir, '.factory/commands/build.md'),
@@ -318,7 +318,7 @@ describe('FactoryGenerator', () => {
         commands: [createMockCommand('my-command')],
       });
 
-      const result = await generator.generate(content);
+      await generator.generate(content);
 
       const agentsContent = await fs.readFile(path.join(tempDir, 'AGENTS.md'), 'utf-8');
       expect(agentsContent).toContain('.factory/skills/my-rule/SKILL.md');
@@ -334,7 +334,7 @@ describe('FactoryGenerator', () => {
         rules: [createMockRule('test-rule')],
       });
 
-      const result = await generator.generate(content, { addHeaders: true });
+      await generator.generate(content, { addHeaders: true });
 
       const fileContent = await fs.readFile(
         path.join(tempDir, '.factory/skills/test-rule/SKILL.md'),
@@ -438,7 +438,7 @@ describe('generate() - command variables', () => {
       commands: [command],
     });
 
-    const result = await generator.generate(content);
+    await generator.generate(content);
 
     const cmdContent = await fs.readFile(
       path.join(tempDir, '.factory/commands/deploy.md'),
@@ -459,7 +459,7 @@ describe('generate() - command variables', () => {
       ],
     });
 
-    const result = await generator.generate(content);
+    await generator.generate(content);
 
     const cmdContent = await fs.readFile(
       path.join(tempDir, '.factory/commands/run.md'),
@@ -488,7 +488,7 @@ describe('generate() - command variables', () => {
       ],
     });
 
-    const result = await generator.generate(content);
+    await generator.generate(content);
 
     const cmdContent = await fs.readFile(
       path.join(tempDir, '.factory/commands/custom.md'),
@@ -509,7 +509,7 @@ describe('generate() - command variables', () => {
       ],
     });
 
-    const result = await generator.generate(content);
+    await generator.generate(content);
 
     const cmdContent = await fs.readFile(
       path.join(tempDir, '.factory/commands/simple.md'),
@@ -533,7 +533,7 @@ describe('generate() - command variables', () => {
       ],
     });
 
-    const result = await generator.generate(content);
+    await generator.generate(content);
 
     const cmdContent = await fs.readFile(
       path.join(tempDir, '.factory/commands/build.md'),
@@ -559,7 +559,7 @@ describe('generate() - command variables', () => {
       ],
     });
 
-    const result = await generator.generate(content);
+    await generator.generate(content);
 
     const cmdContent = await fs.readFile(
       path.join(tempDir, '.factory/commands/complex.md'),
@@ -590,7 +590,7 @@ describe('generate() - command variables', () => {
       ],
     });
 
-    const result = await generator.generate(content);
+    await generator.generate(content);
 
     const cmdContent = await fs.readFile(
       path.join(tempDir, '.factory/commands/nodupe.md'),
@@ -630,7 +630,7 @@ describe('generate() - command variables', () => {
       ],
     });
 
-    const result = await generator.generate(content);
+    await generator.generate(content);
 
     const cmdContent = await fs.readFile(
       path.join(tempDir, '.factory/commands/order.md'),
