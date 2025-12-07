@@ -86,6 +86,24 @@ export interface ClaudePermission {
 }
 
 /**
+ * Claude hook configuration (for config.yaml)
+ */
+export interface ClaudeHookConfig {
+  /** Hook identifier for logging/debugging */
+  name?: string;
+  /** Tool/pattern to match (e.g., 'Bash(*rm*)', 'Write|Edit') */
+  matcher?: string;
+  /** Shell command to execute */
+  command: string;
+  /** Hook type (defaults to 'command') */
+  type?: 'command' | 'validation' | 'notification';
+  /** Action for PreToolUse hooks (warn shows message, block stops) */
+  action?: 'warn' | 'block';
+  /** User-facing message */
+  message?: string;
+}
+
+/**
  * Claude settings configuration
  */
 export interface ClaudeSettingsConfig {
@@ -93,6 +111,8 @@ export interface ClaudeSettingsConfig {
   permissions?: ClaudePermission[];
   /** Environment variables for Claude */
   env?: Record<string, string>;
+  /** Hooks configuration by event type */
+  hooks?: Record<string, ClaudeHookConfig[]>;
 }
 
 /**

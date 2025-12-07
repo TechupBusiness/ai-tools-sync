@@ -22,10 +22,32 @@ import {
 
 /**
  * Hook event types
+ * 
+ * Common events across platforms:
+ * - PreToolUse, PostToolUse - Before/after tool execution
+ * - UserPromptSubmit - Before processing user prompt (Claude's name for PreMessage)
+ * 
+ * Claude-specific events:
+ * - Notification, Stop, SubagentStop, SessionStart, SessionEnd, PreCompact
+ * 
+ * Legacy events (for backwards compatibility):
+ * - PreMessage - Maps to UserPromptSubmit
+ * - PostMessage - Maps to PostToolUse
+ * - PreCommit - Maps to PreToolUse with Bash(git commit*) matcher
  */
 export type HookEvent =
+  // Core events (common across platforms)
   | 'PreToolUse'
   | 'PostToolUse'
+  | 'UserPromptSubmit'
+  // Claude-specific events
+  | 'Notification'
+  | 'Stop'
+  | 'SubagentStop'
+  | 'SessionStart'
+  | 'SessionEnd'
+  | 'PreCompact'
+  // Legacy (for backwards compatibility - will be mapped)
   | 'PreMessage'
   | 'PostMessage'
   | 'PreCommit';
@@ -53,7 +75,23 @@ export type ParsedHook = ParsedContent<Hook>;
 /**
  * Valid event values
  */
-const VALID_EVENTS: HookEvent[] = ['PreToolUse', 'PostToolUse', 'PreMessage', 'PostMessage', 'PreCommit'];
+const VALID_EVENTS: HookEvent[] = [
+  // Core events
+  'PreToolUse',
+  'PostToolUse',
+  'UserPromptSubmit',
+  // Claude-specific
+  'Notification',
+  'Stop',
+  'SubagentStop',
+  'SessionStart',
+  'SessionEnd',
+  'PreCompact',
+  // Legacy (backwards compat)
+  'PreMessage',
+  'PostMessage',
+  'PreCommit',
+];
 
 /**
  * Default values for optional hook fields
@@ -307,17 +345,14 @@ export function filterHooksByEvent(hooks: ParsedHook[], event: HookEvent): Parse
 /**
  * Group hooks by event type
  */
-export function groupHooksByEvent(hooks: ParsedHook[]): Record<HookEvent, ParsedHook[]> {
-  const groups: Record<HookEvent, ParsedHook[]> = {
-    PreToolUse: [],
-    PostToolUse: [],
-    PreMessage: [],
-    PostMessage: [],
-    PreCommit: [],
-  };
+export function groupHooksByEvent(hooks: ParsedHook[]): Partial<Record<HookEvent, ParsedHook[]>> {
+  const groups: Partial<Record<HookEvent, ParsedHook[]>> = {};
 
   for (const hook of hooks) {
     const event = hook.frontmatter.event;
+    if (!groups[event]) {
+      groups[event] = [];
+    }
     groups[event].push(hook);
   }
 

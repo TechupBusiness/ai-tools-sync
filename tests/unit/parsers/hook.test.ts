@@ -283,21 +283,94 @@ Content`;
     it('should group hooks by event type', () => {
       const groups = groupHooksByEvent(hooks as any);
 
-      expect(groups.PreToolUse.length).toBe(2);
-      expect(groups.PostToolUse.length).toBe(1);
-      expect(groups.PreCommit.length).toBe(1);
-      expect(groups.PreMessage.length).toBe(0);
-      expect(groups.PostMessage.length).toBe(0);
+      expect(groups.PreToolUse?.length).toBe(2);
+      expect(groups.PostToolUse?.length).toBe(1);
+      expect(groups.PreCommit?.length).toBe(1);
     });
 
     it('should handle empty array', () => {
       const groups = groupHooksByEvent([]);
+      expect(Object.keys(groups).length).toBe(0);
+    });
+  });
 
-      expect(groups.PreToolUse).toEqual([]);
-      expect(groups.PostToolUse).toEqual([]);
-      expect(groups.PreMessage).toEqual([]);
-      expect(groups.PostMessage).toEqual([]);
-      expect(groups.PreCommit).toEqual([]);
+  describe('parseHook - Claude events', () => {
+    it('should accept UserPromptSubmit event', () => {
+      const content = `---
+name: prompt-check
+event: UserPromptSubmit
+execute: echo "checking prompt"
+---
+Check user prompts.`;
+
+      const result = parseHook(content);
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.frontmatter.event).toBe('UserPromptSubmit');
+      }
+    });
+
+    it('should accept all Claude-specific events', () => {
+      const events = [
+        'Notification',
+        'Stop',
+        'SubagentStop',
+        'SessionStart',
+        'SessionEnd',
+        'PreCompact',
+      ];
+
+      for (const event of events) {
+        const content = `---
+name: test-hook
+event: ${event}
+execute: echo "test"
+---
+Test hook.`;
+
+        const result = parseHook(content);
+        expect(isOk(result)).toBe(true);
+        if (isOk(result)) {
+          expect(result.value.frontmatter.event).toBe(event);
+        }
+      }
+    });
+
+    it('should accept claude extension properties', () => {
+      const content = `---
+name: blocking-hook
+event: PreToolUse
+tool_match: "Bash(*rm*)"
+execute: ./scripts/check.sh
+claude:
+  action: block
+  message: "Blocked for safety"
+---
+Safety check hook.`;
+
+      const result = parseHook(content);
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.frontmatter.claude?.action).toBe('block');
+        expect(result.value.frontmatter.claude?.message).toBe('Blocked for safety');
+      }
+    });
+
+    it('should accept claude extension type property', () => {
+      const content = `---
+name: validation-hook
+event: PreToolUse
+execute: ./scripts/validate.sh
+claude:
+  type: validation
+---
+Validation hook.`;
+
+      const result = parseHook(content);
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.frontmatter.claude?.type).toBe('validation');
+      }
     });
   });
 });

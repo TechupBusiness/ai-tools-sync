@@ -147,6 +147,130 @@ claude:
 
 These settings are written to `.claude/settings.json` alongside hooks and commands.
 
+### Hooks
+
+Claude Code supports event-based hooks that run shell commands at specific points in the workflow.
+
+#### Configuration in config.yaml
+
+```yaml
+claude:
+  settings:
+    hooks:
+      PreToolUse:
+        - name: lint-on-commit
+          matcher: "Bash(git commit*)"
+          command: "npm run lint"
+          action: warn
+          message: "Running lint before commit"
+      PostToolUse:
+        - name: format-on-edit
+          matcher: "Write|Edit"
+          command: "npm run format"
+```
+
+#### Hook File Format
+
+Hooks can also be defined as markdown files in `.ai-tool-sync/hooks/`:
+
+```yaml
+---
+name: pre-commit-lint
+event: PreToolUse
+tool_match: "Bash(git commit*)"
+execute: pnpm lint
+targets:
+  - claude
+claude:
+  action: warn
+  message: "Running lint check"
+---
+
+# Pre-Commit Lint Hook
+
+Automatically run linting checks before any git commit.
+```
+
+#### Supported Events
+
+| Event | Description | Can Block |
+|-------|-------------|-----------|
+| `UserPromptSubmit` | Before user prompt processed | Yes |
+| `PreToolUse` | Before tool execution | Yes |
+| `PostToolUse` | After tool execution | No |
+| `Notification` | When Claude notifies | No |
+| `Stop` | Agent stops | No |
+| `SubagentStop` | Subagent completes | No |
+| `SessionStart` | Session begins | No |
+| `SessionEnd` | Session ends | No |
+| `PreCompact` | Before context compaction | No |
+
+**Blocking Events:**
+- `UserPromptSubmit` and `PreToolUse` can block execution if the hook returns non-zero
+- Use `action: block` or `action: warn` to control behavior
+- Other events are informational only
+
+#### Matcher Patterns
+
+| Pattern | Description |
+|---------|-------------|
+| Omitted or `*` | Match all tools |
+| `ToolName` | Match specific tool (e.g., `Bash`, `Read`) |
+| `ToolName(pattern)` | Match with argument (e.g., `Bash(*rm*)`) |
+| `Tool1|Tool2` | Match multiple tools |
+
+**Example Matchers:**
+- `Bash(git commit*)` - Git commits
+- `Bash(*rm*)` - Destructive rm commands
+- `Write|Edit` - Any file modifications
+- `Read` - File reads
+
+#### Hook Configuration Fields
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `command` | Yes | Shell command to execute |
+| `name` | No | Identifier for logging/debugging |
+| `matcher` | No | Tool pattern to match (default: match all) |
+| `type` | No | Hook type: `command`, `validation`, `notification` (default: `command`) |
+| `action` | No | `warn` or `block` (PreToolUse only) |
+| `message` | No | User-facing message |
+
+#### Legacy Event Mapping
+
+For backwards compatibility, legacy event names are automatically mapped:
+
+| Legacy Event | Maps To | Notes |
+|--------------|---------|-------|
+| `PreMessage` | `UserPromptSubmit` | Renamed to match Claude's naming |
+| `PostMessage` | `PostToolUse` | Best approximation |
+| `PreCommit` | `PreToolUse` | With default `Bash(git commit*)` matcher |
+
+**Generated settings.json Format:**
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": "npm run lint",
+        "matcher": "Bash(git commit*)",
+        "action": "warn",
+        "message": "Running lint check"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "type": "command",
+        "command": "npm run format",
+        "matcher": "Write|Edit"
+      }
+    ]
+  }
+}
+```
+
 ---
 
 ## MCP Configuration
@@ -205,7 +329,7 @@ factory:
 | Platform | Extension Fields | Applied To |
 |----------|-----------------|------------|
 | **Cursor** | `alwaysApply`, `globs`, `allowedTools`, `description` | Rules, Commands |
-| **Claude** | `import_as_skill`, `tools`, `model` | Rules, Personas |
+| **Claude** | `import_as_skill`, `tools`, `model`, `action`, `message`, `type` | Rules, Personas, Hooks |
 | **Factory** | `allowed-tools`, `tools`, `model`, `reasoningEffort` | Rules, Personas, Droids |
 
 ---
@@ -233,7 +357,7 @@ factory:
 | T200 | Factory command variables | ❌ Pending |
 | T201 | Tests for platform feature parity | ✅ Done |
 | T202 | Claude Code settings.json generation | ✅ Done |
-| T203 | Claude Code hooks support | ❌ Pending |
+| T203 | Claude Code hooks support | ✅ Done |
 | T204 | Claude Code commands support | ❌ Pending |
 | T205 | Claude Code agent tool restrictions | ❌ Pending |
 | T206 | Factory droids support | ❌ Pending |

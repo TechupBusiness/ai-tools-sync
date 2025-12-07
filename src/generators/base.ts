@@ -274,11 +274,21 @@ export function sortCommandsByName(commands: ParsedCommand[]): ParsedCommand[] {
  */
 export function sortHooksByEvent(hooks: ParsedHook[]): ParsedHook[] {
   const eventOrder: Record<string, number> = {
-    PreToolUse: 0,
-    PostToolUse: 1,
-    PreMessage: 2,
-    PostMessage: 3,
-    PreCommit: 4,
+    // Blocking events first
+    UserPromptSubmit: 0,
+    PreToolUse: 1,
+    // Non-blocking events
+    PostToolUse: 2,
+    Notification: 3,
+    Stop: 4,
+    SubagentStop: 5,
+    SessionStart: 6,
+    SessionEnd: 7,
+    PreCompact: 8,
+    // Legacy events (will be mapped)
+    PreMessage: 0,   // Maps to UserPromptSubmit
+    PostMessage: 2,  // Maps to PostToolUse
+    PreCommit: 1,    // Maps to PreToolUse
   };
 
   return [...hooks].sort((a, b) => {

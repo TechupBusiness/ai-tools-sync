@@ -134,11 +134,24 @@ unsupported_behavior: "skip"
 # =============================================================================
 # Supported hook events in Claude Code
 hook_events:
-  - PreToolUse
-  - PostToolUse
-  - PreMessage
-  - PostMessage
-  - PreCommit
+  # Core events (can block)
+  - UserPromptSubmit   # Before user prompt processed
+  - PreToolUse         # Before tool execution
+  # Core events (cannot block)
+  - PostToolUse        # After tool execution
+  # Claude-specific events
+  - Notification       # Claude wants to notify
+  - Stop               # Agent stops
+  - SubagentStop       # Subagent completes
+  - SessionStart       # New session begins
+  - SessionEnd         # Session ends
+  - PreCompact         # Before context compaction
+
+# Legacy event mapping (for backwards compatibility)
+hook_event_legacy:
+  PreMessage: UserPromptSubmit
+  PostMessage: PostToolUse
+  PreCommit: PreToolUse  # With Bash(git commit*) matcher
 
 # =============================================================================
 # Import Syntax

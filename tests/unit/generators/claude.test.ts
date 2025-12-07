@@ -73,14 +73,26 @@ function createMockCommand(name: string, overrides: Partial<ParsedCommand['front
 }
 
 // Helper to create mock hook
-function createMockHook(name: string, event: HookEvent = 'PreToolUse', overrides: Partial<ParsedHook['frontmatter']> = {}): ParsedHook {
+function createMockHook(
+  name: string, 
+  event: HookEvent = 'PreToolUse', 
+  overrides: Partial<ParsedHook['frontmatter']> & { claude?: any } = {}
+): ParsedHook {
+  const { claude, ...frontmatterOverrides } = overrides;
+  
+  const frontmatter: ParsedHook['frontmatter'] = {
+    name,
+    event,
+    targets: ['claude'],
+    ...frontmatterOverrides,
+  };
+  
+  if (claude) {
+    frontmatter.claude = claude;
+  }
+  
   return {
-    frontmatter: {
-      name,
-      event,
-      targets: ['claude'],
-      ...overrides,
-    },
+    frontmatter,
     content: `# ${name}\n\nThis is the ${name} hook.`,
   };
 }
@@ -246,17 +258,19 @@ describe('ClaudeGenerator', () => {
     });
   });
 
-  describe('generate() - hooks', () => {
-    it('should generate settings.json with hooks', async () => {
+  describe('generate() - hooks (Claude format)', () => {
+    it('should generate settings.json with correct Claude hook format', async () => {
       const content = createMockContent({
         projectRoot: tempDir,
         hooks: [
-          createMockHook('lint-check', 'PreToolUse', { tool_match: 'Bash(git commit*)', execute: 'npm run lint' }),
+          createMockHook('lint-check', 'PreToolUse', {
+            tool_match: 'Bash(git commit*)',
+            execute: 'npm run lint',
+          }),
         ],
       });
 
       const result = await generator.generate(content);
-
       expect(result.files).toContain('.claude/settings.json');
 
       const settingsContent = await fs.readFile(
@@ -264,12 +278,19 @@ describe('ClaudeGenerator', () => {
         'utf-8'
       );
       const settings = JSON.parse(settingsContent);
-      
+
       expect(settings.hooks).toBeDefined();
       expect(settings.hooks.PreToolUse).toBeDefined();
       expect(settings.hooks.PreToolUse).toHaveLength(1);
-      expect(settings.hooks.PreToolUse[0].matcher).toBe('Bash(git commit*)');
-      expect(settings.hooks.PreToolUse[0].hooks).toContain('npm run lint');
+
+      // Verify correct format (not old format)
+      const hook = settings.hooks.PreToolUse[0];
+      expect(hook.type).toBe('command');
+      expect(hook.command).toBe('npm run lint');
+      expect(hook.matcher).toBe('Bash(git commit*)');
+
+      // Verify old format NOT used
+      expect(hook.hooks).toBeUndefined();
     });
 
     it('should group hooks by event type', async () => {
@@ -282,16 +303,169 @@ describe('ClaudeGenerator', () => {
         ],
       });
 
-      const result = await generator.generate(content);
+      await generator.generate(content);
 
       const settingsContent = await fs.readFile(
         path.join(tempDir, '.claude/settings.json'),
         'utf-8'
       );
       const settings = JSON.parse(settingsContent);
-      
+
       expect(settings.hooks.PreToolUse).toHaveLength(2);
       expect(settings.hooks.PostToolUse).toHaveLength(1);
+    });
+
+    it('should map PreMessage to UserPromptSubmit', async () => {
+      const content = createMockContent({
+        projectRoot: tempDir,
+        hooks: [createMockHook('prompt-check', 'PreMessage', { execute: 'echo check' })],
+      });
+
+      await generator.generate(content);
+      const settingsContent = await fs.readFile(
+        path.join(tempDir, '.claude/settings.json'),
+        'utf-8'
+      );
+      const settings = JSON.parse(settingsContent);
+
+      expect(settings.hooks.PreMessage).toBeUndefined();
+      expect(settings.hooks.UserPromptSubmit).toBeDefined();
+      expect(settings.hooks.UserPromptSubmit[0].command).toBe('echo check');
+    });
+
+    it('should map PreCommit to PreToolUse with default matcher', async () => {
+      const content = createMockContent({
+        projectRoot: tempDir,
+        hooks: [createMockHook('pre-commit', 'PreCommit', { execute: 'npm run lint' })],
+      });
+
+      await generator.generate(content);
+      const settingsContent = await fs.readFile(
+        path.join(tempDir, '.claude/settings.json'),
+        'utf-8'
+      );
+      const settings = JSON.parse(settingsContent);
+
+      expect(settings.hooks.PreCommit).toBeUndefined();
+      expect(settings.hooks.PreToolUse).toBeDefined();
+      expect(settings.hooks.PreToolUse[0].matcher).toBe('Bash(git commit*)');
+    });
+
+    it('should support claude extension for action and message', async () => {
+      const content = createMockContent({
+        projectRoot: tempDir,
+        hooks: [
+          createMockHook('safety-check', 'PreToolUse', {
+            tool_match: 'Bash(*rm*)',
+            execute: './scripts/safety.sh',
+            claude: {
+              action: 'block',
+              message: 'Destructive command blocked',
+            },
+          }),
+        ],
+      });
+
+      await generator.generate(content);
+      const settingsContent = await fs.readFile(
+        path.join(tempDir, '.claude/settings.json'),
+        'utf-8'
+      );
+      const settings = JSON.parse(settingsContent);
+
+      const hook = settings.hooks.PreToolUse[0];
+      expect(hook.action).toBe('block');
+      expect(hook.message).toBe('Destructive command blocked');
+    });
+
+    it('should combine hooks from files and config.yaml', async () => {
+      const content = createMockContent({
+        projectRoot: tempDir,
+        hooks: [createMockHook('file-hook', 'PreToolUse', { execute: 'cmd1' })],
+        claudeSettings: {
+          hooks: {
+            PreToolUse: [{ command: 'cmd2', matcher: 'Edit' }],
+          },
+        },
+      });
+
+      await generator.generate(content);
+      const settingsContent = await fs.readFile(
+        path.join(tempDir, '.claude/settings.json'),
+        'utf-8'
+      );
+      const settings = JSON.parse(settingsContent);
+
+      expect(settings.hooks.PreToolUse).toHaveLength(2);
+    });
+
+    it('should support all Claude hook events', async () => {
+      const events = [
+        'UserPromptSubmit',
+        'PreToolUse',
+        'PostToolUse',
+        'Notification',
+        'Stop',
+        'SubagentStop',
+        'SessionStart',
+        'SessionEnd',
+        'PreCompact',
+      ];
+
+      const content = createMockContent({
+        projectRoot: tempDir,
+        claudeSettings: {
+          hooks: Object.fromEntries(events.map((event) => [event, [{ command: `cmd-${event}` }]])),
+        },
+      });
+
+      await generator.generate(content);
+      const settingsContent = await fs.readFile(
+        path.join(tempDir, '.claude/settings.json'),
+        'utf-8'
+      );
+      const settings = JSON.parse(settingsContent);
+
+      for (const event of events) {
+        expect(settings.hooks[event]).toBeDefined();
+        expect(settings.hooks[event][0].command).toBe(`cmd-${event}`);
+      }
+    });
+
+    it('should not include matcher when it is "*" (match all)', async () => {
+      const content = createMockContent({
+        projectRoot: tempDir,
+        claudeSettings: {
+          hooks: {
+            PostToolUse: [{ command: 'npm run format', matcher: '*' }],
+          },
+        },
+      });
+
+      await generator.generate(content);
+      const settingsContent = await fs.readFile(
+        path.join(tempDir, '.claude/settings.json'),
+        'utf-8'
+      );
+      const settings = JSON.parse(settingsContent);
+
+      expect(settings.hooks.PostToolUse[0].matcher).toBeUndefined();
+    });
+
+    it('should not include matcher when tool_match is undefined', async () => {
+      const content = createMockContent({
+        projectRoot: tempDir,
+        hooks: [createMockHook('hook', 'PostToolUse', { execute: 'cmd' })],
+      });
+
+      await generator.generate(content);
+      const settingsContent = await fs.readFile(
+        path.join(tempDir, '.claude/settings.json'),
+        'utf-8'
+      );
+      const settings = JSON.parse(settingsContent);
+
+      expect(settings.hooks.PostToolUse[0].matcher).toBeUndefined();
     });
   });
 

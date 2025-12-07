@@ -13,7 +13,6 @@
 
 import * as path from 'node:path';
 
-import type { ClaudePermission, ClaudeSettingsConfig } from '../config/types.js';
 import {
   isCommandServer,
   type McpConfig,
@@ -46,6 +45,7 @@ import {
   toSafeFilename,
 } from './base.js';
 
+import type { ClaudeHookConfig, ClaudePermission, ClaudeSettingsConfig } from '../config/types.js';
 import type { ParsedCommand } from '../parsers/command.js';
 import type { ParsedHook } from '../parsers/hook.js';
 import type { ParsedPersona } from '../parsers/persona.js';
@@ -62,6 +62,31 @@ const CLAUDE_DIRS = {
 } as const;
 
 /**
+ * Claude hook output structure
+ */
+interface ClaudeHookOutput {
+  type?: 'command' | 'validation' | 'notification';
+  command?: string;
+  matcher?: string;
+  action?: 'warn' | 'block';
+  message?: string;
+}
+
+/**
+ * Supported Claude hook events
+ */
+type ClaudeHookEvent =
+  | 'UserPromptSubmit'
+  | 'PreToolUse'
+  | 'PostToolUse'
+  | 'Notification'
+  | 'Stop'
+  | 'SubagentStop'
+  | 'SessionStart'
+  | 'SessionEnd'
+  | 'PreCompact';
+
+/**
  * Claude settings.json structure
  */
 interface ClaudeSettings {
@@ -71,25 +96,38 @@ interface ClaudeSettings {
     ask?: string[];
   };
   env?: Record<string, string>;
-  hooks?: {
-    PreToolUse?: ClaudeHookConfig[];
-    PostToolUse?: ClaudeHookConfig[];
-    PreMessage?: ClaudeHookConfig[];
-    PostMessage?: ClaudeHookConfig[];
-    PreCommit?: ClaudeHookConfig[];
-  };
+  hooks?: Partial<Record<ClaudeHookEvent, ClaudeHookOutput[]>>;
   commands?: Record<string, ClaudeCommandConfig>;
   __generated_by?: string;
-}
-
-interface ClaudeHookConfig {
-  matcher: string;
-  hooks: string[];
 }
 
 interface ClaudeCommandConfig {
   description?: string;
   command?: string;
+}
+
+/**
+ * Map internal event names to Claude Code event names
+ */
+function mapEventToClaude(event: string): ClaudeHookEvent | null {
+  const eventMap: Record<string, ClaudeHookEvent> = {
+    // Direct mappings
+    'PreToolUse': 'PreToolUse',
+    'PostToolUse': 'PostToolUse',
+    'UserPromptSubmit': 'UserPromptSubmit',
+    'Notification': 'Notification',
+    'Stop': 'Stop',
+    'SubagentStop': 'SubagentStop',
+    'SessionStart': 'SessionStart',
+    'SessionEnd': 'SessionEnd',
+    'PreCompact': 'PreCompact',
+    // Legacy event mappings
+    'PreMessage': 'UserPromptSubmit',
+    'PostMessage': 'PostToolUse',
+    'PreCommit': 'PreToolUse',
+  };
+  
+  return eventMap[event] ?? null;
 }
 
 /**
@@ -136,7 +174,8 @@ export class ClaudeGenerator implements Generator {
       claudeContent.hooks.length > 0 ||
       claudeContent.commands.length > 0 ||
       (claudeContent.claudeSettings?.permissions?.length ?? 0) > 0 ||
-      (claudeContent.claudeSettings?.env && Object.keys(claudeContent.claudeSettings.env).length > 0);
+      (claudeContent.claudeSettings?.env && Object.keys(claudeContent.claudeSettings.env).length > 0) ||
+      (claudeContent.claudeSettings?.hooks && Object.keys(claudeContent.claudeSettings.hooks).length > 0);
 
     if (hasSettings) {
       const settingsFile = this.generateSettings(
@@ -412,6 +451,110 @@ export class ClaudeGenerator implements Generator {
   }
 
   /**
+   * Build Claude hooks from parsed hook files and config.yaml hooks
+   */
+  private buildClaudeHooks(
+    parsedHooks: ParsedHook[],
+    configHooks: Record<string, ClaudeHookConfig[]> | undefined
+  ): Partial<Record<ClaudeHookEvent, ClaudeHookOutput[]>> | undefined {
+    const result: Partial<Record<ClaudeHookEvent, ClaudeHookOutput[]>> = {};
+
+    // Process parsed hook files
+    for (const hook of sortHooksByEvent(parsedHooks)) {
+      const claudeEvent = mapEventToClaude(hook.frontmatter.event);
+      if (!claudeEvent) {
+        // Skip unsupported events
+        continue;
+      }
+
+      if (!result[claudeEvent]) {
+        result[claudeEvent] = [];
+      }
+
+      const hookOutput = this.buildHookOutput(hook);
+      result[claudeEvent].push(hookOutput);
+    }
+
+    // Process config.yaml hooks (claude.settings.hooks)
+    if (configHooks) {
+      for (const [eventName, hooks] of Object.entries(configHooks)) {
+        const claudeEvent = mapEventToClaude(eventName);
+        if (!claudeEvent) {
+          continue;
+        }
+
+        if (!result[claudeEvent]) {
+          result[claudeEvent] = [];
+        }
+
+        for (const hook of hooks) {
+          const hookOutput: ClaudeHookOutput = {
+            type: hook.type ?? 'command',
+            command: hook.command,
+          };
+
+          if (hook.matcher && hook.matcher !== '*') {
+            hookOutput.matcher = hook.matcher;
+          }
+          if (hook.action) {
+            hookOutput.action = hook.action;
+          }
+          if (hook.message) {
+            hookOutput.message = hook.message;
+          }
+
+          result[claudeEvent].push(hookOutput);
+        }
+      }
+    }
+
+    // Return undefined if no hooks
+    if (Object.keys(result).length === 0) {
+      return undefined;
+    }
+
+    return result;
+  }
+
+  /**
+   * Build hook output from parsed hook
+   */
+  private buildHookOutput(hook: ParsedHook): ClaudeHookOutput {
+    const claudeExt = hook.frontmatter.claude;
+    
+    const output: ClaudeHookOutput = {
+      type: claudeExt?.type ?? 'command',
+    };
+
+    // Set command
+    if (hook.frontmatter.execute) {
+      output.command = hook.frontmatter.execute;
+    }
+
+    // Set matcher (from tool_match, default to undefined = match all)
+    if (hook.frontmatter.tool_match && hook.frontmatter.tool_match !== '*') {
+      output.matcher = hook.frontmatter.tool_match;
+    }
+
+    // Handle legacy PreCommit event - add default matcher if not specified
+    if (hook.frontmatter.event === 'PreCommit' && !output.matcher) {
+      output.matcher = 'Bash(git commit*)';
+    }
+
+    // Set action (only for PreToolUse)
+    if (claudeExt?.action) {
+      output.action = claudeExt.action;
+    }
+
+    // Set message
+    if (claudeExt?.message) {
+      output.message = claudeExt.message;
+    }
+
+    return output;
+  }
+
+  /**
    * Generate settings.json with hooks, commands, permissions, and env
    */
   private generateSettings(
@@ -437,29 +580,10 @@ export class ClaudeGenerator implements Generator {
       settings.env = claudeSettings.env;
     }
 
-    // Process hooks
-    if (hooks.length > 0) {
-      const sortedHooks = sortHooksByEvent(hooks);
-      settings.hooks = {};
-
-      for (const hook of sortedHooks) {
-        const event = hook.frontmatter.event;
-        if (!settings.hooks[event]) {
-          settings.hooks[event] = [];
-        }
-
-        const hookConfig: ClaudeHookConfig = {
-          matcher: hook.frontmatter.tool_match ?? '*',
-          hooks: [],
-        };
-
-        // Add execute command if present
-        if (hook.frontmatter.execute) {
-          hookConfig.hooks.push(hook.frontmatter.execute);
-        }
-
-        settings.hooks[event].push(hookConfig);
-      }
+    // Process hooks - combine from hook files AND config.yaml claude.settings.hooks
+    const combinedHooks = this.buildClaudeHooks(hooks, claudeSettings?.hooks);
+    if (combinedHooks && Object.keys(combinedHooks).length > 0) {
+      settings.hooks = combinedHooks;
     }
 
     // Process commands

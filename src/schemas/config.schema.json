@@ -262,6 +262,16 @@
           "additionalProperties": {
             "type": "string"
           }
+        },
+        "hooks": {
+          "type": "object",
+          "description": "Claude Code hooks configuration by event",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/claudeHook"
+            }
+          }
         }
       },
       "additionalProperties": false
@@ -282,6 +292,41 @@
         "message": {
           "type": "string",
           "description": "Optional message explaining the permission"
+        }
+      },
+      "additionalProperties": false
+    },
+    "claudeHook": {
+      "type": "object",
+      "required": ["command"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Hook identifier for logging/debugging"
+        },
+        "matcher": {
+          "type": "string",
+          "description": "Tool/pattern to match (e.g., 'Bash(*rm*)', 'Write|Edit')",
+          "default": "*"
+        },
+        "command": {
+          "type": "string",
+          "description": "Shell command to execute"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["command", "validation", "notification"],
+          "description": "Hook type",
+          "default": "command"
+        },
+        "action": {
+          "type": "string",
+          "enum": ["warn", "block"],
+          "description": "Action for PreToolUse hooks (warn shows message, block stops)"
+        },
+        "message": {
+          "type": "string",
+          "description": "User-facing message"
         }
       },
       "additionalProperties": false
