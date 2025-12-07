@@ -3,6 +3,7 @@
  * @description Tests for loading content from Git repositories
  */
 
+import { execSync, exec } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -21,9 +22,9 @@ import {
   DEFAULT_GIT_CACHE_TTL_MS,
   DEFAULT_CLONE_DEPTH,
   DEFAULT_GIT_TIMEOUT_MS,
-  type ParsedGitSource,
   type GitLoaderOptions,
 } from '../../../src/loaders/git.js';
+import { generatePluginId, DEFAULT_PLUGIN_CACHE_DIR } from '../../../src/utils/plugin-cache.js';
 
 // Mock child_process
 vi.mock('node:child_process', async () => {
@@ -38,8 +39,6 @@ vi.mock('node:child_process', async () => {
     }),
   };
 });
-
-import { execSync, exec } from 'node:child_process';
 
 // Sample content for creating mock repos
 const SAMPLE_RULE = `---
@@ -72,6 +71,9 @@ model: default
 
 An expert persona from a git repository.
 `;
+
+const getRepoPath = (baseDir: string, source: string) =>
+  path.join(baseDir, DEFAULT_PLUGIN_CACHE_DIR, generatePluginId(source));
 
 describe('GitLoader', () => {
   let loader: GitLoader;
@@ -382,7 +384,7 @@ describe('GitLoader', () => {
 
     beforeEach(() => {
       // Create a mock repo structure
-      mockRepoPath = path.join(tempDir, 'git', 'github.com_user_repo');
+      mockRepoPath = getRepoPath(tempDir, 'github:user/repo');
       const rulesDir = path.join(mockRepoPath, 'rules');
       const personasDir = path.join(mockRepoPath, 'personas');
 
@@ -437,7 +439,7 @@ describe('GitLoader', () => {
     it('should clear all git cache', () => {
       clearGitCache(tempDir);
 
-      expect(fs.existsSync(path.join(tempDir, 'git'))).toBe(false);
+      expect(fs.existsSync(path.join(tempDir, DEFAULT_PLUGIN_CACHE_DIR))).toBe(false);
     });
   });
 });
@@ -529,7 +531,8 @@ describe('integration with LocalLoader', () => {
 
   it('should load content with subpath', async () => {
     // Create mock cached repo with subpath structure
-    const repoPath = path.join(tempDir, 'git', 'github.com_user_repo');
+    const source = 'github:user/repo/packages/rules';
+    const repoPath = getRepoPath(tempDir, source);
     const subpathDir = path.join(repoPath, 'packages', 'rules');
     const rulesDir = path.join(subpathDir, 'rules');
 
@@ -541,13 +544,13 @@ describe('integration with LocalLoader', () => {
     fs.writeFileSync(
       path.join(repoPath, '.ai-tool-sync-metadata.json'),
       JSON.stringify({
-        source: 'github:user/repo/packages/rules',
+        source,
         cloneUrl: 'https://github.com/user/repo.git',
         lastFetched: Date.now(),
       })
     );
 
-    const result = await loader.load('github:user/repo/packages/rules', {
+    const result = await loader.load(source, {
       cacheDir: tempDir,
       useCache: true,
     });
@@ -558,7 +561,8 @@ describe('integration with LocalLoader', () => {
 
   it('should return error for non-existent subpath', async () => {
     // Create mock cached repo without the subpath
-    const repoPath = path.join(tempDir, 'git', 'github.com_user_repo');
+    const source = 'github:user/repo/nonexistent/path';
+    const repoPath = getRepoPath(tempDir, source);
 
     fs.mkdirSync(path.join(repoPath, '.git'), { recursive: true });
     fs.mkdirSync(path.join(repoPath, 'rules'), { recursive: true });
@@ -567,13 +571,13 @@ describe('integration with LocalLoader', () => {
     fs.writeFileSync(
       path.join(repoPath, '.ai-tool-sync-metadata.json'),
       JSON.stringify({
-        source: 'github:user/repo',
+        source,
         cloneUrl: 'https://github.com/user/repo.git',
         lastFetched: Date.now(),
       })
     );
 
-    const result = await loader.load('github:user/repo/nonexistent/path', {
+    const result = await loader.load(source, {
       cacheDir: tempDir,
       useCache: true,
     });

@@ -159,7 +159,7 @@ describe('ClaudeGenerator', () => {
         rules: [createMockRule('core', { always_apply: true })],
       });
 
-      const result = await generator.generate(content);
+      await generator.generate(content);
 
       const fileContent = await fs.readFile(
         path.join(tempDir, '.claude/skills/core/SKILL.md'),

@@ -5,7 +5,7 @@
 
 import * as path from 'node:path';
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   loadTargetMapping,
@@ -20,12 +20,6 @@ import {
   getImportFormat,
   type TargetMapping,
 } from '../../../src/config/target-mapping.js';
-
-// Path to the actual targets directory
-const TARGETS_DIR = path.resolve(__dirname, '../../../targets');
-
-// Path to fixtures
-const FIXTURES_DIR = path.resolve(__dirname, '../../fixtures');
 
 describe('loadTargetMapping', () => {
   describe('loading default targets', () => {
@@ -369,11 +363,15 @@ describe('hook events', () => {
     if (!result.ok) return;
     
     expect(result.value.hook_events).toBeDefined();
+    expect(result.value.hook_events).toContain('UserPromptSubmit');
     expect(result.value.hook_events).toContain('PreToolUse');
     expect(result.value.hook_events).toContain('PostToolUse');
-    expect(result.value.hook_events).toContain('PreMessage');
-    expect(result.value.hook_events).toContain('PostMessage');
-    expect(result.value.hook_events).toContain('PreCommit');
+    expect(result.value.hook_events).toContain('Notification');
+    expect(result.value.hook_events).toContain('Stop');
+    expect(result.value.hook_events).toContain('SubagentStop');
+    expect(result.value.hook_events).toContain('SessionStart');
+    expect(result.value.hook_events).toContain('SessionEnd');
+    expect(result.value.hook_events).toContain('PreCompact');
   });
 });
 

@@ -41,8 +41,8 @@ exports[`Output Snapshots > Claude SKILL.md snapshots > should match claude sett
   "hooks": {
     "PreToolUse": [
       {
-        "hooks": [],
         "matcher": "Bash(git commit*)",
+        "type": "command",
       },
     ],
   },

@@ -8,9 +8,7 @@ import { describe, it, expect } from 'vitest';
 import {
   DEFAULT_OUTPUT,
   DEFAULT_TARGETS,
-  DEFAULT_CONFIG_VERSION,
   DEFAULT_LOADERS,
-  DEFAULT_CONFIG,
   applyDefaults,
   isValidVersion,
   compareVersions,

@@ -820,7 +820,7 @@ export function parseGitSource(source: string, useSsh?: boolean): ParsedGitSourc
  * Clear the git cache for a specific repo or all repos
  */
 export function clearGitCache(cacheDir: string, source?: string): void {
-  const gitCacheDir = path.join(cacheDir, 'git');
+  const gitCacheDir = path.join(cacheDir, DEFAULT_PLUGIN_CACHE_DIR);
 
   if (!fs.existsSync(gitCacheDir)) {
     return;
@@ -831,14 +831,9 @@ export function clearGitCache(cacheDir: string, source?: string): void {
     const loader = new GitLoader();
     const parsed = loader.parseSource(source);
     if (parsed) {
-      const repoId = `${parsed.host}_${parsed.owner}_${parsed.repo}`;
-      const entries = fs.readdirSync(gitCacheDir);
-      for (const entry of entries) {
-        if (entry.startsWith(repoId)) {
-          const entryPath = path.join(gitCacheDir, entry);
-          fs.rmSync(entryPath, { recursive: true, force: true });
-        }
-      }
+      const pluginId = generatePluginId(parsed.original, parsed.ref);
+      const entryPath = path.join(gitCacheDir, pluginId);
+      fs.rmSync(entryPath, { recursive: true, force: true });
     }
   } else {
     // Clear all
@@ -850,7 +845,7 @@ export function clearGitCache(cacheDir: string, source?: string): void {
  * List cached repositories
  */
 export function listCachedRepos(cacheDir: string): GitCacheMetadata[] {
-  const gitCacheDir = path.join(cacheDir, 'git');
+  const gitCacheDir = path.join(cacheDir, DEFAULT_PLUGIN_CACHE_DIR);
 
   if (!fs.existsSync(gitCacheDir)) {
     return [];

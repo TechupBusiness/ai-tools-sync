@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-import { loadConfig, DEFAULT_CONFIG_DIR } from '../../src/config/loader.js';
+import { DEFAULT_CONFIG_DIR } from '../../src/config/loader.js';
 import {
   createResolvedContent,
   filterContentByTarget,
@@ -355,7 +355,7 @@ version: 2.0.0
       const content = createResolvedContent(loadResult, testDir);
 
       const generator = createClaudeGenerator();
-      const result = await generator.generate(content, {
+      const _result = await generator.generate(content, {
         outputDir: testDir,
       });
 
@@ -399,7 +399,7 @@ targets: [cursor]
       const content = createResolvedContent(loadResult, testDir);
 
       const generator = createCursorGenerator();
-      const result = await generator.generate(content, {
+      const _result = await generator.generate(content, {
         outputDir: testDir,
       });
 
