@@ -494,6 +494,81 @@ describe('ClaudeGenerator', () => {
 
       expect(settings.hooks.PostToolUse[0].matcher).toBeUndefined();
     });
+
+    it('should preserve hook type from claude extension', async () => {
+      const content = createMockContent({
+        projectRoot: tempDir,
+        hooks: [
+          createMockHook('validate-hook', 'PreToolUse', {
+            execute: './validate.sh',
+            claude: {
+              type: 'validation',
+              action: 'block',
+            },
+          }),
+        ],
+      });
+
+      await generator.generate(content);
+      const settingsContent = await fs.readFile(
+        path.join(tempDir, '.claude/settings.json'),
+        'utf-8'
+      );
+      const settings = JSON.parse(settingsContent);
+
+      const hook = settings.hooks.PreToolUse[0];
+      expect(hook.type).toBe('validation');
+    });
+
+    it('should handle hook with only command (minimal config)', async () => {
+      const content = createMockContent({
+        projectRoot: tempDir,
+        claudeSettings: {
+          hooks: {
+            PostToolUse: [{ command: 'echo done' }],
+          },
+        },
+      });
+
+      await generator.generate(content);
+      const settingsContent = await fs.readFile(
+        path.join(tempDir, '.claude/settings.json'),
+        'utf-8'
+      );
+      const settings = JSON.parse(settingsContent);
+
+      const hook = settings.hooks.PostToolUse[0];
+      expect(hook.type).toBe('command');
+      expect(hook.command).toBe('echo done');
+      expect(hook.matcher).toBeUndefined();
+      expect(hook.action).toBeUndefined();
+      expect(hook.message).toBeUndefined();
+    });
+
+    it('should sort hooks deterministically within each event', async () => {
+      // Create hooks in reverse alphabetical order
+      const content = createMockContent({
+        projectRoot: tempDir,
+        hooks: [
+          createMockHook('z-hook', 'PreToolUse', { execute: 'cmd-z' }),
+          createMockHook('a-hook', 'PreToolUse', { execute: 'cmd-a' }),
+          createMockHook('m-hook', 'PreToolUse', { execute: 'cmd-m' }),
+        ],
+      });
+
+      await generator.generate(content);
+      const settingsContent = await fs.readFile(
+        path.join(tempDir, '.claude/settings.json'),
+        'utf-8'
+      );
+      const settings = JSON.parse(settingsContent);
+
+      // Should be sorted alphabetically by name
+      expect(settings.hooks.PreToolUse).toHaveLength(3);
+      expect(settings.hooks.PreToolUse[0].command).toBe('cmd-a');
+      expect(settings.hooks.PreToolUse[1].command).toBe('cmd-m');
+      expect(settings.hooks.PreToolUse[2].command).toBe('cmd-z');
+    });
   });
 
   describe('generate() - commands', () => {
