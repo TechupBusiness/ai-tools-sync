@@ -123,6 +123,21 @@ export type {
   PluginCacheMetadata,
   PluginCacheOptions,
 } from './utils/plugin-cache.js';
+export {
+  fetchRemoteTags,
+  hasNewerVersion,
+  checkForUpdates,
+  checkAllPluginsForUpdates,
+  updatePlugin,
+} from './utils/plugin-update.js';
+export type {
+  PluginUpdateCheck,
+  PluginUpdateResult,
+  PluginVersionInfo,
+  UpdateCheckOptions,
+  UpdateOptions,
+} from './utils/plugin-update.js';
+export { compareVersions } from './utils/version.js';
 
 // Version
 export const VERSION = '0.1.0';

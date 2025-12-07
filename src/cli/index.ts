@@ -16,6 +16,7 @@ import { logger } from '../utils/logger.js';
 import { init } from './commands/init.js';
 import { merge } from './commands/merge.js';
 import { migrate } from './commands/migrate.js';
+import { createPluginsCommand } from './commands/plugins.js';
 import { sync } from './commands/sync.js';
 import { validate } from './commands/validate.js';
 import { watch } from './commands/watch.js';
@@ -205,6 +206,8 @@ program
     }
   });
 
+program.addCommand(createPluginsCommand());
+
 program
   .command('merge')
   .description('Merge input files into configuration')
@@ -269,6 +272,7 @@ export type { InitOptions, InitResult } from './commands/init.js';
 export type { ValidateOptions, ValidateResult } from './commands/validate.js';
 export type { MigrateOptions, MigrateResult, DiscoveryResult, DiscoveredFile } from './commands/migrate.js';
 export type { MergeOptions, MergeResult, InputFile, DiffStatus } from './commands/merge.js';
+export { createPluginsCommand } from './commands/plugins.js';
 
 // Run if executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {
