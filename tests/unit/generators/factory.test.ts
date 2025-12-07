@@ -211,6 +211,148 @@ describe('FactoryGenerator', () => {
       expect(fileContent).toContain('execute');
       expect(fileContent).toContain('list'); // 'ls' maps to 'list' in Factory
     });
+
+    describe('factory-specific overrides', () => {
+      it('should prefer factory.tools over generic tools', async () => {
+        const content = createMockContent({
+          projectRoot: tempDir,
+          personas: [
+            createMockPersona('dev', {
+              tools: ['read', 'write'],
+              factory: {
+                tools: ['execute', 'search'],
+              },
+            }),
+          ],
+        });
+
+        await generator.generate(content);
+
+        const fileContent = await fs.readFile(
+          path.join(tempDir, '.factory/droids/dev.md'),
+          'utf-8'
+        );
+
+        expect(fileContent).toContain('execute');
+        expect(fileContent).toContain('search');
+        expect(fileContent).not.toContain('- **Tools:** read');
+      });
+
+      it('should prefer factory.model over generic model', async () => {
+        const content = createMockContent({
+          projectRoot: tempDir,
+          personas: [
+            createMockPersona('dev', {
+              model: 'fast',
+              factory: {
+                model: 'powerful',
+              },
+            }),
+          ],
+        });
+
+        await generator.generate(content);
+
+        const fileContent = await fs.readFile(
+          path.join(tempDir, '.factory/droids/dev.md'),
+          'utf-8'
+        );
+
+        expect(fileContent).toContain('**Model:** powerful');
+        expect(fileContent).not.toContain('fast');
+      });
+
+      it('should include reasoningEffort when specified', async () => {
+        const content = createMockContent({
+          projectRoot: tempDir,
+          personas: [
+            createMockPersona('deep-thinker', {
+              factory: {
+                reasoningEffort: 'high',
+              },
+            }),
+          ],
+        });
+
+        await generator.generate(content);
+
+        const fileContent = await fs.readFile(
+          path.join(tempDir, '.factory/droids/deep-thinker.md'),
+          'utf-8'
+        );
+
+        expect(fileContent).toContain('**Reasoning Effort:** high');
+      });
+
+      it('should not include reasoningEffort when not specified', async () => {
+        const content = createMockContent({
+          projectRoot: tempDir,
+          personas: [createMockPersona('basic-dev')],
+        });
+
+        await generator.generate(content);
+
+        const fileContent = await fs.readFile(
+          path.join(tempDir, '.factory/droids/basic-dev.md'),
+          'utf-8'
+        );
+
+        expect(fileContent).not.toContain('Reasoning Effort');
+      });
+
+      it('should handle empty factory.tools as explicit restriction', async () => {
+        const content = createMockContent({
+          projectRoot: tempDir,
+          personas: [
+            createMockPersona('restricted', {
+              tools: ['read', 'write', 'execute'],
+              factory: {
+                tools: [],
+              },
+            }),
+          ],
+        });
+
+        await generator.generate(content);
+
+        const fileContent = await fs.readFile(
+          path.join(tempDir, '.factory/droids/restricted.md'),
+          'utf-8'
+        );
+
+        expect(fileContent).not.toContain('**Tools:**');
+      });
+
+      it('should apply all factory-specific overrides together', async () => {
+        const content = createMockContent({
+          projectRoot: tempDir,
+          personas: [
+            createMockPersona('factory-agent', {
+              tools: ['read'],
+              model: 'fast',
+              factory: {
+                tools: ['execute', 'search', 'edit'],
+                model: 'powerful',
+                reasoningEffort: 'medium',
+              },
+            }),
+          ],
+        });
+
+        await generator.generate(content);
+
+        const fileContent = await fs.readFile(
+          path.join(tempDir, '.factory/droids/factory-agent.md'),
+          'utf-8'
+        );
+
+        expect(fileContent).toContain('**Model:** powerful');
+        expect(fileContent).toContain('execute');
+        expect(fileContent).toContain('search');
+        expect(fileContent).toContain('edit');
+        expect(fileContent).toContain('**Reasoning Effort:** medium');
+      });
+    });
   });
 
   describe('generate() - commands', () => {

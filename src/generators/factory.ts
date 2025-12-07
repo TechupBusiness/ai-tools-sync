@@ -17,6 +17,7 @@ import {
   isCommandServer,
   type McpConfig,
 } from '../parsers/mcp.js';
+import { PERSONA_DEFAULTS } from '../parsers/index.js';
 import { mapModel } from '../transformers/model-mapper.js';
 import { mapTools } from '../transformers/tool-mapper.js';
 import {
@@ -315,12 +316,25 @@ export class FactoryGenerator implements Generator {
     const filename = `${toSafeFilename(persona.frontmatter.name)}.md`;
     const filePath = joinPath(FACTORY_DIRS.droids, filename);
 
-    // Map tools to Factory-specific names
-    const tools = persona.frontmatter.tools ?? [];
+    // Prefer factory-specific overrides when present
+    const tools =
+      persona.frontmatter.factory?.tools ??
+      persona.frontmatter.tools ??
+      PERSONA_DEFAULTS.tools ??
+      [];
     const mappedTools = mapTools(tools, 'factory');
 
-    // Map model
-    const model = mapModel(persona.frontmatter.model ?? 'default', 'factory');
+    // Map model with factory-specific override
+    const model = mapModel(
+      persona.frontmatter.factory?.model ??
+        persona.frontmatter.model ??
+        PERSONA_DEFAULTS.model ??
+        'default',
+      'factory'
+    );
+
+    // Factory-specific reasoning effort (no generic equivalent)
+    const reasoningEffort = persona.frontmatter.factory?.reasoningEffort;
 
     // Build content
     const parts: string[] = [];
@@ -351,6 +365,10 @@ export class FactoryGenerator implements Generator {
 
     if (mappedTools.length > 0) {
       parts.push(`- **Tools:** ${mappedTools.join(', ')}`);
+    }
+
+    if (reasoningEffort) {
+      parts.push(`- **Reasoning Effort:** ${reasoningEffort}`);
     }
 
     parts.push('');
