@@ -60,6 +60,8 @@ This document tracks feature support across different AI coding assistant platfo
 | **Tool Restrictions** | ❌ Not supported | ✅ `tools` array | ✅ `tools` array/category |
 | **Reasoning Effort** | ❌ Not supported | ❌ Not supported | ✅ `reasoningEffort` |
 
+**Claude overrides:** `claude.tools` and `claude.model` in persona frontmatter replace the generic `tools`/`model` when generating Claude agents, while other platforms continue using the generic values.
+
 ### Factory Tool Categories
 
 Factory supports both individual tool IDs and categories:
@@ -359,7 +361,7 @@ factory:
 | T202 | Claude Code settings.json generation | ✅ Done |
 | T203 | Claude Code hooks support | ✅ Done |
 | T204 | Claude Code commands support | ✅ Done |
-| T205 | Claude Code agent tool restrictions | ❌ Pending |
+| T205 | Claude Code agent tool restrictions | ✅ Done |
 | T206 | Factory droids support | ❌ Pending |
 | T207 | Factory hooks support | ❌ Pending |
 | T208 | Factory MCP generation | ❌ Pending |

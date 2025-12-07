@@ -132,11 +132,16 @@ tools:
   - read
   - search
   - glob
-model: default
+model: fast
 targets:
   - cursor
   - claude
   - factory
+claude:
+  tools:
+    - execute
+    - glob
+  model: powerful
 ---
 
 # The Architect

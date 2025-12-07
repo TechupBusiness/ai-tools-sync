@@ -240,6 +240,8 @@ model: claude-sonnet-4-20250514
 - `search` → `Search`
 - `glob` → `Glob`
 
+> Claude-specific overrides: `claude.tools` and `claude.model` in persona frontmatter override the generic `tools`/`model` values when generating Claude agents. Other targets continue to use the generic fields.
+
 ### Command Files
 
 Commands are emitted to `.claude/commands/<name>.md` and become available as `/name` slash commands when present:

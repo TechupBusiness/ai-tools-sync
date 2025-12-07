@@ -241,6 +241,33 @@ describe('ClaudeGenerator', () => {
       expect(fileContent).toContain('Bash'); // 'execute' maps to 'Bash' in Claude
     });
 
+    it('should prefer claude-specific tools and model overrides', async () => {
+      const content = createMockContent({
+        projectRoot: tempDir,
+        personas: [
+          createMockPersona('claude-dev', {
+            tools: ['read'],
+            model: 'fast',
+            claude: {
+              tools: ['execute', 'search'],
+              model: 'powerful',
+            },
+          }),
+        ],
+      });
+
+      await generator.generate(content);
+
+      const fileContent = await fs.readFile(
+        path.join(tempDir, '.claude/agents/claude-dev.md'),
+        'utf-8'
+      );
+
+      expect(fileContent).toContain('- **Tools:** Bash, Search');
+      expect(fileContent).toContain('claude-sonnet-4-20250514'); // mapped powerful model
+      expect(fileContent).not.toContain('claude-3-5-haiku-20241022'); // fast is overridden
+    });
+
     it('should include model configuration', async () => {
       const content = createMockContent({
         projectRoot: tempDir,

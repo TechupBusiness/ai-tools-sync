@@ -378,12 +378,15 @@ export class ClaudeGenerator implements Generator {
     const filename = `${toSafeFilename(persona.frontmatter.name)}.md`;
     const filePath = joinPath(CLAUDE_DIRS.agents, filename);
 
-    // Map tools to Claude-specific names
-    const tools = persona.frontmatter.tools ?? [];
+    // Prefer claude-specific overrides when present
+    const tools = persona.frontmatter.claude?.tools ?? persona.frontmatter.tools ?? [];
     const mappedTools = mapTools(tools, 'claude');
 
-    // Map model
-    const model = mapModel(persona.frontmatter.model ?? 'default', 'claude');
+    // Map model with claude-specific override
+    const model = mapModel(
+      persona.frontmatter.claude?.model ?? persona.frontmatter.model ?? 'default',
+      'claude'
+    );
 
     // Build content
     const parts: string[] = [];

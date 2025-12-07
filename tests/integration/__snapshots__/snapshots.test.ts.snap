@@ -13,7 +13,7 @@ exports[`Output Snapshots > Claude SKILL.md snapshots > should match claude agen
 ## Configuration
 
 - **Model:** claude-sonnet-4-20250514
-- **Tools:** Read, Search, Glob
+- **Tools:** Bash, Glob
 
 ## Instructions
 
@@ -408,6 +408,7 @@ exports[`Output Snapshots > Factory snapshots > should match factory droid snaps
 
 ## Configuration
 
+- **Model:** fast
 - **Tools:** read, search, glob
 
 ## Instructions
