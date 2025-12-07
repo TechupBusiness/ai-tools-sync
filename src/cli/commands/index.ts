@@ -15,3 +15,6 @@ export type { ValidateOptions, ValidateResult } from './validate.js';
 export { migrate, discover } from './migrate.js';
 export type { MigrateOptions, MigrateResult, DiscoveryResult, DiscoveredFile } from './migrate.js';
 
+export { merge } from './merge.js';
+export type { MergeOptions, MergeResult, InputFile, DiffStatus } from './merge.js';
+

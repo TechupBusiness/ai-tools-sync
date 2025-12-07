@@ -14,6 +14,7 @@ import { VERSION } from '../index.js';
 import { logger } from '../utils/logger.js';
 
 import { init } from './commands/init.js';
+import { merge } from './commands/merge.js';
 import { migrate } from './commands/migrate.js';
 import { sync } from './commands/sync.js';
 import { validate } from './commands/validate.js';
@@ -185,6 +186,51 @@ program
     }
   });
 
+program
+  .command('merge')
+  .description('Merge input files into configuration')
+  .option('-v, --verbose', 'Show detailed diff output')
+  .option('-d, --dry-run', 'Show what would be merged without changes')
+  .option('-y, --yes', 'Skip interactive prompts')
+  .option('-f, --file <path>', 'Process specific file only')
+  .option('-p, --project <path>', 'Project root directory')
+  .option('-c, --config-dir <path>', 'Configuration directory name (default: .ai-tool-sync)')
+  .action(async (options: {
+    verbose?: boolean;
+    dryRun?: boolean;
+    yes?: boolean;
+    file?: string;
+    project?: string;
+    configDir?: string;
+  }) => {
+    if (options.verbose) {
+      logger.setVerbose(true);
+    }
+
+    try {
+      const mergeOptions: Parameters<typeof merge>[0] = {};
+      if (options.verbose !== undefined) mergeOptions.verbose = options.verbose;
+      if (options.dryRun !== undefined) mergeOptions.dryRun = options.dryRun;
+      if (options.yes !== undefined) mergeOptions.yes = options.yes;
+      if (options.file !== undefined) mergeOptions.file = options.file;
+      if (options.project !== undefined) mergeOptions.projectRoot = options.project;
+      if (options.configDir !== undefined) mergeOptions.configDir = options.configDir;
+
+      const result = await merge(mergeOptions);
+
+      if (!result.success) {
+        process.exit(1);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error(`Merge failed: ${message}`);
+      if (options.verbose && error instanceof Error && error.stack) {
+        console.error(error.stack);
+      }
+      process.exit(1);
+    }
+  });
+
 /**
  * Run the CLI
  */
@@ -198,11 +244,12 @@ export function run(): void {
 export default run;
 
 // Re-export commands for programmatic usage
-export { sync, init, validate, migrate };
+export { sync, init, validate, migrate, merge };
 export type { SyncOptions, SyncResult } from './commands/sync.js';
 export type { InitOptions, InitResult } from './commands/init.js';
 export type { ValidateOptions, ValidateResult } from './commands/validate.js';
 export type { MigrateOptions, MigrateResult, DiscoveryResult, DiscoveredFile } from './commands/migrate.js';
+export type { MergeOptions, MergeResult, InputFile, DiffStatus } from './commands/merge.js';
 
 // Run if executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {

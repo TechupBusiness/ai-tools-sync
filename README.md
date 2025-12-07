@@ -240,6 +240,67 @@ ai-sync migrate --yes
 
 The migrate command helps you transition from existing tool-specific configurations to the unified ai-tool-sync format. It analyzes file contents, detects content types (rules, personas, commands), and can generate AI-assisted migration prompts for complex files that need manual review.
 
+### `ai-sync merge`
+
+Process and merge files from the `input/` folder into your configuration.
+
+```bash
+ai-sync merge [options]
+
+Options:
+  -v, --verbose             Show detailed diff output
+  -d, --dry-run             Show what would be merged without changes
+  -y, --yes                 Skip interactive prompts
+  -f, --file <path>         Process specific file only
+  -p, --project <path>      Use a different project root
+  -c, --config-dir <path>   Configuration directory name (default: .ai-tool-sync)
+```
+
+**What it does:**
+
+The merge command helps you integrate files from `.ai-tool-sync/input/` (populated by `migrate` or manual import) into your configuration:
+
+1. **Discovers** all markdown files in `input/`
+2. **Analyzes** each file to detect content type (rule, persona, command, hook)
+3. **Compares** with existing content to identify new, modified, or identical files
+4. **Reports** differences with detailed diff information (frontmatter changes, content changes)
+5. **Merges** accepted files into the appropriate directories (rules/, personas/, etc.)
+
+**Examples:**
+
+```bash
+# Preview what would be merged (no changes)
+ai-sync merge --dry-run
+
+# See detailed diffs for all files
+ai-sync merge --verbose
+
+# Auto-merge without prompts
+ai-sync merge --yes
+
+# Merge a specific file only
+ai-sync merge --file input/my-rule.md
+
+# Dry run with verbose output
+ai-sync merge --dry-run --verbose
+```
+
+**Interactive Mode:**
+
+When merging modified files, you'll be prompted for each file:
+- `(y)es` — Merge this file
+- `(n)o` — Skip this file
+- `(d)iff` — Show detailed diff, then confirm
+
+**File Status Types:**
+- 🆕 **New** — File doesn't exist in target folder
+- ✏️ **Modified** — File exists with different content
+- ✅ **Identical** — File exists with same content (automatically skipped)
+- ⚠️ **Conflict** — Cannot auto-merge (manual review needed)
+- ❌ **Invalid** — File cannot be parsed
+
+After merging, files are automatically removed from the `input/` folder and placed in the correct location based on their content type.
+
 ## Configuration
 
 ### Configurable Directory Name
@@ -470,7 +531,7 @@ See [docs/LOADERS.md](docs/LOADERS.md) for detailed configuration.
 ## Programmatic API
 
 ```typescript
-import { sync, init, validate, migrate, discover } from '@anthropic/ai-tool-sync';
+import { sync, init, validate, migrate, merge, discover } from '@anthropic/ai-tool-sync';
 
 // Sync configuration
 const result = await sync({
@@ -508,6 +569,16 @@ const migration = await migrate({
 });
 
 console.log(`Migrated ${migration.migratedFiles.length} files`);
+
+// Merge files from input/ folder
+const mergeResult = await merge({
+  projectRoot: '/path/to/project',
+  verbose: true,
+  yes: false, // Interactive mode
+});
+
+console.log(`Merged ${mergeResult.merged.length} files`);
+console.log(`Skipped ${mergeResult.skipped.length} files`);
 ```
 
 ## Documentation
