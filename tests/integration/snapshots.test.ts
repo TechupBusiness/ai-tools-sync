@@ -12,13 +12,13 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
+import { DEFAULT_CONFIG_DIR } from '../../src/config/loader.js';
 import { createResolvedContent } from '../../src/generators/base.js';
 import {
   createCursorGenerator,
   createClaudeGenerator,
   createFactoryGenerator,
 } from '../../src/generators/index.js';
-import { DEFAULT_CONFIG_DIR } from '../../src/config/loader.js';
 import { createLocalLoader } from '../../src/loaders/local.js';
 import { readFile } from '../../src/utils/fs.js';
 

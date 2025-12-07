@@ -18,6 +18,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import { logger } from '../utils/logger.js';
+import { resolvePluginRootVariable } from '../utils/plugin-cache.js';
 import { parseYaml } from '../utils/yaml.js';
 
 import {
@@ -33,6 +34,7 @@ import type { ParsedHook, HookEvent } from '../parsers/hook.js';
 import type { ParsedPersona, PersonaTool } from '../parsers/persona.js';
 import type { ParsedRule, RuleCategory } from '../parsers/rule.js';
 import type { TargetType } from '../parsers/types.js';
+import type { PluginCache } from '../utils/plugin-cache.js';
 
 
 /**
@@ -116,6 +118,21 @@ export interface ClaudePluginLoaderOptions extends LoaderOptions {
    * Whether to preserve Claude-specific metadata
    */
   preserveMetadata?: boolean;
+
+  /**
+   * Plugin cache instance (for centralized caching)
+   */
+  pluginCache?: PluginCache;
+
+  /**
+   * Whether to use disk-based caching (default: true)
+   */
+  useCache?: boolean;
+
+  /**
+   * Version to use for caching (overrides source version)
+   */
+  version?: string;
 }
 
 /**
@@ -234,7 +251,21 @@ export class ClaudePluginLoader implements Loader {
     // Remove the claude-plugin: prefix
     const spec = source.slice(CLAUDE_PLUGIN_PREFIX.length);
 
-    // Check cache
+    // Check centralized plugin cache first
+    if (options?.pluginCache && options.useCache !== false) {
+      const version = options.version ?? this.extractVersion(spec);
+      if (await options.pluginCache.isCached(source, version)) {
+        const entry = options.pluginCache.getCacheEntry(source, version);
+        if (entry) {
+          const cachedPath = options.pluginCache.getPluginPath(entry.id);
+          await options.pluginCache.touchPlugin(source, version);
+          logger.debug(`Using cached plugin: ${cachedPath}`);
+          return cachedPath;
+        }
+      }
+    }
+
+    // Fall back to in-memory cache
     if (pluginPathCache.has(source)) {
       return pluginPathCache.get(source)!;
     }
@@ -264,6 +295,28 @@ export class ClaudePluginLoader implements Loader {
     }
 
     return resolvedPath;
+  }
+
+  /**
+   * Extract version from source spec
+   */
+  private extractVersion(spec: string): string | undefined {
+    // Handle npm:@org/pkg@1.0.0 format
+    const atIndex = spec.lastIndexOf('@');
+    if (atIndex > 0 && !spec.startsWith('@')) {
+      const version = spec.slice(atIndex + 1);
+      if (/^\d/.test(version)) {
+        return version;
+      }
+    }
+
+    // Handle github:owner/repo#v1.0.0 format
+    const hashIndex = spec.indexOf('#');
+    if (hashIndex > 0) {
+      return spec.slice(hashIndex + 1);
+    }
+
+    return undefined;
   }
 
   /**
@@ -458,7 +511,24 @@ export class ClaudePluginLoader implements Loader {
     _options?: ClaudePluginLoaderOptions
   ): Promise<{ ok: true; value: ParsedRule } | { ok: false; error: LoadError }> {
     try {
-      const content = await fs.promises.readFile(filePath, 'utf-8');
+      let content = await fs.promises.readFile(filePath, 'utf-8');
+      
+      // Resolve ${CLAUDE_PLUGIN_ROOT} variable
+      // For skills/<name>/SKILL.md, go up 3 levels; for flat skills/skill.md, go up 2 levels
+      const dirname = path.dirname(filePath);
+      const parentDirName = path.basename(dirname);
+      let pluginRoot: string;
+      
+      if (parentDirName === 'skills') {
+        // Flat structure: skills/skill.md -> go up 2 levels
+        pluginRoot = path.dirname(dirname);
+      } else {
+        // Nested structure: skills/<name>/SKILL.md -> go up 3 levels
+        pluginRoot = path.dirname(path.dirname(dirname));
+      }
+      
+      content = resolvePluginRootVariable(content, pluginRoot);
+      
       const { frontmatter, body } = this.extractFrontmatter<ClaudeSkillFrontmatter>(content);
 
       // Build rule frontmatter with only defined properties
@@ -548,7 +618,13 @@ export class ClaudePluginLoader implements Loader {
     _options?: ClaudePluginLoaderOptions
   ): Promise<{ ok: true; value: ParsedPersona } | { ok: false; error: LoadError }> {
     try {
-      const content = await fs.promises.readFile(filePath, 'utf-8');
+      let content = await fs.promises.readFile(filePath, 'utf-8');
+      
+      // Resolve ${CLAUDE_PLUGIN_ROOT} variable
+      // Plugin root is typically 2 levels up from agents/<name>.md
+      const pluginRoot = path.dirname(path.dirname(filePath));
+      content = resolvePluginRootVariable(content, pluginRoot);
+      
       const { frontmatter, body } = this.extractFrontmatter<ClaudeAgentFrontmatter>(content);
 
       // Transform Claude agent to generic persona
@@ -713,7 +789,13 @@ export class ClaudePluginLoader implements Loader {
     commandName: string
   ): Promise<{ ok: true; value: ParsedCommand } | { ok: false; error: LoadError }> {
     try {
-      const content = await fs.promises.readFile(filePath, 'utf-8');
+      let content = await fs.promises.readFile(filePath, 'utf-8');
+      
+      // Resolve ${CLAUDE_PLUGIN_ROOT} variable
+      // Plugin root is typically 2 levels up from commands/<name>.md
+      const pluginRoot = path.dirname(path.dirname(filePath));
+      content = resolvePluginRootVariable(content, pluginRoot);
+      
       const { frontmatter, body } = this.extractFrontmatter<Record<string, unknown>>(content);
 
       // Build frontmatter with only defined properties

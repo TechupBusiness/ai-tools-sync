@@ -455,6 +455,16 @@ ai-tool-sync supports multiple content sources:
 | `url` | Remote URL | `source: https://example.com/rules.yaml` |
 | `claude-plugin` | Claude plugins | `source: claude-plugin:@anthropic/web-dev` |
 
+### Plugin Caching
+
+Git repositories and remote plugins are automatically cached in `.ai-tool-sync/plugins/` to improve performance:
+
+- **Version-aware caching** — Each version is cached separately
+- **Automatic invalidation** — Cache is refreshed when versions change
+- **Zero configuration** — Works transparently out of the box
+
+This means the first sync might be slower (downloading plugins), but subsequent syncs are instant.
+
 See [docs/LOADERS.md](docs/LOADERS.md) for detailed configuration.
 
 ## Programmatic API

@@ -23,6 +23,7 @@ import * as path from 'node:path';
 import { promisify } from 'node:util';
 
 import { logger } from '../utils/logger.js';
+import { generatePluginId, DEFAULT_PLUGIN_CACHE_DIR } from '../utils/plugin-cache.js';
 
 import {
   type Loader,
@@ -42,9 +43,9 @@ export const GIT_PREFIXES = ['git:', 'github:', 'gitlab:', 'bitbucket:'] as cons
 export type GitPrefix = (typeof GIT_PREFIXES)[number];
 
 /**
- * Default cache directory name within .ai/plugins/
+ * Default cache directory (base directory, plugins go in subdirectory)
  */
-export const DEFAULT_GIT_CACHE_DIR = '.ai/plugins';
+export const DEFAULT_GIT_CACHE_DIR = '.ai-tool-sync';
 
 /**
  * Default cache TTL in milliseconds (24 hours)
@@ -545,16 +546,11 @@ export class GitLoader implements Loader {
    * Get the cache path for a repository
    */
   private getRepoCachePath(cacheDir: string, parsed: ParsedGitSource): string {
-    // Create a unique identifier for the repo
-    const repoId = `${parsed.host}_${parsed.owner}_${parsed.repo}`;
-
-    // Add ref to path if specified
-    if (parsed.ref) {
-      const safeRef = parsed.ref.replace(/[^a-zA-Z0-9.-]/g, '_');
-      return path.join(cacheDir, 'git', `${repoId}_${safeRef}`);
-    }
-
-    return path.join(cacheDir, 'git', repoId);
+    // Use centralized plugin ID generation
+    const pluginId = generatePluginId(parsed.original, parsed.ref);
+    
+    // Cache goes in the plugins subdirectory
+    return path.join(cacheDir, DEFAULT_PLUGIN_CACHE_DIR, pluginId);
   }
 
   /**

@@ -494,7 +494,7 @@ describe('GIT_PREFIXES constant', () => {
 
 describe('DEFAULT constants', () => {
   it('should have correct default cache directory', () => {
-    expect(DEFAULT_GIT_CACHE_DIR).toBe('.ai/plugins');
+    expect(DEFAULT_GIT_CACHE_DIR).toBe('.ai-tool-sync');
   });
 
   it('should have correct default cache TTL (24 hours)', () => {

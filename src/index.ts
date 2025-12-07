@@ -106,6 +106,23 @@ export type { Generator, GeneratorOptions, ResolvedContent } from './generators/
 // Re-export utilities
 export { ok, err, isOk, isErr } from './utils/result.js';
 export { logger } from './utils/logger.js';
+export {
+  PluginCache,
+  createPluginCache,
+  generatePluginId,
+  resolvePluginRootVariable,
+  calculateContentHash,
+  CLAUDE_PLUGIN_ROOT_VAR,
+  DEFAULT_PLUGIN_CACHE_DIR,
+  CACHE_MANIFEST_FILE,
+  PLUGIN_META_FILE,
+} from './utils/plugin-cache.js';
+export type {
+  PluginCacheManifest,
+  PluginCacheEntry,
+  PluginCacheMetadata,
+  PluginCacheOptions,
+} from './utils/plugin-cache.js';
 
 // Version
 export const VERSION = '0.1.0';
