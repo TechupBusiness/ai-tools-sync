@@ -18,6 +18,7 @@ import { merge } from './commands/merge.js';
 import { migrate } from './commands/migrate.js';
 import { sync } from './commands/sync.js';
 import { validate } from './commands/validate.js';
+import { watch } from './commands/watch.js';
 
 const program = new Command();
 
@@ -31,6 +32,8 @@ program
   .description('Sync configuration to tool-specific outputs')
   .option('-v, --verbose', 'Enable verbose output')
   .option('-d, --dry-run', 'Show what would be generated without writing files')
+  .option('-w, --watch', 'Watch for changes and auto-regenerate')
+  .option('--debounce <ms>', 'Debounce interval for watch mode (default: 300)', '300')
   .option('--no-clean', 'Do not clean output directories before generating')
   .option('--update-gitignore', 'Update .gitignore with generated paths (default: true)')
   .option('--no-update-gitignore', 'Do not update .gitignore')
@@ -39,6 +42,8 @@ program
   .action(async (options: {
     verbose?: boolean;
     dryRun?: boolean;
+    watch?: boolean;
+    debounce?: string;
     clean?: boolean;
     updateGitignore?: boolean;
     project?: string;
@@ -49,18 +54,32 @@ program
     }
 
     try {
-      const result = await sync({
-        verbose: options.verbose,
-        dryRun: options.dryRun,
-        clean: options.clean,
-        updateGitignore: options.updateGitignore,
-        projectRoot: options.project,
-        configDir: options.configDir,
-      });
-
-      // Exit with error code if sync failed
-      if (!result.success) {
-        process.exit(1);
+      if (options.watch) {
+        const debounceMs = Number.parseInt(options.debounce ?? '300', 10);
+        const result = await watch({
+          verbose: options.verbose,
+          dryRun: options.dryRun,
+          clean: options.clean,
+          updateGitignore: options.updateGitignore,
+          projectRoot: options.project,
+          configDir: options.configDir,
+          debounceMs: Number.isNaN(debounceMs) ? undefined : debounceMs,
+        });
+        if (!result.success) {
+          process.exit(1);
+        }
+      } else {
+        const result = await sync({
+          verbose: options.verbose,
+          dryRun: options.dryRun,
+          clean: options.clean,
+          updateGitignore: options.updateGitignore,
+          projectRoot: options.project,
+          configDir: options.configDir,
+        });
+        if (!result.success) {
+          process.exit(1);
+        }
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

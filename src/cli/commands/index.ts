@@ -6,6 +6,9 @@
 export { sync } from './sync.js';
 export type { SyncOptions, SyncResult } from './sync.js';
 
+export { watch } from './watch.js';
+export type { WatchOptions, WatchResult } from './watch.js';
+
 export { init } from './init.js';
 export type { InitOptions, InitResult } from './init.js';
 
