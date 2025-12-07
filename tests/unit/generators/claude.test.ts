@@ -467,6 +467,221 @@ describe('createClaudeGenerator', () => {
   });
 });
 
+describe('generate() - permissions', () => {
+  let generator: ClaudeGenerator;
+  let tempDir: string;
+
+  beforeEach(async () => {
+    generator = createClaudeGenerator();
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'claude-permissions-test-'));
+  });
+
+  afterEach(async () => {
+    try {
+      await fs.rm(tempDir, { recursive: true, force: true });
+    } catch {
+      // Ignore cleanup errors
+    }
+  });
+
+  it('should generate settings.json with permissions', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      claudeSettings: {
+        permissions: [
+          { matcher: 'Bash(*)', action: 'allow' },
+          { matcher: 'Bash(rm*)', action: 'deny' },
+        ],
+      },
+    });
+
+    const result = await generator.generate(content);
+
+    expect(result.files).toContain('.claude/settings.json');
+
+    const settingsContent = await fs.readFile(
+      path.join(tempDir, '.claude/settings.json'),
+      'utf-8'
+    );
+    const settings = JSON.parse(settingsContent);
+
+    expect(settings.permissions).toBeDefined();
+    expect(settings.permissions.allow).toContain('Bash(*)');
+    expect(settings.permissions.deny).toContain('Bash(rm*)');
+  });
+
+  it('should not include empty permission arrays', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      claudeSettings: {
+        permissions: [{ matcher: 'Read', action: 'allow' }],
+      },
+    });
+
+    const result = await generator.generate(content);
+
+    const settingsContent = await fs.readFile(
+      path.join(tempDir, '.claude/settings.json'),
+      'utf-8'
+    );
+    const settings = JSON.parse(settingsContent);
+
+    expect(settings.permissions.allow).toBeDefined();
+    expect(settings.permissions.deny).toBeUndefined();
+    expect(settings.permissions.ask).toBeUndefined();
+  });
+
+  it('should group permissions by action', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      claudeSettings: {
+        permissions: [
+          { matcher: 'Bash(*)', action: 'allow' },
+          { matcher: 'Read', action: 'allow' },
+          { matcher: 'Bash(rm*)', action: 'deny' },
+          { matcher: 'Write', action: 'ask' },
+        ],
+      },
+    });
+
+    const result = await generator.generate(content);
+
+    const settingsContent = await fs.readFile(
+      path.join(tempDir, '.claude/settings.json'),
+      'utf-8'
+    );
+    const settings = JSON.parse(settingsContent);
+
+    expect(settings.permissions.allow).toHaveLength(2);
+    expect(settings.permissions.deny).toHaveLength(1);
+    expect(settings.permissions.ask).toHaveLength(1);
+  });
+});
+
+describe('generate() - env variables', () => {
+  let generator: ClaudeGenerator;
+  let tempDir: string;
+
+  beforeEach(async () => {
+    generator = createClaudeGenerator();
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'claude-env-test-'));
+  });
+
+  afterEach(async () => {
+    try {
+      await fs.rm(tempDir, { recursive: true, force: true });
+    } catch {
+      // Ignore cleanup errors
+    }
+  });
+
+  it('should generate settings.json with env variables', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      claudeSettings: {
+        env: {
+          NODE_ENV: 'development',
+          DEBUG: 'true',
+        },
+      },
+    });
+
+    const result = await generator.generate(content);
+
+    expect(result.files).toContain('.claude/settings.json');
+
+    const settingsContent = await fs.readFile(
+      path.join(tempDir, '.claude/settings.json'),
+      'utf-8'
+    );
+    const settings = JSON.parse(settingsContent);
+
+    expect(settings.env).toBeDefined();
+    expect(settings.env.NODE_ENV).toBe('development');
+    expect(settings.env.DEBUG).toBe('true');
+  });
+
+  it('should not generate settings.json for empty env object', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      claudeSettings: {
+        env: {},
+      },
+    });
+
+    const result = await generator.generate(content);
+
+    // Should not generate settings.json if only empty env
+    expect(result.files).not.toContain('.claude/settings.json');
+  });
+});
+
+describe('generate() - combined settings', () => {
+  let generator: ClaudeGenerator;
+  let tempDir: string;
+
+  beforeEach(async () => {
+    generator = createClaudeGenerator();
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'claude-combined-test-'));
+  });
+
+  afterEach(async () => {
+    try {
+      await fs.rm(tempDir, { recursive: true, force: true });
+    } catch {
+      // Ignore cleanup errors
+    }
+  });
+
+  it('should combine permissions, env, hooks, and commands', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      claudeSettings: {
+        permissions: [{ matcher: 'Bash', action: 'allow' }],
+        env: { NODE_ENV: 'test' },
+      },
+      hooks: [createMockHook('test-hook')],
+      commands: [createMockCommand('test-cmd')],
+    });
+
+    const result = await generator.generate(content);
+
+    const settingsContent = await fs.readFile(
+      path.join(tempDir, '.claude/settings.json'),
+      'utf-8'
+    );
+    const settings = JSON.parse(settingsContent);
+
+    expect(settings.permissions).toBeDefined();
+    expect(settings.env).toBeDefined();
+    expect(settings.hooks).toBeDefined();
+    expect(settings.commands).toBeDefined();
+  });
+
+  it('should generate settings.json with only permissions (no hooks/commands)', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      claudeSettings: {
+        permissions: [{ matcher: 'Bash(*)', action: 'allow' }],
+      },
+    });
+
+    const result = await generator.generate(content);
+
+    expect(result.files).toContain('.claude/settings.json');
+
+    const settingsContent = await fs.readFile(
+      path.join(tempDir, '.claude/settings.json'),
+      'utf-8'
+    );
+    const settings = JSON.parse(settingsContent);
+
+    expect(settings.permissions).toBeDefined();
+    expect(settings.hooks).toBeUndefined();
+    expect(settings.commands).toBeUndefined();
+  });
+});
+
 describe('MCP generation', () => {
   let generator: ClaudeGenerator;
   let tempDir: string;

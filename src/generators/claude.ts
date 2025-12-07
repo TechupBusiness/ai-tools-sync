@@ -13,6 +13,7 @@
 
 import * as path from 'node:path';
 
+import type { ClaudePermission, ClaudeSettingsConfig } from '../config/types.js';
 import {
   isCommandServer,
   type McpConfig,
@@ -64,6 +65,12 @@ const CLAUDE_DIRS = {
  * Claude settings.json structure
  */
 interface ClaudeSettings {
+  permissions?: {
+    allow?: string[];
+    deny?: string[];
+    ask?: string[];
+  };
+  env?: Record<string, string>;
   hooks?: {
     PreToolUse?: ClaudeHookConfig[];
     PostToolUse?: ClaudeHookConfig[];
@@ -124,11 +131,18 @@ export class ClaudeGenerator implements Generator {
     );
     generated.push(...agentFiles);
 
-    // Generate settings.json with hooks and commands
-    if (claudeContent.hooks.length > 0 || claudeContent.commands.length > 0) {
+    // Generate settings.json with hooks, commands, permissions, and env
+    const hasSettings =
+      claudeContent.hooks.length > 0 ||
+      claudeContent.commands.length > 0 ||
+      (claudeContent.claudeSettings?.permissions?.length ?? 0) > 0 ||
+      (claudeContent.claudeSettings?.env && Object.keys(claudeContent.claudeSettings.env).length > 0);
+
+    if (hasSettings) {
       const settingsFile = this.generateSettings(
         claudeContent.hooks,
         claudeContent.commands,
+        claudeContent.claudeSettings,
         options
       );
       generated.push(settingsFile);
@@ -364,11 +378,46 @@ export class ClaudeGenerator implements Generator {
   }
 
   /**
-   * Generate settings.json with hooks and commands
+   * Build permissions object from array of permission rules
+   */
+  private buildPermissions(
+    permissions: ClaudePermission[]
+  ): { allow?: string[]; deny?: string[]; ask?: string[] } {
+    const result: { allow?: string[]; deny?: string[]; ask?: string[] } = {};
+
+    const allow: string[] = [];
+    const deny: string[] = [];
+    const ask: string[] = [];
+
+    for (const perm of permissions) {
+      switch (perm.action) {
+        case 'allow':
+          allow.push(perm.matcher);
+          break;
+        case 'deny':
+          deny.push(perm.matcher);
+          break;
+        case 'ask':
+          ask.push(perm.matcher);
+          break;
+      }
+    }
+
+    // Only include non-empty arrays
+    if (allow.length > 0) result.allow = allow;
+    if (deny.length > 0) result.deny = deny;
+    if (ask.length > 0) result.ask = ask;
+
+    return result;
+  }
+
+  /**
+   * Generate settings.json with hooks, commands, permissions, and env
    */
   private generateSettings(
     hooks: ParsedHook[],
     commands: ParsedCommand[],
+    claudeSettings: ClaudeSettingsConfig | undefined,
     options: GeneratorOptions
   ): GeneratedFile {
     const settings: ClaudeSettings = {};
@@ -376,6 +425,16 @@ export class ClaudeGenerator implements Generator {
     // Add generated marker
     if (options.addHeaders) {
       settings.__generated_by = 'ai-tool-sync - DO NOT EDIT DIRECTLY';
+    }
+
+    // Process permissions
+    if (claudeSettings?.permissions && claudeSettings.permissions.length > 0) {
+      settings.permissions = this.buildPermissions(claudeSettings.permissions);
+    }
+
+    // Process env variables
+    if (claudeSettings?.env && Object.keys(claudeSettings.env).length > 0) {
+      settings.env = claudeSettings.env;
     }
 
     // Process hooks

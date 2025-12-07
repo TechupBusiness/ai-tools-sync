@@ -90,6 +90,16 @@
         }
       },
       "additionalProperties": false
+    },
+    "claude": {
+      "type": "object",
+      "description": "Claude Code platform-specific settings",
+      "properties": {
+        "settings": {
+          "$ref": "#/$defs/claudeSettings"
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false,
@@ -231,6 +241,47 @@
         "message": {
           "type": "string",
           "description": "Message to display"
+        }
+      },
+      "additionalProperties": false
+    },
+    "claudeSettings": {
+      "type": "object",
+      "description": "Claude Code settings configuration",
+      "properties": {
+        "permissions": {
+          "type": "array",
+          "description": "Permission rules for Claude tools",
+          "items": {
+            "$ref": "#/$defs/claudePermission"
+          }
+        },
+        "env": {
+          "type": "object",
+          "description": "Environment variables for Claude",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "claudePermission": {
+      "type": "object",
+      "required": ["matcher", "action"],
+      "properties": {
+        "matcher": {
+          "type": "string",
+          "description": "Tool/pattern match expression (e.g., 'Bash(*)', 'Read')"
+        },
+        "action": {
+          "type": "string",
+          "enum": ["allow", "deny", "ask"],
+          "description": "Permission action"
+        },
+        "message": {
+          "type": "string",
+          "description": "Optional message explaining the permission"
         }
       },
       "additionalProperties": false

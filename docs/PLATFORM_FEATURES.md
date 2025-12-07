@@ -101,6 +101,54 @@ Factory supports both individual tool IDs and categories:
 
 ---
 
+## Claude Code Settings
+
+Claude Code supports additional platform-specific settings through the `claude.settings` section in config.yaml:
+
+### Permissions
+
+Control which tools Claude can use automatically:
+
+```yaml
+claude:
+  settings:
+    permissions:
+      - matcher: "Bash(*)"      # Allow all Bash commands
+        action: allow
+      - matcher: "Bash(rm*)"    # Block destructive commands
+        action: deny
+        message: "Destructive operations blocked"
+      - matcher: "Read"         # Ask before reading
+        action: ask
+```
+
+**Permission Actions:**
+- `allow` - Tool can be used without prompting
+- `deny` - Tool usage is blocked
+- `ask` - User will be prompted before tool use
+
+**Matcher Patterns:**
+- Exact tool name: `"Read"`, `"Write"`, `"Bash"`
+- Wildcards: `"Bash(*)"` matches all Bash commands
+- Specific patterns: `"Bash(rm*)"` matches destructive Bash commands
+
+### Environment Variables
+
+Set environment variables for Claude sessions:
+
+```yaml
+claude:
+  settings:
+    env:
+      NODE_ENV: development
+      DEBUG: "true"
+      API_KEY: "${API_KEY}"  # Can reference system env vars
+```
+
+These settings are written to `.claude/settings.json` alongside hooks and commands.
+
+---
+
 ## MCP Configuration
 
 | Feature | Cursor | Claude Code | Factory |
@@ -184,7 +232,7 @@ factory:
 | T199 | Cursor `allowedTools` support | ✅ Done |
 | T200 | Factory command variables | ❌ Pending |
 | T201 | Tests for platform feature parity | ✅ Done |
-| T202 | Claude Code settings.json generation | ❌ Pending |
+| T202 | Claude Code settings.json generation | ✅ Done |
 | T203 | Claude Code hooks support | ❌ Pending |
 | T204 | Claude Code commands support | ❌ Pending |
 | T205 | Claude Code agent tool restrictions | ❌ Pending |

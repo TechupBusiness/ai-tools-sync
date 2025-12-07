@@ -13,6 +13,7 @@ This document provides a complete reference for `.ai/config.yaml` configuration 
 - [rules](#rules)
 - [subfolder_contexts](#subfolder_contexts)
 - [hooks](#hooks)
+- [claude](#claude)
 - [output](#output)
 - [Complete Examples](#complete-examples)
 
@@ -372,6 +373,73 @@ Bash(git commit*)         # Match Bash commands starting with "git commit"
 Edit(*order*)             # Match Edit on files containing "order"
 ```
 
+## claude
+
+Claude Code platform-specific settings. These settings are only applied when generating for the `claude` target.
+
+```yaml
+claude:
+  settings:
+    permissions:
+      - matcher: "Bash(*)"
+        action: allow
+      - matcher: "Bash(rm*)"
+        action: deny
+        message: "Destructive operations blocked"
+      - matcher: "Read"
+        action: ask
+    env:
+      NODE_ENV: development
+      DEBUG: "true"
+```
+
+### claude.settings.permissions
+
+Control which tools Claude can use automatically without user confirmation.
+
+**Permission Properties:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `matcher` | string | Tool/pattern match expression (required) |
+| `action` | string | Permission action: `allow`, `deny`, `ask` (required) |
+| `message` | string | Optional message explaining the permission |
+
+**Permission Actions:**
+
+- `allow` — Tool can be used without prompting
+- `deny` — Tool usage is blocked entirely
+- `ask` — User will be prompted before tool use
+
+**Matcher Pattern Examples:**
+
+```yaml
+matcher: "Read"           # Exact tool name
+matcher: "Bash(*)"        # All Bash commands
+matcher: "Bash(rm*)"      # Destructive Bash commands (rm, rmdir, etc.)
+matcher: "Write(*order*)" # Write operations on files containing "order"
+matcher: "Edit|Write"     # Multiple tools (OR)
+```
+
+### claude.settings.env
+
+Environment variables to set for Claude Code sessions. These are written to `.claude/settings.json` and made available during Claude's execution.
+
+```yaml
+claude:
+  settings:
+    env:
+      NODE_ENV: development
+      DEBUG: "true"
+      API_KEY: "${API_KEY}"  # Can reference system env vars
+      DATABASE_URL: "postgresql://localhost:5432/dev"
+```
+
+**Notes:**
+- Values must be strings
+- Can reference system environment variables using `${VAR_NAME}` syntax
+- Empty env object is omitted from output
+
 ## output
 
 Output generation settings.
@@ -500,6 +568,18 @@ hooks:
       match: "Bash(*deploy* --prod*)"
       action: warn
       message: "⚠️ Production deployment - please confirm"
+
+claude:
+  settings:
+    permissions:
+      - matcher: "Bash(*)"
+        action: allow
+      - matcher: "Bash(rm*)"
+        action: deny
+        message: "Destructive operations blocked"
+    env:
+      NODE_ENV: production
+      API_URL: "https://api.example.com"
 
 output:
   clean_before_sync: true

@@ -74,6 +74,36 @@ export interface UseConfig {
 }
 
 /**
+ * Claude permission configuration
+ */
+export interface ClaudePermission {
+  /** Tool/pattern match expression (e.g., 'Bash(*)', 'Read') */
+  matcher: string;
+  /** Permission action */
+  action: 'allow' | 'deny' | 'ask';
+  /** Optional message explaining the permission */
+  message?: string;
+}
+
+/**
+ * Claude settings configuration
+ */
+export interface ClaudeSettingsConfig {
+  /** Permission rules for Claude tools */
+  permissions?: ClaudePermission[];
+  /** Environment variables for Claude */
+  env?: Record<string, string>;
+}
+
+/**
+ * Claude platform-specific configuration
+ */
+export interface ClaudeConfig {
+  /** Claude settings (permissions, env) */
+  settings?: ClaudeSettingsConfig;
+}
+
+/**
  * Main configuration structure for .ai/config.yaml
  */
 export interface Config {
@@ -87,6 +117,9 @@ export interface Config {
   subfolder_contexts?: Record<string, SubfolderContextConfig>;
   hooks?: Record<string, HookConfig[]>;
   output?: OutputConfig;
+  
+  /** Claude Code platform-specific settings */
+  claude?: ClaudeConfig;
 }
 
 /**
