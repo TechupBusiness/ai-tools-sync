@@ -13,11 +13,11 @@
 
 import * as path from 'node:path';
 
+import { PERSONA_DEFAULTS } from '../parsers/index.js';
 import {
   isCommandServer,
   type McpConfig,
 } from '../parsers/mcp.js';
-import { PERSONA_DEFAULTS } from '../parsers/index.js';
 import { mapModel } from '../transformers/model-mapper.js';
 import { mapTools } from '../transformers/tool-mapper.js';
 import {
