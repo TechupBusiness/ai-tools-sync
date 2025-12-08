@@ -32,6 +32,8 @@ export type PersonaTool = 'read' | 'write' | 'edit' | 'execute' | 'search' | 'gl
 export interface Persona extends BaseFrontmatter {
   /** Unique identifier for the persona */
   name: string;
+  /** Name of parent persona to inherit from */
+  extends?: string;
   /** Tools available to this persona */
   tools?: PersonaTool[];
   /** Model to use (default, fast, powerful, inherit, or specific model) */
@@ -87,6 +89,23 @@ function validatePersonaFields(data: Record<string, unknown>): ContentValidation
       message: 'Name cannot be empty',
       value: data.name,
     });
+  }
+
+  // Validate extends
+  if (data.extends !== undefined) {
+    if (typeof data.extends !== 'string') {
+      errors.push({
+        path: 'extends',
+        message: 'extends must be a string',
+        value: data.extends,
+      });
+    } else if (data.extends.trim() === '') {
+      errors.push({
+        path: 'extends',
+        message: 'extends cannot be empty',
+        value: data.extends,
+      });
+    }
   }
 
   // Validate description
@@ -186,6 +205,10 @@ function applyPersonaDefaults(data: Record<string, unknown>): Persona {
   }
   if (data.traits !== undefined) {
     persona.traits = data.traits as Record<string, unknown>;
+  }
+
+  if (data.extends !== undefined) {
+    persona.extends = (data.extends as string).trim();
   }
 
   // Platform-specific extensions
@@ -307,4 +330,214 @@ export function getUniqueTools(personas: ParsedPersona[]): PersonaTool[] {
   }
 
   return Array.from(toolSet);
+}
+
+/**
+ * Warning during inheritance resolution
+ */
+export interface InheritanceWarning {
+  /** Persona name that has the issue */
+  persona: string;
+  /** Warning message */
+  message: string;
+  /** File path if available */
+  filePath?: string;
+}
+
+/**
+ * Options for persona inheritance resolution
+ */
+export interface ResolvePersonaInheritanceOptions {
+  /** Maximum inheritance depth (default: 10) */
+  maxDepth?: number;
+}
+
+/**
+ * Result of inheritance resolution
+ */
+export interface ResolvePersonaInheritanceResult {
+  /** Resolved personas with inheritance applied */
+  personas: ParsedPersona[];
+  /** Warnings for non-fatal issues (e.g., missing parent) */
+  warnings: InheritanceWarning[];
+}
+
+type InheritanceError =
+  | {
+      type: 'circular';
+      message: string;
+      persona: string;
+    }
+  | {
+      type: 'depth';
+      message: string;
+      persona: string;
+    };
+
+/**
+ * Merge parent and child personas
+ * Child frontmatter overrides parent, content concatenates
+ */
+function mergePersonas(parent: ParsedPersona, child: ParsedPersona): ParsedPersona {
+  const mergedFrontmatter: Persona = {
+    ...parent.frontmatter,
+    ...Object.fromEntries(
+      Object.entries(child.frontmatter).filter(([, value]) => value !== undefined)
+    ),
+    name: child.frontmatter.name,
+  };
+
+  delete (mergedFrontmatter as { extends?: string }).extends;
+
+  if (parent.frontmatter.cursor || child.frontmatter.cursor) {
+    mergedFrontmatter.cursor = {
+      ...parent.frontmatter.cursor,
+      ...child.frontmatter.cursor,
+    };
+  }
+
+  if (parent.frontmatter.claude || child.frontmatter.claude) {
+    mergedFrontmatter.claude = {
+      ...parent.frontmatter.claude,
+      ...child.frontmatter.claude,
+    };
+  }
+
+  if (parent.frontmatter.factory || child.frontmatter.factory) {
+    mergedFrontmatter.factory = {
+      ...parent.frontmatter.factory,
+      ...child.frontmatter.factory,
+    };
+  }
+
+  if (parent.frontmatter.traits || child.frontmatter.traits) {
+    mergedFrontmatter.traits = {
+      ...parent.frontmatter.traits,
+      ...child.frontmatter.traits,
+    };
+  }
+
+  const parentContent = parent.content.trim();
+  const childContent = child.content.trim();
+  const separator = '\n\n---\n\n';
+  const mergedContent =
+    parentContent && childContent
+      ? `${parentContent}${separator}${childContent}`
+      : parentContent || childContent;
+
+  return {
+    frontmatter: mergedFrontmatter,
+    content: mergedContent,
+    ...(child.filePath !== undefined ? { filePath: child.filePath } : {}),
+  };
+}
+
+/**
+ * Resolve inheritance chain for a persona
+ */
+function resolveInheritanceChain(
+  persona: ParsedPersona,
+  personaMap: Map<string, ParsedPersona>,
+  visited: Set<string>,
+  maxDepth: number
+): Result<ParsedPersona, InheritanceError> {
+  const name = persona.frontmatter.name;
+
+  if (visited.has(name)) {
+    const cycle = [...visited, name].join(' → ');
+    return err({
+      type: 'circular',
+      message: `Circular inheritance detected: ${cycle}`,
+      persona: name,
+    });
+  }
+
+  if (visited.size >= maxDepth) {
+    return err({
+      type: 'depth',
+      message: `Maximum inheritance depth (${maxDepth}) exceeded`,
+      persona: name,
+    });
+  }
+
+  const parentName = persona.frontmatter.extends;
+  if (!parentName) {
+    return ok(persona);
+  }
+
+  visited.add(name);
+  const parent = personaMap.get(parentName);
+
+  if (!parent) {
+    return ok(persona);
+  }
+
+  const parentResult = resolveInheritanceChain(parent, personaMap, visited, maxDepth);
+  if (!parentResult.ok) {
+    return parentResult;
+  }
+
+  return ok(mergePersonas(parentResult.value, persona));
+}
+
+/**
+ * Resolve inheritance for all personas
+ *
+ * @param personas - Array of parsed personas
+ * @param options - Resolution options
+ * @returns Resolved personas with inheritance applied
+ */
+export function resolvePersonaInheritance(
+  personas: ParsedPersona[],
+  options: ResolvePersonaInheritanceOptions = {}
+): Result<ResolvePersonaInheritanceResult, ParseError> {
+  const maxDepth = options.maxDepth ?? 10;
+  const warnings: InheritanceWarning[] = [];
+  const resolved: ParsedPersona[] = [];
+  const personaMap = new Map<string, ParsedPersona>();
+  const uniquePersonas: ParsedPersona[] = [];
+
+  for (const persona of personas) {
+    const personaName = persona.frontmatter.name;
+    const existing = personaMap.get(personaName);
+
+    if (existing) {
+      const keptPath = existing.filePath ?? 'previous source';
+      const ignoredPath = persona.filePath ?? 'later source';
+      warnings.push({
+        persona: personaName,
+        message: `Duplicate persona '${personaName}' found; keeping first occurrence (${keptPath}), ignoring ${ignoredPath}`,
+        ...(persona.filePath !== undefined ? { filePath: persona.filePath } : {}),
+      });
+      continue;
+    }
+
+    personaMap.set(personaName, persona);
+    uniquePersonas.push(persona);
+  }
+
+  for (const persona of uniquePersonas) {
+    const visited = new Set<string>();
+    const result = resolveInheritanceChain(persona, personaMap, visited, maxDepth);
+
+    if (!result.ok) {
+      return err(
+        createParseError(result.error.message, {
+          filePath: persona.filePath,
+        })
+      );
+    }
+
+    if (persona.frontmatter.extends && !personaMap.has(persona.frontmatter.extends)) {
+      warnings.push({
+        persona: persona.frontmatter.name,
+        message: `Parent persona '${persona.frontmatter.extends}' not found, inheritance skipped`,
+        ...(persona.filePath !== undefined ? { filePath: persona.filePath } : {}),
+      });
+    }
+
+    resolved.push(result.value);
+  }
+
+  return ok({ personas: resolved, warnings });
 }

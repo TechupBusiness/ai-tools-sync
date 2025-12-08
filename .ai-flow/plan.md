@@ -214,7 +214,7 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
 
 #### Track B: Persona Composition (P2)
 
-- [ ] **T227** - Implement persona inheritance
+- [x] **T227** - Implement persona inheritance
   - Syntax: `extends: base-implementer`
   - Merge frontmatter fields (child overrides parent)
   - Concatenate content sections

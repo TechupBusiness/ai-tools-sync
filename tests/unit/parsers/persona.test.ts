@@ -10,7 +10,9 @@ import {
   parsePersonas,
   filterPersonasByTarget,
   getUniqueTools,
+  resolvePersonaInheritance,
   PERSONA_DEFAULTS,
+  type ParsedPersona,
 } from '../../../src/parsers/persona.js';
 import { isOk, isErr } from '../../../src/utils/result.js';
 
@@ -231,6 +233,53 @@ Content`;
         expect(result.value.frontmatter.model).toBe('gpt-4-turbo');
       }
     });
+
+    it('should parse persona with valid extends field', () => {
+      const content = `---
+name: child
+extends: base
+---
+Content`;
+
+      const result = parsePersona(content);
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.frontmatter.extends).toBe('base');
+      }
+    });
+
+    it('should return error for non-string extends', () => {
+      const content = `---
+name: child
+extends: 123
+---
+Content`;
+
+      const result = parsePersona(content);
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        const paths = result.error.validationErrors?.map((e) => e.path);
+        expect(paths).toContain('extends');
+      }
+    });
+
+    it('should return error for empty extends', () => {
+      const content = `---
+name: child
+extends: "   "
+---
+Content`;
+
+      const result = parsePersona(content);
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        const messages = result.error.validationErrors?.map((e) => e.message).join(' ');
+        expect(messages).toContain('extends');
+      }
+    });
   });
 
   describe('parsePersonas()', () => {
@@ -260,6 +309,221 @@ Content`;
       expect(isErr(result)).toBe(true);
       if (isErr(result)) {
         expect(result.error.length).toBe(2);
+      }
+    });
+  });
+
+  describe('resolvePersonaInheritance()', () => {
+    it('should merge parent frontmatter and content with separator', () => {
+      const parent: ParsedPersona = {
+        frontmatter: {
+          name: 'base-implementer',
+          description: 'Base implementer',
+          tools: ['read', 'write', 'edit'],
+          model: 'default',
+          targets: ['cursor', 'claude'],
+        },
+        content: '# Base Implementer\n\nBase content here.',
+      };
+
+      const child: ParsedPersona = {
+        frontmatter: {
+          name: 'senior-implementer',
+          extends: 'base-implementer',
+          description: 'Senior implementer',
+          tools: ['read', 'write', 'edit', 'execute'],
+        },
+        content: '## Senior Additions\n\nAdditional content.',
+        filePath: 'personas/senior-implementer.md',
+      };
+
+      const result = resolvePersonaInheritance([parent, child]);
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.warnings).toHaveLength(0);
+        const resolved = result.value.personas.find(
+          (p) => p.frontmatter.name === 'senior-implementer'
+        );
+        expect(resolved).toBeDefined();
+        expect(resolved?.frontmatter.description).toBe('Senior implementer');
+        expect(resolved?.frontmatter.tools).toEqual(['read', 'write', 'edit', 'execute']);
+        expect(resolved?.frontmatter.model).toBe('default');
+        expect(resolved?.frontmatter.targets).toEqual(['cursor', 'claude']);
+        expect(resolved?.frontmatter.extends).toBeUndefined();
+        expect(resolved?.content).toContain('Base Implementer');
+        expect(resolved?.content).toContain('Senior Additions');
+        expect(resolved?.content).toContain('---');
+        expect(resolved?.filePath).toBe('personas/senior-implementer.md');
+      }
+    });
+
+    it('should resolve multi-level inheritance', () => {
+      const base: ParsedPersona = {
+        frontmatter: { name: 'base', model: 'default' },
+        content: 'Base content',
+      };
+      const middle: ParsedPersona = {
+        frontmatter: { name: 'middle', extends: 'base', tools: ['read'] },
+        content: 'Middle content',
+      };
+      const leaf: ParsedPersona = {
+        frontmatter: { name: 'leaf', extends: 'middle', description: 'Leaf override' },
+        content: 'Leaf content',
+      };
+
+      const result = resolvePersonaInheritance([base, middle, leaf]);
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        const resolved = result.value.personas.find((p) => p.frontmatter.name === 'leaf');
+        expect(resolved).toBeDefined();
+        expect(resolved?.frontmatter.model).toBe('default');
+        expect(resolved?.frontmatter.tools).toEqual(['read']);
+        expect(resolved?.frontmatter.description).toBe('Leaf override');
+        expect(resolved?.content).toBe('Base content\n\n---\n\nMiddle content\n\n---\n\nLeaf content');
+      }
+    });
+
+    it('should warn when parent is missing', () => {
+      const orphan: ParsedPersona = {
+        frontmatter: { name: 'orphan', extends: 'ghost' },
+        content: 'Content',
+        filePath: 'personas/orphan.md',
+      };
+
+      const result = resolvePersonaInheritance([orphan]);
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.warnings).toHaveLength(1);
+        expect(result.value.warnings[0]).toMatchObject({
+          persona: 'orphan',
+          filePath: 'personas/orphan.md',
+        });
+        expect(result.value.personas[0].frontmatter.extends).toBe('ghost');
+      }
+    });
+
+    it('should detect circular references', () => {
+      const a: ParsedPersona = {
+        frontmatter: { name: 'persona-a', extends: 'persona-b' },
+        content: 'A',
+      };
+      const b: ParsedPersona = {
+        frontmatter: { name: 'persona-b', extends: 'persona-a' },
+        content: 'B',
+      };
+
+      const result = resolvePersonaInheritance([a, b]);
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        expect(result.error.message).toContain('Circular');
+      }
+    });
+
+    it('should respect max depth limit', () => {
+      const a: ParsedPersona = {
+        frontmatter: { name: 'a', extends: 'b' },
+        content: 'A',
+      };
+      const b: ParsedPersona = {
+        frontmatter: { name: 'b', extends: 'c' },
+        content: 'B',
+      };
+      const c: ParsedPersona = {
+        frontmatter: { name: 'c' },
+        content: 'C',
+      };
+
+      const result = resolvePersonaInheritance([a, b, c], { maxDepth: 1 });
+
+      expect(isErr(result)).toBe(true);
+      if (isErr(result)) {
+        expect(result.error.message).toContain('Maximum inheritance depth');
+      }
+    });
+
+    it('should merge platform extensions with child priority', () => {
+      const parent: ParsedPersona = {
+        frontmatter: {
+          name: 'base',
+          cursor: { alwaysApply: true, globs: ['**/*.ts'] },
+          claude: { model: 'opus' },
+        },
+        content: 'Base',
+      };
+
+      const child: ParsedPersona = {
+        frontmatter: {
+          name: 'child',
+          extends: 'base',
+          cursor: { globs: ['**/*.tsx'] },
+          factory: { reasoningEffort: 'high' },
+        },
+        content: 'Child',
+      };
+
+      const result = resolvePersonaInheritance([parent, child]);
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        const resolved = result.value.personas.find((p) => p.frontmatter.name === 'child');
+        expect(resolved?.frontmatter.cursor).toEqual({
+          alwaysApply: true,
+          globs: ['**/*.tsx'],
+        });
+        expect(resolved?.frontmatter.claude).toEqual({ model: 'opus' });
+        expect(resolved?.frontmatter.factory).toEqual({ reasoningEffort: 'high' });
+      }
+    });
+
+    it('should warn on duplicate persona names and keep first', () => {
+      const first: ParsedPersona = {
+        frontmatter: { name: 'duplicate', description: 'first' },
+        content: 'First',
+        filePath: 'project/duplicate.md',
+      };
+      const second: ParsedPersona = {
+        frontmatter: { name: 'duplicate', description: 'second' },
+        content: 'Second',
+        filePath: 'defaults/duplicate.md',
+      };
+
+      const result = resolvePersonaInheritance([first, second]);
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.personas).toHaveLength(1);
+        expect(result.value.personas[0].frontmatter.description).toBe('first');
+        expect(result.value.warnings).toHaveLength(1);
+        expect(result.value.warnings[0].message).toContain('Duplicate persona');
+        expect(result.value.warnings[0].persona).toBe('duplicate');
+      }
+    });
+
+    it('should keep first duplicate persona and warn', () => {
+      const first: ParsedPersona = {
+        frontmatter: { name: 'duplicate', description: 'first' },
+        content: 'First',
+        filePath: 'project/duplicate.md',
+      };
+      const second: ParsedPersona = {
+        frontmatter: { name: 'duplicate', description: 'second' },
+        content: 'Second',
+        filePath: 'defaults/duplicate.md',
+      };
+
+      const result = resolvePersonaInheritance([first, second]);
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.personas).toHaveLength(1);
+        expect(result.value.personas[0].frontmatter.description).toBe('first');
+        expect(result.value.warnings).toHaveLength(1);
+        expect(result.value.warnings[0].message).toContain('Duplicate persona');
+        expect(result.value.warnings[0].persona).toBe('duplicate');
       }
     });
   });

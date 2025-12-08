@@ -32,6 +32,7 @@ import {
   getLoadResultStats,
 } from '../../loaders/base.js';
 import { createLocalLoader } from '../../loaders/local.js';
+import { resolvePersonaInheritance } from '../../parsers/persona.js';
 import { updateGitignore, updateToolFolderGitignores } from '../../utils/gitignore.js';
 import { logger } from '../../utils/logger.js';
 import {
@@ -98,6 +99,7 @@ export interface SyncResult {
 export async function sync(options: SyncOptions = {}): Promise<SyncResult> {
   const startTime = Date.now();
   const projectRoot = path.resolve(options.projectRoot ?? process.cwd());
+  const warningMessages: string[] = [];
 
   printHeader('AI Tool Sync');
 
@@ -167,6 +169,34 @@ export async function sync(options: SyncOptions = {}): Promise<SyncResult> {
     }
   }
 
+  // Resolve persona inheritance before generating output
+  const inheritanceResult = resolvePersonaInheritance(loadResult.personas);
+
+  if (!inheritanceResult.ok) {
+    const message = inheritanceResult.error.message;
+    printError(message);
+    return {
+      success: false,
+      filesGenerated: 0,
+      filesDeleted: 0,
+      warnings: warningMessages,
+      errors: [message],
+      duration: Date.now() - startTime,
+    };
+  }
+
+  if (inheritanceResult.value.warnings.length > 0) {
+    for (const warning of inheritanceResult.value.warnings) {
+      const formatted = warning.filePath
+        ? `${warning.persona}: ${warning.message} (${warning.filePath})`
+        : `${warning.persona}: ${warning.message}`;
+      logger.warn(formatted);
+      warningMessages.push(formatted);
+    }
+  }
+
+  loadResult.personas = inheritanceResult.value.personas;
+
   // Step 3: Create resolved content
   const resolvedContent = createResolvedContent(
     loadResult,
@@ -205,7 +235,7 @@ export async function sync(options: SyncOptions = {}): Promise<SyncResult> {
 
   // Report results
   const stats = getGenerateResultStats(generateResult);
-  const totalWarnings = [...generateResult.warnings];
+  const totalWarnings = [...warningMessages, ...generateResult.warnings];
 
   // Print generated files in verbose mode
   if (options.verbose && generateResult.files.length > 0) {
@@ -216,7 +246,7 @@ export async function sync(options: SyncOptions = {}): Promise<SyncResult> {
   }
 
   // Print summary
-  const success = generateResult.warnings.filter((w) => w.includes('error')).length === 0;
+  const success = totalWarnings.filter((w) => w.includes('error')).length === 0;
 
   printSummary({
     success,
@@ -227,8 +257,8 @@ export async function sync(options: SyncOptions = {}): Promise<SyncResult> {
     dryRun: options.dryRun,
   });
 
-  if (generateResult.warnings.length > 0) {
-    for (const warning of generateResult.warnings) {
+  if (totalWarnings.length > 0) {
+    for (const warning of totalWarnings) {
       printWarning(warning);
     }
   }

@@ -49,10 +49,14 @@ export {
   parsePersonas,
   filterPersonasByTarget,
   getUniqueTools,
+  resolvePersonaInheritance,
   PERSONA_DEFAULTS,
   type Persona,
   type ParsedPersona,
   type PersonaTool,
+  type InheritanceWarning,
+  type ResolvePersonaInheritanceOptions,
+  type ResolvePersonaInheritanceResult,
 } from './persona.js';
 
 // Command parser
