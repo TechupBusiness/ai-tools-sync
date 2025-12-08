@@ -13,10 +13,12 @@ import { Command } from 'commander';
 import { VERSION } from '../index.js';
 import { logger } from '../utils/logger.js';
 
+import { clean } from './commands/clean.js';
 import { init } from './commands/init.js';
 import { merge } from './commands/merge.js';
 import { migrate } from './commands/migrate.js';
 import { createPluginsCommand } from './commands/plugins.js';
+import { status } from './commands/status.js';
 import { sync } from './commands/sync.js';
 import { validate } from './commands/validate.js';
 import { watch } from './commands/watch.js';
@@ -160,6 +162,76 @@ program
   });
 
 program
+  .command('clean')
+  .description('Remove generated files')
+  .option('-v, --verbose', 'Show detailed output')
+  .option('-f, --force', 'Remove even modified files (with warnings)')
+  .option('-d, --dry-run', 'Show what would be deleted without deleting')
+  .option('-p, --project <path>', 'Project root directory')
+  .option('-c, --config-dir <path>', 'Configuration directory name')
+  .action(async (options: {
+    verbose?: boolean;
+    force?: boolean;
+    dryRun?: boolean;
+    project?: string;
+    configDir?: string;
+  }) => {
+    if (options.verbose) {
+      logger.setVerbose(true);
+    }
+
+    try {
+      const result = await clean({
+        verbose: options.verbose,
+        force: options.force,
+        dryRun: options.dryRun,
+        projectRoot: options.project,
+        configDir: options.configDir,
+      });
+
+      if (!result.success) {
+        process.exit(1);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error(`Clean failed: ${message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('status')
+  .description('Show status of generated files')
+  .option('-v, --verbose', 'Show all files, not just summary')
+  .option('-p, --project <path>', 'Project root directory')
+  .option('-c, --config-dir <path>', 'Configuration directory name')
+  .action(async (options: {
+    verbose?: boolean;
+    project?: string;
+    configDir?: string;
+  }) => {
+    if (options.verbose) {
+      logger.setVerbose(true);
+    }
+
+    try {
+      const result = await status({
+        verbose: options.verbose,
+        projectRoot: options.project,
+        configDir: options.configDir,
+      });
+
+      if (!result.success) {
+        process.exit(1);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error(`Status failed: ${message}`);
+      process.exit(1);
+    }
+  });
+
+program
   .command('migrate')
   .description('Discover and migrate existing AI tool configurations')
   .option('-v, --verbose', 'Enable verbose output')
@@ -266,12 +338,14 @@ export function run(): void {
 export default run;
 
 // Re-export commands for programmatic usage
-export { sync, init, validate, migrate, merge };
+export { sync, init, validate, migrate, merge, clean, status };
 export type { SyncOptions, SyncResult } from './commands/sync.js';
 export type { InitOptions, InitResult } from './commands/init.js';
 export type { ValidateOptions, ValidateResult } from './commands/validate.js';
 export type { MigrateOptions, MigrateResult, DiscoveryResult, DiscoveredFile } from './commands/migrate.js';
 export type { MergeOptions, MergeResult, InputFile, DiffStatus } from './commands/merge.js';
+export type { CleanOptions, CleanResult } from './commands/clean.js';
+export type { StatusOptions, StatusResult, FileStatus } from './commands/status.js';
 export { createPluginsCommand } from './commands/plugins.js';
 
 // Run if executed directly

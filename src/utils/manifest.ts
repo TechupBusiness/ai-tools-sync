@@ -8,10 +8,12 @@
  * - Detection of manual edits to generated files
  */
 
+import { createHash } from 'node:crypto';
+import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
 import { fileExists, readFile, writeFile } from './fs.js';
-import { ok, err, type Result } from './result.js';
+import { ok, err, tryCatchAsync, type Result } from './result.js';
 
 /**
  * Name of the manifest file
@@ -42,6 +44,27 @@ export interface Manifest {
    */
   directories: string[];
 }
+
+/**
+ * Manifest file entry with hash (v2)
+ */
+export interface ManifestFileEntry {
+  path: string;
+  hash: string; // SHA256 hash
+}
+
+/**
+ * Manifest v2 structure with file hashes
+ */
+export interface ManifestV2 {
+  version: string;
+  timestamp: string;
+  files: ManifestFileEntry[];
+  directories: string[];
+}
+
+export type ManifestV1 = Manifest;
+export type ManifestData = ManifestV1 | ManifestV2;
 
 /**
  * Default directories that are always generated
@@ -98,6 +121,37 @@ export function parseManifest(content: string): Manifest {
 }
 
 /**
+ * Parse a JSON manifest (v2) if possible
+ */
+function parseJsonManifest(content: string): ManifestData | null {
+  try {
+    const parsed = JSON.parse(content) as Partial<ManifestData>;
+    if (
+      parsed &&
+      typeof parsed === 'object' &&
+      typeof parsed.version === 'string' &&
+      Array.isArray(parsed.files) &&
+      Array.isArray(parsed.directories)
+    ) {
+      return parsed as ManifestData;
+    }
+  } catch {
+    // Not JSON, fall back to v1 parser
+  }
+  return null;
+}
+
+/**
+ * Determine if the manifest is v2 (has hashed file entries)
+ */
+export function isManifestV2(manifest: ManifestData): manifest is ManifestV2 {
+  if (manifest.version?.startsWith('2.')) {
+    return true;
+  }
+  return Array.isArray(manifest.files) && manifest.files.some((file) => typeof file === 'object');
+}
+
+/**
  * Format a manifest to file content
  */
 export function formatManifest(manifest: Manifest): string {
@@ -146,7 +200,7 @@ export function createManifest(
 /**
  * Read an existing manifest file
  */
-export async function readManifest(projectRoot: string): Promise<Result<Manifest | null>> {
+export async function readManifest(projectRoot: string): Promise<Result<ManifestData | null>> {
   const manifestPath = path.join(projectRoot, MANIFEST_FILENAME);
 
   if (!(await fileExists(manifestPath))) {
@@ -156,6 +210,12 @@ export async function readManifest(projectRoot: string): Promise<Result<Manifest
   const content = await readFile(manifestPath);
   if (!content.ok) {
     return err(content.error);
+  }
+
+  // Try JSON (v2) first
+  const jsonManifest = parseJsonManifest(content.value);
+  if (jsonManifest) {
+    return ok(jsonManifest);
   }
 
   try {
@@ -168,9 +228,14 @@ export async function readManifest(projectRoot: string): Promise<Result<Manifest
 /**
  * Write a manifest file
  */
-export async function writeManifest(projectRoot: string, manifest: Manifest): Promise<Result<void>> {
+export async function writeManifest(
+  projectRoot: string,
+  manifest: ManifestData
+): Promise<Result<void>> {
   const manifestPath = path.join(projectRoot, MANIFEST_FILENAME);
-  const content = formatManifest(manifest);
+  const content = isManifestV2(manifest)
+    ? JSON.stringify(manifest, null, 2) + '\n'
+    : formatManifest(manifest);
   return writeFile(manifestPath, content);
 }
 
@@ -241,5 +306,53 @@ export function getGitignorePaths(manifest: Manifest): string[] {
   paths.push(MANIFEST_FILENAME);
 
   return [...new Set(paths)].sort();
+}
+
+/**
+ * Compute SHA256 hash of file contents
+ */
+export async function computeFileHash(filePath: string): Promise<Result<string>> {
+  return tryCatchAsync(async () => {
+    const buffer = await fs.readFile(filePath);
+    const hash = createHash('sha256').update(buffer).digest('hex');
+    return `sha256:${hash}`;
+  });
+}
+
+/**
+ * Check if a file has been modified since generation
+ */
+export async function isFileModified(
+  projectRoot: string,
+  entry: ManifestFileEntry
+): Promise<Result<boolean>> {
+  const filePath = path.join(projectRoot, entry.path);
+
+  if (!(await fileExists(filePath))) {
+    return ok(true);
+  }
+
+  const hashResult = await computeFileHash(filePath);
+  if (!hashResult.ok) {
+    return err(hashResult.error);
+  }
+
+  return ok(hashResult.value !== entry.hash);
+}
+
+/**
+ * Create a manifest v2 with file hashes
+ */
+export function createManifestV2(
+  files: ManifestFileEntry[],
+  directories: string[],
+  version: string
+): ManifestV2 {
+  return {
+    version,
+    timestamp: new Date().toISOString(),
+    files: [...files],
+    directories: [...directories],
+  };
 }
 
