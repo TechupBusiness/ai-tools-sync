@@ -1,7 +1,7 @@
 import * as path from 'node:path';
 
 import { fileExists } from '../../utils/fs.js';
-import { type ManifestV1, type ManifestV2, readManifest, isManifestV2, isFileModified } from '../../utils/manifest.js';
+import { type ManifestV2, readManifest, isFileModified } from '../../utils/manifest.js';
 import {
   printHeader,
   printSummary,
@@ -96,7 +96,7 @@ export async function status(options: StatusOptions = {}): Promise<StatusResult>
     };
   }
 
-  if ((manifest.files?.length ?? 0) === 0) {
+  if (manifest.files.length === 0) {
     printWarning('No generated files found');
     printSummary({
       success: true,
@@ -113,9 +113,7 @@ export async function status(options: StatusOptions = {}): Promise<StatusResult>
     };
   }
 
-  const statuses = isManifestV2(manifest)
-    ? await getFileStatusesV2(projectRoot, manifest)
-    : await getFileStatusesV1(projectRoot, manifest);
+  const statuses = await getFileStatuses(projectRoot, manifest);
 
   const counts = summarizeStatuses(statuses);
 
@@ -165,7 +163,7 @@ export async function status(options: StatusOptions = {}): Promise<StatusResult>
   return result;
 }
 
-async function getFileStatusesV2(projectRoot: string, manifest: ManifestV2): Promise<FileStatus[]> {
+async function getFileStatuses(projectRoot: string, manifest: ManifestV2): Promise<FileStatus[]> {
   const statuses: FileStatus[] = [];
 
   for (const entry of manifest.files) {
@@ -186,22 +184,6 @@ async function getFileStatusesV2(projectRoot: string, manifest: ManifestV2): Pro
       path: entry.path,
       status: modifiedResult.value ? 'modified' : 'unchanged',
     });
-  }
-
-  return statuses;
-}
-
-async function getFileStatusesV1(projectRoot: string, manifest: ManifestV1): Promise<FileStatus[]> {
-  const statuses: FileStatus[] = [];
-
-  for (const file of manifest.files) {
-    const filePath = path.join(projectRoot, file);
-    const exists = await fileExists(filePath);
-    if (!exists) {
-      statuses.push({ path: file, status: 'missing' });
-      continue;
-    }
-    statuses.push({ path: file, status: 'unknown' });
   }
 
   return statuses;

@@ -1,7 +1,7 @@
 import * as path from 'node:path';
 
 import { deleteFile, fileExists } from '../../utils/fs.js';
-import { type ManifestV1, type ManifestV2, readManifest, isManifestV2, isFileModified } from '../../utils/manifest.js';
+import { type ManifestV2, readManifest, isFileModified } from '../../utils/manifest.js';
 import {
   printHeader,
   printSummary,
@@ -98,7 +98,7 @@ export async function clean(options: CleanOptions = {}): Promise<CleanResult> {
     };
   }
 
-  if ((manifest.files?.length ?? 0) === 0) {
+  if (manifest.files.length === 0) {
     printSuccess('No generated files found');
     printSummary({
       success: true,
@@ -116,51 +116,20 @@ export async function clean(options: CleanOptions = {}): Promise<CleanResult> {
     };
   }
 
-  if (!isManifestV2(manifest) && !options.force) {
-    const message = 'Manifest does not include hashes; rerun with --force to clean';
-    printWarning(message);
-    printSummary({
-      success: false,
-      message,
-      duration: Date.now() - startTime,
-      dryRun: options.dryRun,
-    });
-    return {
-      success: false,
-      deleted: [],
-      skipped: [],
-      missing: [],
-      errors: [message],
-      duration: Date.now() - startTime,
-    };
-  }
-
   const deleted: string[] = [];
   const skipped: string[] = [];
   const missing: string[] = [];
   const errors: string[] = [];
 
-  if (isManifestV2(manifest)) {
-    await cleanV2({
-      manifest,
-      projectRoot,
-      options,
-      deleted,
-      skipped,
-      missing,
-      errors,
-    });
-  } else {
-    await cleanV1({
-      manifest,
-      projectRoot,
-      options,
-      deleted,
-      skipped,
-      missing,
-      errors,
-    });
-  }
+  await cleanV2({
+    manifest,
+    projectRoot,
+    options,
+    deleted,
+    skipped,
+    missing,
+    errors,
+  });
 
   const success = errors.length === 0;
 
@@ -265,47 +234,6 @@ async function cleanV2(params: {
       deleted.push(entry.path);
     } else {
       const message = `Failed to delete ${entry.path}: ${
-        deleteResult.error instanceof Error ? deleteResult.error.message : String(deleteResult.error)
-      }`;
-      errors.push(message);
-      printWarning(message);
-    }
-  }
-}
-
-async function cleanV1(params: {
-  manifest: ManifestV1;
-  projectRoot: string;
-  options: CleanOptions;
-  deleted: string[];
-  skipped: string[];
-  missing: string[];
-  errors: string[];
-}): Promise<void> {
-  const { manifest, projectRoot, options, deleted, skipped: _skipped, missing, errors } = params;
-
-  printWarning('Manifest v1 detected - unable to detect modifications');
-  printSubHeader('Removing generated files...');
-
-  for (const file of manifest.files) {
-    const filePath = path.join(projectRoot, file);
-
-    if (!(await fileExists(filePath))) {
-      missing.push(file);
-      printListItem(`Already missing: ${file}`);
-      continue;
-    }
-
-    printWarning(`Removing without hash check: ${file}`);
-    if (options.dryRun) {
-      continue;
-    }
-
-    const deleteResult = await deleteFile(filePath);
-    if (deleteResult.ok) {
-      deleted.push(file);
-    } else {
-      const message = `Failed to delete ${file}: ${
         deleteResult.error instanceof Error ? deleteResult.error.message : String(deleteResult.error)
       }`;
       errors.push(message);

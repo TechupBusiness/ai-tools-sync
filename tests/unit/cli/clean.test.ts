@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { clean } from '../../../src/cli/commands/clean.js';
 import * as fsUtils from '../../../src/utils/fs.js';
-import { MANIFEST_FILENAME, type ManifestV1, type ManifestV2 } from '../../../src/utils/manifest.js';
+import { MANIFEST_FILENAME, type ManifestV2 } from '../../../src/utils/manifest.js';
 import { err } from '../../../src/utils/result.js';
 
 // Mock logger to suppress output during tests
@@ -143,32 +143,6 @@ describe('Clean Command', () => {
     expect(result.success).toBe(true);
     expect(result.deleted).toHaveLength(0);
     expect(await fsUtils.fileExists(path.join(testDir, filePath))).toBe(true);
-  });
-
-  it('should require force when manifest lacks hashes', async () => {
-    const manifest: ManifestV1 = {
-      version: '1.0.0',
-      timestamp: new Date().toISOString(),
-      files: ['file.txt'],
-      directories: [],
-    };
-    const manifestPath = path.join(testDir, MANIFEST_FILENAME);
-    await fs.writeFile(
-      manifestPath,
-      [
-        '# version: 1.0.0',
-        `# timestamp: ${manifest.timestamp}`,
-        '#',
-        '# Files:',
-        ...manifest.files,
-        '',
-      ].join('\n')
-    );
-
-    const result = await clean({ projectRoot: testDir });
-
-    expect(result.success).toBe(false);
-    expect(result.errors[0]).toContain('Manifest does not include hashes');
   });
 
   it('should continue on delete errors', async () => {

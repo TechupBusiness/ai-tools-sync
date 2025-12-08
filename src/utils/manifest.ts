@@ -12,6 +12,11 @@ import { createHash } from 'node:crypto';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
+import Ajv, { type ErrorObject } from 'ajv';
+import addFormats from 'ajv-formats';
+
+import manifestSchema from '../schemas/manifest.schema.json' assert { type: 'json' };
+
 import { fileExists, readFile, writeFile } from './fs.js';
 import { logger } from './logger.js';
 import { ok, err, tryCatchAsync, type Result } from './result.js';
@@ -22,50 +27,22 @@ import { ok, err, tryCatchAsync, type Result } from './result.js';
 export const MANIFEST_FILENAME = '.ai-tool-sync-generated';
 
 /**
- * Manifest file content structure
- */
-export interface Manifest {
-  /**
-   * Version of ai-tool-sync that generated this manifest
-   */
-  version: string;
-
-  /**
-   * Timestamp when the manifest was last updated
-   */
-  timestamp: string;
-
-  /**
-   * List of generated file paths (relative to project root)
-   */
-  files: string[];
-
-  /**
-   * List of generated directories (relative to project root)
-   */
-  directories: string[];
-}
-
-/**
  * Manifest file entry with hash (v2)
  */
 export interface ManifestFileEntry {
   path: string;
-  hash: string; // SHA256 hash
+  hash: string; // Format: sha256:<64-char-hex>
 }
 
 /**
  * Manifest v2 structure with file hashes
  */
 export interface ManifestV2 {
-  version: string;
+  version: '2.0.0';
   timestamp: string;
   files: ManifestFileEntry[];
   directories: string[];
 }
-
-export type ManifestV1 = Manifest;
-export type ManifestData = ManifestV1 | ManifestV2;
 
 /**
  * Default directories that are always generated
@@ -86,122 +63,47 @@ export const DEFAULT_GENERATED_FILES: readonly string[] = [
   'mcp.json',
 ] as const;
 
-/**
- * Parse a manifest file content
- */
-export function parseManifest(content: string): Manifest {
-  const lines = content.split('\n');
-  let version = '';
-  let timestamp = '';
-  const files: string[] = [];
-  const directories: string[] = [];
+const ajv = new Ajv({ allErrors: true });
+addFormats(ajv);
+const validateSchema = ajv.compile<ManifestV2>(manifestSchema);
 
-  for (const line of lines) {
-    const trimmed = line.trim();
-
-    // Skip empty lines and comments
-    if (!trimmed || trimmed.startsWith('#')) {
-      // Extract metadata from special comments
-      if (trimmed.startsWith('# version:')) {
-        version = trimmed.replace('# version:', '').trim();
-      } else if (trimmed.startsWith('# timestamp:')) {
-        timestamp = trimmed.replace('# timestamp:', '').trim();
-      }
-      continue;
-    }
-
-    // Directories end with /
-    if (trimmed.endsWith('/')) {
-      directories.push(trimmed);
-    } else {
-      files.push(trimmed);
-    }
+function formatAjvErrors(errors: ErrorObject[] | null | undefined): string {
+  if (!errors?.length) {
+    return 'Unknown error';
   }
 
-  return { version, timestamp, files, directories };
+  return errors
+    .map((error) => {
+      const path = error.instancePath || error.schemaPath || '';
+      const message = error.message ?? 'is invalid';
+      return path ? `${path} ${message}` : message;
+    })
+    .join(', ');
 }
 
 /**
- * Parse a JSON manifest (v2) if possible
+ * Validate manifest data against the v2 schema
  */
-function parseJsonManifest(content: string): ManifestData | null {
-  try {
-    const parsed = JSON.parse(content) as Partial<ManifestData>;
-    if (
-      parsed &&
-      typeof parsed === 'object' &&
-      typeof parsed.version === 'string' &&
-      Array.isArray(parsed.files) &&
-      Array.isArray(parsed.directories)
-    ) {
-      return parsed as ManifestData;
-    }
-  } catch {
-    // Not JSON, fall back to v1 parser
+export function validateManifest(data: unknown): Result<ManifestV2> {
+  if (validateSchema(data)) {
+    return ok(data);
   }
-  return null;
+
+  const errors = formatAjvErrors(validateSchema.errors);
+  return err(new Error(`Invalid manifest: ${errors}`));
 }
 
 /**
- * Determine if the manifest is v2 (has hashed file entries)
+ * Determine if the manifest matches the v2 schema
  */
-export function isManifestV2(manifest: ManifestData): manifest is ManifestV2 {
-  if (manifest.version?.startsWith('2.')) {
-    return true;
-  }
-  return Array.isArray(manifest.files) && manifest.files.some((file) => typeof file === 'object');
-}
-
-/**
- * Format a manifest to file content
- */
-export function formatManifest(manifest: Manifest): string {
-  const lines: string[] = [
-    '# AI Tool Sync Generated Files',
-    '# This file is auto-generated. Do not edit manually.',
-    '#',
-    `# version: ${manifest.version}`,
-    `# timestamp: ${manifest.timestamp}`,
-    '#',
-    '# Directories:',
-  ];
-
-  // Add directories (sorted)
-  for (const dir of [...manifest.directories].sort()) {
-    lines.push(dir);
-  }
-
-  lines.push('#');
-  lines.push('# Files:');
-
-  // Add files (sorted)
-  for (const file of [...manifest.files].sort()) {
-    lines.push(file);
-  }
-
-  return lines.join('\n') + '\n';
-}
-
-/**
- * Create a new manifest from generated files
- */
-export function createManifest(
-  files: string[],
-  directories: string[],
-  version: string
-): Manifest {
-  return {
-    version,
-    timestamp: new Date().toISOString(),
-    files: [...new Set(files)].sort(),
-    directories: [...new Set(directories)].sort(),
-  };
+export function isManifestV2(value: unknown): value is ManifestV2 {
+  return validateSchema(value) === true;
 }
 
 /**
  * Read an existing manifest file
  */
-export async function readManifest(projectRoot: string): Promise<Result<ManifestData | null>> {
+export async function readManifest(projectRoot: string): Promise<Result<ManifestV2 | null>> {
   const manifestPath = path.join(projectRoot, MANIFEST_FILENAME);
 
   if (!(await fileExists(manifestPath))) {
@@ -213,17 +115,20 @@ export async function readManifest(projectRoot: string): Promise<Result<Manifest
     return err(content.error);
   }
 
-  // Try JSON (v2) first
-  const jsonManifest = parseJsonManifest(content.value);
-  if (jsonManifest) {
-    return ok(jsonManifest);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(content.value);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    return err(new Error(`Failed to parse manifest JSON: ${message}`));
   }
 
-  try {
-    return ok(parseManifest(content.value));
-  } catch (e) {
-    return err(new Error(`Failed to parse manifest: ${e instanceof Error ? e.message : String(e)}`));
+  const validation = validateManifest(parsed);
+  if (!validation.ok) {
+    return err(validation.error);
   }
+
+  return ok(validation.value);
 }
 
 /**
@@ -231,12 +136,15 @@ export async function readManifest(projectRoot: string): Promise<Result<Manifest
  */
 export async function writeManifest(
   projectRoot: string,
-  manifest: ManifestData
+  manifest: ManifestV2
 ): Promise<Result<void>> {
+  const validation = validateManifest(manifest);
+  if (!validation.ok) {
+    return err(validation.error);
+  }
+
   const manifestPath = path.join(projectRoot, MANIFEST_FILENAME);
-  const content = isManifestV2(manifest)
-    ? JSON.stringify(manifest, null, 2) + '\n'
-    : formatManifest(manifest);
+  const content = JSON.stringify(validation.value, null, 2) + '\n';
   return writeFile(manifestPath, content);
 }
 
@@ -251,20 +159,14 @@ export function collectGeneratedPaths(files: string[], projectRoot: string): {
   const dirSet = new Set<string>();
 
   for (const file of files) {
-    // Normalize path to be relative
-    const relativePath = path.isAbsolute(file)
-      ? path.relative(projectRoot, file)
-      : file;
+    const relativePath = path.isAbsolute(file) ? path.relative(projectRoot, file) : file;
 
     fileSet.add(relativePath);
 
-    // Extract directory path
     const dirPath = path.dirname(relativePath);
     if (dirPath && dirPath !== '.') {
-      // Add the directory with trailing slash
-      dirSet.add(dirPath + '/');
+      dirSet.add(`${dirPath}/`);
 
-      // Also add parent directories for known generated dirs
       for (const knownDir of DEFAULT_GENERATED_DIRECTORIES) {
         const knownDirClean = knownDir.replace(/\/$/, '');
         if (relativePath.startsWith(knownDirClean)) {
@@ -283,27 +185,23 @@ export function collectGeneratedPaths(files: string[], projectRoot: string): {
 /**
  * Get all paths that should be in .gitignore
  */
-export function getGitignorePaths(manifest: Manifest): string[] {
+export function getGitignorePaths(manifest: ManifestV2): string[] {
   const paths: string[] = [];
   const generatedDirs: string[] = [...DEFAULT_GENERATED_DIRECTORIES];
   const generatedFiles: string[] = [...DEFAULT_GENERATED_FILES];
 
-  // Add directories (these are more efficient to ignore)
   for (const dir of manifest.directories) {
-    // Only add top-level generated directories
     if (generatedDirs.includes(dir)) {
       paths.push(dir);
     }
   }
 
-  // Add root-level generated files
   for (const file of manifest.files) {
-    if (generatedFiles.includes(file)) {
-      paths.push(file);
+    if (generatedFiles.includes(file.path)) {
+      paths.push(file.path);
     }
   }
 
-  // Always include the manifest file itself
   paths.push(MANIFEST_FILENAME);
 
   return [...new Set(paths)].sort();
@@ -347,7 +245,7 @@ export async function isFileModified(
 export function createManifestV2(
   files: ManifestFileEntry[],
   directories: string[],
-  version: string
+  version: ManifestV2['version']
 ): ManifestV2 {
   return {
     version,

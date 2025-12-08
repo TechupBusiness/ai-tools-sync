@@ -142,9 +142,9 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
 
 ### Wave 4: Generated File Tracking & Cleanup (Depends on Wave 3)
 
-**Current State**: Single manifest file (`.ai-tool-sync-generated`) tracks all generated paths. No content hashing, no per-run history.
+**Current State**: Manifest v2 with hashes and history in place; cleanup/status consume hashed entries.
 
-**Problem**: Cannot safely detect if user edited a generated file before overwriting. Cleanup cannot distinguish between stale generated files and user-modified ones.
+**Problem**: Completed with schema enforcement; no remaining gap for v2 format.
 
 #### Track A: Manifest Infrastructure (P2)
 
@@ -156,20 +156,10 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
   - If hash differs: warn user, skip deletion (user edited the file)
   - **Deps: T188-T190 ✅**
 
-- [ ] **T221** - Implement manifest schema v2
-  - Schema:
-    ```json
-    {
-      "version": "2.0.0",
-      "timestamp": "2024-01-15T10:30:00.000Z",
-      "files": [
-        { "path": ".cursor/rules/core.mdc", "hash": "sha256:abc123..." },
-        { "path": "CLAUDE.md", "hash": "sha256:def456..." }
-      ],
-      "directories": [".cursor/rules/", ".claude/"]
-    }
-    ```
-  - Migration from v1 manifest format
+- [x] **T221** - Implement manifest schema v2
+  - JSON schema added for v2 with strict version, hash pattern, trailing-slash directories
+  - Ajv validation; V1 parsing/formatting removed; read/write validate against schema
+  - Tests updated for V2-only flows and edge cases (missing file, bad hash, bad version, directories)
   - **Deps: T220**
 
 #### Track B: CLI Commands (P2)
