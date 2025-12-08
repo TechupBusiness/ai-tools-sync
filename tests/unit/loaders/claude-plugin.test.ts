@@ -161,6 +161,109 @@ describe('ClaudePluginLoader', () => {
     });
   });
 
+  describe('load() - hooks from hooks/hooks.json', () => {
+    const fullHooksPluginPath = path.join(FIXTURES_PATH, 'full-hooks-plugin');
+
+    describe('event types', () => {
+      it('should parse all Claude event types', async () => {
+        const result = await loader.load(`claude-plugin:${fullHooksPluginPath}`);
+
+        const events = result.hooks.map((h) => h.frontmatter.event);
+        expect(events).toEqual(
+          expect.arrayContaining([
+            'UserPromptSubmit',
+            'PreToolUse',
+            'PostToolUse',
+            'Notification',
+            'Stop',
+            'SubagentStop',
+            'SessionStart',
+            'SessionEnd',
+            'PreCompact',
+          ])
+        );
+        expect(result.hooks.length).toBeGreaterThanOrEqual(9);
+      });
+
+      it('should map UserPromptSubmit event correctly', async () => {
+        const result = await loader.load(`claude-plugin:${fullHooksPluginPath}`);
+
+        const promptFilter = result.hooks.find((h) => h.frontmatter.name === 'prompt-filter');
+        expect(promptFilter).toBeDefined();
+        expect(promptFilter!.frontmatter.event).toBe('UserPromptSubmit');
+      });
+
+      it('should map session lifecycle events correctly', async () => {
+        const result = await loader.load(`claude-plugin:${fullHooksPluginPath}`);
+
+        const sessionStart = result.hooks.find((h) => h.frontmatter.name === 'init-workspace');
+        const sessionEnd = result.hooks.find((h) => h.frontmatter.name === 'save-context');
+        expect(sessionStart?.frontmatter.event).toBe('SessionStart');
+        expect(sessionEnd?.frontmatter.event).toBe('SessionEnd');
+      });
+    });
+
+    describe('matcher patterns', () => {
+      it('should preserve complex match patterns', async () => {
+        const result = await loader.load(`claude-plugin:${fullHooksPluginPath}`);
+
+        const securityHook = result.hooks.find((h) => h.frontmatter.name === 'security-check');
+        expect(securityHook).toBeDefined();
+        expect(securityHook!.frontmatter.tool_match).toBe('Bash(*rm*)|Bash(*sudo*)');
+      });
+
+      it('should handle pipe-separated matchers', async () => {
+        const result = await loader.load(`claude-plugin:${fullHooksPluginPath}`);
+
+        const formatHook = result.hooks.find((h) => h.frontmatter.name === 'format-on-edit');
+        expect(formatHook?.frontmatter.tool_match).toBe('Write|Edit');
+      });
+    });
+
+    describe('hook types', () => {
+      it('should preserve hook type (command/validation/notification)', async () => {
+        const result = await loader.load(`claude-plugin:${fullHooksPluginPath}`);
+
+        const promptFilter = result.hooks.find((h) => h.frontmatter.name === 'prompt-filter');
+        const notification = result.hooks.find((h) => h.frontmatter.name === 'cleanup');
+        expect(promptFilter?.frontmatter.claude?.type).toBe('validation');
+        expect(notification?.frontmatter.claude?.type).toBe('notification');
+      });
+    });
+
+    describe('path resolution', () => {
+      it('should resolve ${CLAUDE_PLUGIN_ROOT} in command paths', async () => {
+        const result = await loader.load(`claude-plugin:${fullHooksPluginPath}`);
+
+        const promptFilter = result.hooks.find((h) => h.frontmatter.name === 'prompt-filter');
+        expect(promptFilter).toBeDefined();
+        expect(promptFilter!.frontmatter.execute).not.toContain('${CLAUDE_PLUGIN_ROOT}');
+        expect(promptFilter!.frontmatter.execute).toContain(fullHooksPluginPath);
+      });
+    });
+
+    describe('hook actions', () => {
+      it('should preserve hook action types', async () => {
+        const result = await loader.load(`claude-plugin:${fullHooksPluginPath}`);
+
+        const fileGuard = result.hooks.find((h) => h.frontmatter.name === 'file-guard');
+        expect(fileGuard).toBeDefined();
+        expect(fileGuard!.content).toContain('Cannot modify .env files');
+        expect(fileGuard!.frontmatter.claude?.action).toBe('deny');
+      });
+    });
+
+    describe('priority', () => {
+      it('should prefer hooks/hooks.json over settings.json when both exist', async () => {
+        const result = await loader.load(`claude-plugin:${fullHooksPluginPath}`);
+
+        const legacyHook = result.hooks.find((h) => h.frontmatter.name === 'legacy-hook');
+        expect(legacyHook).toBeUndefined();
+        expect(result.hooks.find((h) => h.frontmatter.name === 'prompt-filter')).toBeDefined();
+      });
+    });
+  });
+
   describe('load() - flat skills', () => {
     const flatSkillsPath = path.join(FIXTURES_PATH, 'flat-skills');
 

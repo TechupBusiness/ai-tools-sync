@@ -69,8 +69,9 @@ interface ClaudeHookOutput {
   type?: 'command' | 'validation' | 'notification';
   command?: string;
   matcher?: string;
-  action?: 'warn' | 'block';
+  action?: 'allow' | 'deny' | 'warn' | 'ask' | 'block';
   message?: string;
+  timeout?: number;
 }
 
 /**
@@ -661,6 +662,10 @@ export class ClaudeGenerator implements Generator {
     // Set action (only for PreToolUse)
     if (claudeExt?.action) {
       output.action = claudeExt.action;
+    }
+
+    if (claudeExt?.timeout !== undefined) {
+      output.timeout = claudeExt.timeout;
     }
 
     // Set message

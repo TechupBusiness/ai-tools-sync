@@ -68,20 +68,6 @@ export interface ClaudeAgentFrontmatter {
 /**
  * Claude settings.json structure
  */
-export interface ClaudeSettings {
-  hooks?: {
-    PreToolUse?: ClaudeHook[];
-    PostToolUse?: ClaudeHook[];
-    Notification?: ClaudeHook[];
-    Stop?: ClaudeHook[];
-  };
-  mcp_servers?: Record<string, unknown>;
-  [key: string]: unknown;
-}
-
-/**
- * Claude hook configuration
- */
 export interface ClaudeHook {
   name?: string;
   match?: string;
@@ -89,6 +75,33 @@ export interface ClaudeHook {
   script?: string;
   action?: 'allow' | 'deny' | 'warn' | 'ask';
   message?: string;
+  /** Hook type (command/validation/notification) */
+  type?: 'command' | 'validation' | 'notification';
+  /** Timeout in milliseconds */
+  timeout?: number;
+}
+
+/**
+ * Full hooks.json structure
+ */
+export interface ClaudeHooksJson {
+  hooks: {
+    UserPromptSubmit?: ClaudeHook[];
+    PreToolUse?: ClaudeHook[];
+    PostToolUse?: ClaudeHook[];
+    Notification?: ClaudeHook[];
+    Stop?: ClaudeHook[];
+    SubagentStop?: ClaudeHook[];
+    SessionStart?: ClaudeHook[];
+    SessionEnd?: ClaudeHook[];
+    PreCompact?: ClaudeHook[];
+  };
+}
+
+export interface ClaudeSettings {
+  hooks?: ClaudeHooksJson['hooks'];
+  mcp_servers?: Record<string, unknown>;
+  [key: string]: unknown;
 }
 
 /**
@@ -839,7 +852,7 @@ export class ClaudePluginLoader implements Loader {
    */
   private async loadHooksFromPath(
     hooksPath: string,
-    _pluginRoot: string,
+    pluginRoot: string,
     _options?: ClaudePluginLoaderOptions
   ): Promise<{ items: ParsedHook[]; errors: LoadError[] }> {
     const items: ParsedHook[] = [];
@@ -850,19 +863,29 @@ export class ClaudePluginLoader implements Loader {
     }
 
     try {
-      const content = await fs.promises.readFile(hooksPath, 'utf-8');
-      const settings = JSON.parse(content) as ClaudeSettings;
+      const rawContent = await fs.promises.readFile(hooksPath, 'utf-8');
+      const resolvedContent = resolvePluginRootVariable(rawContent, pluginRoot);
+      const parsed = JSON.parse(resolvedContent) as unknown;
+      const hooksObject = this.extractHooksObject(parsed);
 
-      if (settings.hooks) {
-        // Transform each hook type
-        for (const [eventType, hooks] of Object.entries(settings.hooks)) {
-          if (!Array.isArray(hooks)) continue;
+      if (!hooksObject) {
+        logger.debug(`No hooks found in ${hooksPath}`);
+        return { items, errors };
+      }
 
-          for (const hook of hooks) {
-            const parsedHook = this.transformHook(hook, eventType, hooksPath);
+      // Transform each hook type
+      for (const [eventType, hooks] of Object.entries(hooksObject)) {
+        if (!Array.isArray(hooks)) {
+          logger.debug(`Skipping hooks for event ${eventType} in ${hooksPath}: not an array`);
+          continue;
+        }
+
+        hooks.forEach((hook, index) => {
+          const parsedHook = this.transformHook(hook, eventType, hooksPath, index);
+          if (parsedHook) {
             items.push(parsedHook);
           }
-        }
+        });
       }
     } catch (error) {
       errors.push({
@@ -876,27 +899,61 @@ export class ClaudePluginLoader implements Loader {
   }
 
   /**
+   * Extract hooks object from either hooks.json or settings.json format
+   */
+  private extractHooksObject(parsed: unknown): Record<string, ClaudeHook[]> | null {
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+
+    const obj = parsed as Record<string, unknown>;
+
+    if (obj.hooks && typeof obj.hooks === 'object' && obj.hooks !== null) {
+      return obj.hooks as Record<string, ClaudeHook[]>;
+    }
+
+    return null;
+  }
+
+  /**
    * Transform a Claude hook to generic format
    */
   private transformHook(
     hook: ClaudeHook,
     eventType: string,
-    filePath: string
-  ): ParsedHook {
+    filePath: string,
+    index: number
+  ): ParsedHook | null {
     // Map Claude event types to generic hook events
     const eventMap: Record<string, HookEvent> = {
+      UserPromptSubmit: 'UserPromptSubmit',
       PreToolUse: 'PreToolUse',
       PostToolUse: 'PostToolUse',
-      Notification: 'PreMessage', // Map Notification to PreMessage
-      Stop: 'PostMessage', // Map Stop to PostMessage
+      Notification: 'Notification',
+      Stop: 'Stop',
+      SubagentStop: 'SubagentStop',
+      SessionStart: 'SessionStart',
+      SessionEnd: 'SessionEnd',
+      PreCompact: 'PreCompact',
+      // Legacy mappings for backwards compatibility
+      PreMessage: 'PreMessage',
+      PostMessage: 'PostMessage',
+      PreCommit: 'PreCommit',
     };
+
+    const mappedEvent = eventMap[eventType];
+
+    if (!mappedEvent) {
+      logger.warn(`Unknown hook event type "${eventType}" in ${filePath}, skipping`);
+      return null;
+    }
 
     // Build hook frontmatter with only defined properties
     const hookFrontmatter: ParsedHook['frontmatter'] = {
-      name: hook.name ?? `${eventType.toLowerCase()}-hook`,
+      name: hook.name ?? `${eventType}-${index + 1}`,
       description: hook.message ?? `Claude ${eventType} hook`,
       version: '1.0.0',
-      event: eventMap[eventType] ?? 'PreToolUse',
+      event: mappedEvent,
       targets: ['claude'] as TargetType[], // Hooks are Claude-specific
     };
 
@@ -909,6 +966,25 @@ export class ClaudePluginLoader implements Loader {
     const execute = hook.command ?? hook.script;
     if (execute) {
       hookFrontmatter.execute = execute;
+    }
+
+    const claudeExtension: NonNullable<ParsedHook['frontmatter']['claude']> = {};
+
+    if (hook.type) {
+      claudeExtension.type = hook.type;
+    }
+    if (hook.action) {
+      claudeExtension.action = hook.action;
+    }
+    if (hook.message) {
+      claudeExtension.message = hook.message;
+    }
+    if (hook.timeout !== undefined) {
+      claudeExtension.timeout = hook.timeout;
+    }
+
+    if (Object.keys(claudeExtension).length > 0) {
+      hookFrontmatter.claude = claudeExtension;
     }
 
     return {

@@ -1,0 +1,78 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "name": "prompt-filter",
+        "type": "validation",
+        "command": "sh -c '${CLAUDE_PLUGIN_ROOT}/hooks/filter-prompt.sh'",
+        "message": "Filtering user prompt"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "name": "security-check",
+        "match": "Bash(*rm*)|Bash(*sudo*)",
+        "type": "command",
+        "command": "sh -c './hooks/security-check.sh'",
+        "action": "warn",
+        "message": "Potentially dangerous command detected"
+      },
+      {
+        "name": "file-guard",
+        "match": "Write(*.env*)|Edit(*.env*)",
+        "action": "deny",
+        "message": "Cannot modify .env files",
+        "timeout": 5000
+      }
+    ],
+    "PostToolUse": [
+      {
+        "name": "format-on-edit",
+        "match": "Write|Edit",
+        "type": "command",
+        "command": "npx prettier --write"
+      }
+    ],
+    "Notification": [
+      {
+        "name": "notify-user",
+        "type": "notification",
+        "message": "Heads up from plugin"
+      }
+    ],
+    "Stop": [
+      {
+        "name": "cleanup",
+        "type": "notification",
+        "message": "Agent stopped"
+      }
+    ],
+    "SubagentStop": [
+      {
+        "name": "delegate-cleanup",
+        "message": "Subagent finished"
+      }
+    ],
+    "SessionStart": [
+      {
+        "name": "init-workspace",
+        "type": "command",
+        "command": "sh -c './hooks/init.sh'"
+      }
+    ],
+    "SessionEnd": [
+      {
+        "name": "save-context",
+        "type": "command",
+        "command": "sh -c './hooks/save-context.sh'"
+      }
+    ],
+    "PreCompact": [
+      {
+        "name": "before-compact",
+        "message": "Preparing to compact"
+      }
+    ]
+  }
+}
+

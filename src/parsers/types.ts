@@ -33,11 +33,13 @@ export interface ClaudeExtension {
   /** Model override for agents */
   model?: string;
   /** Hook action: warn shows message, block stops execution (PreToolUse only) */
-  action?: 'warn' | 'block';
+  action?: 'allow' | 'deny' | 'warn' | 'ask' | 'block';
   /** User-facing message for hooks */
   message?: string;
   /** Hook type (defaults to 'command') */
   type?: 'command' | 'validation' | 'notification';
+  /** Hook timeout in milliseconds */
+  timeout?: number;
 }
 
 /**

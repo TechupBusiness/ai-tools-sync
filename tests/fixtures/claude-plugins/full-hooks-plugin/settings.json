@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "name": "legacy-hook",
+        "match": "Bash(*)",
+        "message": "Legacy settings hook"
+      }
+    ]
+  }
+}
+
