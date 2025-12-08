@@ -6,7 +6,7 @@
  * - Skills: .factory/skills/<name>/SKILL.md
  * - Droids: .factory/droids/<name>.md (personas)
  * - Commands: .factory/commands/<name>.md
- * - Hooks: NOT documented/supported
+ * - Hooks: supported via .factory/settings.json (same events as Claude)
  * - Entry point: AGENTS.md
  * - MCP: .factory/mcp.json (if supported)
  */
@@ -40,12 +40,15 @@ import {
   emptyGenerateResult,
   filterContentByTarget,
   sortCommandsByName,
+  sortHooksByEvent,
   sortPersonasByName,
   sortRulesByPriority,
   toSafeFilename,
 } from './base.js';
 
+import type { FactoryHookConfig, FactorySettingsConfig } from '../config/types.js';
 import type { ParsedCommand } from '../parsers/command.js';
+import type { ParsedHook } from '../parsers/hook.js';
 import type { ParsedPersona } from '../parsers/persona.js';
 import type { ParsedRule } from '../parsers/rule.js';
 
@@ -77,6 +80,66 @@ const FACTORY_COMMAND_VARIABLES = {
 } as const;
 
 /**
+ * Factory hook output structure
+ * Same as Claude - Factory uses identical event system
+ */
+interface FactoryHookOutput {
+  type?: 'command' | 'validation' | 'notification';
+  command?: string;
+  matcher?: string;
+  action?: 'warn' | 'block';
+  message?: string;
+}
+
+/**
+ * Supported Factory hook events (same as Claude Code)
+ */
+type FactoryHookEvent =
+  | 'UserPromptSubmit'
+  | 'PreToolUse'
+  | 'PostToolUse'
+  | 'Notification'
+  | 'Stop'
+  | 'SubagentStop'
+  | 'SessionStart'
+  | 'SessionEnd'
+  | 'PreCompact';
+
+/**
+ * Factory settings.json structure
+ */
+interface FactorySettings {
+  env?: Record<string, string>;
+  hooks?: Partial<Record<FactoryHookEvent, FactoryHookOutput[]>>;
+  __generated_by?: string;
+}
+
+/**
+ * Map internal event names to Factory event names
+ * Factory uses same events as Claude Code
+ */
+function mapEventToFactory(event: string): FactoryHookEvent | null {
+  const eventMap: Record<string, FactoryHookEvent> = {
+    // Direct mappings (same as Claude)
+    PreToolUse: 'PreToolUse',
+    PostToolUse: 'PostToolUse',
+    UserPromptSubmit: 'UserPromptSubmit',
+    Notification: 'Notification',
+    Stop: 'Stop',
+    SubagentStop: 'SubagentStop',
+    SessionStart: 'SessionStart',
+    SessionEnd: 'SessionEnd',
+    PreCompact: 'PreCompact',
+    // Legacy event mappings
+    PreMessage: 'UserPromptSubmit',
+    PostMessage: 'PostToolUse',
+    PreCommit: 'PreToolUse',
+  };
+
+  return eventMap[event] ?? null;
+}
+
+/**
  * Generator for Factory output
  */
 export class FactoryGenerator implements Generator {
@@ -93,12 +156,12 @@ export class FactoryGenerator implements Generator {
     // Filter content for factory target
     const factoryContent = filterContentByTarget(content, 'factory');
 
-    // Handle hooks - warn and skip (Factory doesn't support hooks)
-    if (factoryContent.hooks.length > 0) {
-      result.warnings.push(
-        `Factory does not support hooks. ${factoryContent.hooks.length} hook(s) will be skipped.`
-      );
-    }
+    const hasSettings =
+      factoryContent.hooks.length > 0 ||
+      (factoryContent.factorySettings?.env &&
+        Object.keys(factoryContent.factorySettings.env).length > 0) ||
+      (factoryContent.factorySettings?.hooks &&
+        Object.keys(factoryContent.factorySettings.hooks).length > 0);
 
     // Clean if requested
     if (options.clean && !options.dryRun) {
@@ -129,6 +192,16 @@ export class FactoryGenerator implements Generator {
       options
     );
     generated.push(...commandFiles);
+
+    // Generate settings.json when hooks or env/settings exist
+    if (hasSettings) {
+      const settingsFile = this.generateSettings(
+        factoryContent.hooks,
+        factoryContent.factorySettings,
+        options
+      );
+      generated.push(settingsFile);
+    }
 
     // Generate AGENTS.md entry point
     const agentsMd = this.generateAgentsMd(factoryContent, options);
@@ -493,6 +566,134 @@ export class FactoryGenerator implements Generator {
       path: filePath,
       content: parts.join('\n'),
       type: 'command',
+    };
+  }
+
+  /**
+   * Build Factory hooks from parsed hook files and config.yaml hooks
+   */
+  private buildFactoryHooks(
+    parsedHooks: ParsedHook[],
+    configHooks: Record<string, FactoryHookConfig[]> | undefined
+  ): Partial<Record<FactoryHookEvent, FactoryHookOutput[]>> | undefined {
+    const result: Partial<Record<FactoryHookEvent, FactoryHookOutput[]>> = {};
+
+    // Process parsed hook files
+    for (const hook of sortHooksByEvent(parsedHooks)) {
+      const factoryEvent = mapEventToFactory(hook.frontmatter.event);
+      if (!factoryEvent) {
+        continue;
+      }
+
+      if (!result[factoryEvent]) {
+        result[factoryEvent] = [];
+      }
+
+      const hookOutput = this.buildHookOutput(hook);
+      result[factoryEvent].push(hookOutput);
+    }
+
+    // Process config.yaml hooks (factory.settings.hooks)
+    if (configHooks) {
+      for (const [eventName, hooks] of Object.entries(configHooks)) {
+        const factoryEvent = mapEventToFactory(eventName);
+        if (!factoryEvent) {
+          continue;
+        }
+
+        if (!result[factoryEvent]) {
+          result[factoryEvent] = [];
+        }
+
+        for (const hook of hooks) {
+          const hookOutput: FactoryHookOutput = {
+            type: hook.type ?? 'command',
+            command: hook.command,
+          };
+
+          if (hook.matcher && hook.matcher !== '*') {
+            hookOutput.matcher = hook.matcher;
+          }
+          if (hook.action) {
+            hookOutput.action = hook.action;
+          }
+          if (hook.message) {
+            hookOutput.message = hook.message;
+          }
+
+          result[factoryEvent].push(hookOutput);
+        }
+      }
+    }
+
+    if (Object.keys(result).length === 0) {
+      return undefined;
+    }
+
+    return result;
+  }
+
+  /**
+   * Build hook output from parsed hook
+   */
+  private buildHookOutput(hook: ParsedHook): FactoryHookOutput {
+    const factoryExt = hook.frontmatter.factory as Partial<FactoryHookConfig> | undefined;
+
+    const output: FactoryHookOutput = {
+      type: factoryExt?.type ?? 'command',
+    };
+
+    if (hook.frontmatter.execute) {
+      output.command = hook.frontmatter.execute;
+    }
+
+    if (hook.frontmatter.tool_match && hook.frontmatter.tool_match !== '*') {
+      output.matcher = hook.frontmatter.tool_match;
+    }
+
+    // Handle legacy PreCommit event - add default matcher if not specified
+    if (hook.frontmatter.event === 'PreCommit' && !output.matcher) {
+      output.matcher = 'Bash(git commit*)';
+    }
+
+    if (factoryExt?.action) {
+      output.action = factoryExt.action;
+    }
+
+    if (factoryExt?.message) {
+      output.message = factoryExt.message;
+    }
+
+    return output;
+  }
+
+  /**
+   * Generate settings.json with hooks and env
+   */
+  private generateSettings(
+    hooks: ParsedHook[],
+    factorySettings: FactorySettingsConfig | undefined,
+    options: GeneratorOptions
+  ): GeneratedFile {
+    const settings: FactorySettings = {};
+
+    if (options.addHeaders) {
+      settings.__generated_by = DO_NOT_EDIT_COMMENT_JSON.__generated_by;
+    }
+
+    if (factorySettings?.env && Object.keys(factorySettings.env).length > 0) {
+      settings.env = factorySettings.env;
+    }
+
+    const combinedHooks = this.buildFactoryHooks(hooks, factorySettings?.hooks);
+    if (combinedHooks && Object.keys(combinedHooks).length > 0) {
+      settings.hooks = combinedHooks;
+    }
+
+    return {
+      path: joinPath(FACTORY_DIRS.root, 'settings.json'),
+      content: JSON.stringify(settings, null, 2) + '\n',
+      type: 'config',
     };
   }
 

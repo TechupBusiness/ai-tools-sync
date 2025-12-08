@@ -9,7 +9,7 @@
 
 import { filterServersByTarget } from '../parsers/mcp.js';
 
-import type { ClaudeSettingsConfig } from '../config/types.js';
+import type { ClaudeSettingsConfig, FactorySettingsConfig } from '../config/types.js';
 import type { LoadResult } from '../loaders/base.js';
 import type { ParsedCommand } from '../parsers/command.js';
 import type { ParsedHook } from '../parsers/hook.js';
@@ -41,6 +41,11 @@ export interface ResolvedContent extends LoadResult {
    * Claude Code platform-specific settings
    */
   claudeSettings?: ClaudeSettingsConfig;
+
+  /**
+   * Factory platform-specific settings
+   */
+  factorySettings?: FactorySettingsConfig;
 }
 
 /**
@@ -330,7 +335,8 @@ export function createResolvedContent(
   projectRoot: string,
   projectName?: string,
   mcpConfig?: McpConfig,
-  claudeSettings?: ClaudeSettingsConfig
+  claudeSettings?: ClaudeSettingsConfig,
+  factorySettings?: FactorySettingsConfig
 ): ResolvedContent {
   const resolved: ResolvedContent = {
     ...loadResult,
@@ -347,6 +353,10 @@ export function createResolvedContent(
 
   if (claudeSettings !== undefined) {
     resolved.claudeSettings = claudeSettings;
+  }
+
+  if (factorySettings !== undefined) {
+    resolved.factorySettings = factorySettings;
   }
 
   return resolved;

@@ -25,6 +25,7 @@ function createMockContent(overrides: Partial<ResolvedContent> = {}): ResolvedCo
     personas: [],
     commands: [],
     hooks: [],
+    factorySettings: undefined,
     ...overrides,
   };
 }
@@ -73,15 +74,25 @@ function createMockCommand(name: string, overrides: Partial<ParsedCommand['front
 }
 
 // Helper to create mock hook
-function createMockHook(name: string, targets: ('cursor' | 'claude' | 'factory')[] = ['cursor', 'claude', 'factory']): ParsedHook {
+function createMockHook(
+  name: string,
+  targets: ('cursor' | 'claude' | 'factory')[] = ['cursor', 'claude', 'factory'],
+  overrides: Partial<ParsedHook['frontmatter']> = {}
+): ParsedHook {
   return {
     frontmatter: {
       name,
       event: 'PreToolUse',
-      targets,
+      targets: overrides.targets ?? targets,
+      ...overrides,
     },
     content: `# ${name}\n\nThis is the ${name} hook.`,
   };
+}
+
+async function readSettings(tempDir: string): Promise<Record<string, unknown>> {
+  const settingsContent = await fs.readFile(path.join(tempDir, '.factory/settings.json'), 'utf-8');
+  return JSON.parse(settingsContent);
 }
 
 describe('FactoryGenerator', () => {
@@ -407,18 +418,269 @@ describe('FactoryGenerator', () => {
     });
   });
 
-  describe('generate() - hooks', () => {
-    it('should warn and skip hooks (not supported)', async () => {
+  describe('generate() - hooks (settings.json)', () => {
+    describe('basic hook generation', () => {
+      it('should generate settings.json with hooks', async () => {
+        const content = createMockContent({
+          projectRoot: tempDir,
+          hooks: [createMockHook('pre-commit', ['factory'])],
+        });
+
+        const result = await generator.generate(content);
+
+        expect(result.files).toContain('.factory/settings.json');
+
+        const settings = await readSettings(tempDir);
+        const hooks = (settings as { hooks?: Record<string, unknown[]> }).hooks;
+        expect(hooks?.PreToolUse).toBeDefined();
+      });
+
+      it('should not generate settings.json when no hooks or settings', async () => {
+        const content = createMockContent({
+          projectRoot: tempDir,
+          rules: [createMockRule('some-rule')],
+        });
+
+        const result = await generator.generate(content);
+
+        expect(result.files).not.toContain('.factory/settings.json');
+      });
+    });
+
+    describe('event mapping', () => {
+      it('should map PreToolUse event correctly', async () => {
+        const hook = createMockHook('safety-check', ['factory'], {
+          event: 'PreToolUse',
+          execute: 'echo "checking..."',
+          tool_match: 'Bash(*rm*)',
+        });
+
+        const content = createMockContent({
+          projectRoot: tempDir,
+          hooks: [hook],
+        });
+
+        await generator.generate(content);
+
+        const settings = await readSettings(tempDir);
+        const hooks = (settings as { hooks?: Record<string, unknown[]> }).hooks;
+
+        expect(hooks?.PreToolUse).toHaveLength(1);
+        expect(hooks?.PreToolUse?.[0].command).toBe('echo "checking..."');
+        expect(hooks?.PreToolUse?.[0].matcher).toBe('Bash(*rm*)');
+      });
+
+      it('should map PostToolUse event correctly', async () => {
+        const hook = createMockHook('post-check', ['factory'], {
+          event: 'PostToolUse',
+          execute: 'echo "done"',
+        });
+
+        const content = createMockContent({
+          projectRoot: tempDir,
+          hooks: [hook],
+        });
+
+        await generator.generate(content);
+
+        const settings = await readSettings(tempDir);
+        const hooks = (settings as { hooks?: Record<string, unknown[]> }).hooks;
+
+        expect(hooks?.PostToolUse).toHaveLength(1);
+        expect(hooks?.PostToolUse?.[0].command).toBe('echo "done"');
+      });
+
+      it('should map legacy PreMessage to UserPromptSubmit', async () => {
+        const hook = createMockHook('prompt-check', ['factory'], {
+          event: 'PreMessage',
+          execute: 'echo "before prompt"',
+        });
+
+        const content = createMockContent({
+          projectRoot: tempDir,
+          hooks: [hook],
+        });
+
+        await generator.generate(content);
+
+        const settings = await readSettings(tempDir);
+        const hooks = (settings as { hooks?: Record<string, unknown[]> }).hooks;
+
+        expect(hooks?.UserPromptSubmit).toHaveLength(1);
+        expect(hooks?.UserPromptSubmit?.[0].command).toBe('echo "before prompt"');
+      });
+
+      it('should map legacy PreCommit to PreToolUse with default matcher', async () => {
+        const hook = createMockHook('lint-check', ['factory'], {
+          event: 'PreCommit',
+          execute: './scripts/lint.sh',
+        });
+
+        const content = createMockContent({
+          projectRoot: tempDir,
+          hooks: [hook],
+        });
+
+        await generator.generate(content);
+
+        const settings = await readSettings(tempDir);
+        const hooks = (settings as { hooks?: Record<string, unknown[]> }).hooks;
+
+        expect(hooks?.PreToolUse?.[0].matcher).toBe('Bash(git commit*)');
+      });
+
+      it('should skip unsupported events', async () => {
+        const hook = createMockHook('unsupported', ['factory'], {
+          // @ts-expect-error - intentionally using unsupported event for testing
+          event: 'UnsupportedEvent',
+        });
+
+        const content = createMockContent({
+          projectRoot: tempDir,
+          hooks: [hook],
+        });
+
+        await generator.generate(content);
+
+        const settings = await readSettings(tempDir);
+        expect((settings as { hooks?: unknown }).hooks).toBeUndefined();
+      });
+    });
+
+    describe('hook output format', () => {
+      it('should include type, command, and matcher when present', async () => {
+        const content = createMockContent({
+          projectRoot: tempDir,
+          factorySettings: {
+            hooks: {
+              PreToolUse: [
+                {
+                  command: 'npm test',
+                  matcher: 'Bash(*rm*)',
+                  type: 'validation',
+                },
+              ],
+            },
+          },
+        });
+
+        await generator.generate(content);
+
+        const settings = await readSettings(tempDir);
+        const hooks = (settings as { hooks?: Record<string, unknown[]> }).hooks;
+
+        expect(hooks?.PreToolUse?.[0].type).toBe('validation');
+        expect(hooks?.PreToolUse?.[0].command).toBe('npm test');
+        expect(hooks?.PreToolUse?.[0].matcher).toBe('Bash(*rm*)');
+      });
+
+      it('should omit matcher when not specified', async () => {
+        const hook = createMockHook('no-matcher', ['factory'], {
+          event: 'PreToolUse',
+          execute: 'echo "no matcher"',
+          tool_match: '*',
+        });
+
+        const content = createMockContent({
+          projectRoot: tempDir,
+          hooks: [hook],
+        });
+
+        await generator.generate(content);
+
+        const settings = await readSettings(tempDir);
+        const hooks = (settings as { hooks?: Record<string, unknown[]> }).hooks;
+
+        expect(hooks?.PreToolUse?.[0].matcher).toBeUndefined();
+      });
+
+      it('should include action and message for blocking hooks', async () => {
+        const content = createMockContent({
+          projectRoot: tempDir,
+          factorySettings: {
+            hooks: {
+              PreToolUse: [
+                {
+                  command: 'echo "block"',
+                  action: 'block',
+                  message: 'Blocking action',
+                },
+              ],
+            },
+          },
+        });
+
+        await generator.generate(content);
+
+        const settings = await readSettings(tempDir);
+        const hooks = (settings as { hooks?: Record<string, unknown[]> }).hooks;
+
+        expect(hooks?.PreToolUse?.[0].action).toBe('block');
+        expect(hooks?.PreToolUse?.[0].message).toBe('Blocking action');
+      });
+    });
+
+    describe('combined sources', () => {
+      it('should merge hook files with config.yaml hooks', async () => {
+        const content = createMockContent({
+          projectRoot: tempDir,
+          hooks: [
+            createMockHook('file-hook', ['factory'], {
+              event: 'PreToolUse',
+              execute: 'echo "from file"',
+            }),
+          ],
+          factorySettings: {
+            hooks: {
+              PreToolUse: [
+                {
+                  command: 'echo "from config"',
+                },
+              ],
+            },
+          },
+        });
+
+        await generator.generate(content);
+
+        const settings = await readSettings(tempDir);
+        const hooks = (settings as { hooks?: Record<string, unknown[]> }).hooks;
+
+        expect(hooks?.PreToolUse).toHaveLength(2);
+        expect(hooks?.PreToolUse?.[0].command).toBe('echo "from file"');
+        expect(hooks?.PreToolUse?.[1].command).toBe('echo "from config"');
+      });
+
+      it('should include env vars in settings.json', async () => {
+        const content = createMockContent({
+          projectRoot: tempDir,
+          factorySettings: {
+            env: {
+              NODE_ENV: 'test',
+              FACTORY_CUSTOM: 'value',
+            },
+          },
+        });
+
+        await generator.generate(content);
+
+        const settings = (await readSettings(tempDir)) as { env?: Record<string, string> };
+
+        expect(settings.env?.NODE_ENV).toBe('test');
+        expect(settings.env?.FACTORY_CUSTOM).toBe('value');
+      });
+    });
+
+    it('should NOT warn about hooks anymore (hooks now supported)', async () => {
       const content = createMockContent({
         projectRoot: tempDir,
-        hooks: [createMockHook('pre-commit')],
+        hooks: [createMockHook('test-hook', ['factory'])],
       });
 
       const result = await generator.generate(content);
 
-      expect(result.warnings).toHaveLength(1);
-      expect(result.warnings[0]).toContain('does not support hooks');
-      expect(result.warnings[0]).toContain('1 hook(s) will be skipped');
+      expect(result.warnings).not.toContain(expect.stringContaining('does not support hooks'));
+      expect(result.files).toContain('.factory/settings.json');
     });
   });
 

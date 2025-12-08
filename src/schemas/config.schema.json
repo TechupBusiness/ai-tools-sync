@@ -100,6 +100,16 @@
         }
       },
       "additionalProperties": false
+    },
+    "factory": {
+      "type": "object",
+      "description": "Factory platform-specific settings",
+      "properties": {
+        "settings": {
+          "$ref": "#/$defs/factorySettings"
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false,
@@ -297,6 +307,65 @@
       "additionalProperties": false
     },
     "claudeHook": {
+      "type": "object",
+      "required": ["command"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Hook identifier for logging/debugging"
+        },
+        "matcher": {
+          "type": "string",
+          "description": "Tool/pattern to match (e.g., 'Bash(*rm*)', 'Write|Edit')",
+          "default": "*"
+        },
+        "command": {
+          "type": "string",
+          "description": "Shell command to execute"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["command", "validation", "notification"],
+          "description": "Hook type",
+          "default": "command"
+        },
+        "action": {
+          "type": "string",
+          "enum": ["warn", "block"],
+          "description": "Action for PreToolUse hooks (warn shows message, block stops)"
+        },
+        "message": {
+          "type": "string",
+          "description": "User-facing message"
+        }
+      },
+      "additionalProperties": false
+    },
+    "factorySettings": {
+      "type": "object",
+      "description": "Factory settings configuration",
+      "properties": {
+        "env": {
+          "type": "object",
+          "description": "Environment variables for Factory",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "hooks": {
+          "type": "object",
+          "description": "Factory hooks configuration by event",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/factoryHook"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "factoryHook": {
       "type": "object",
       "required": ["command"],
       "properties": {

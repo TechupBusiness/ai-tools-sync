@@ -170,7 +170,8 @@ export async function sync(options: SyncOptions = {}): Promise<SyncResult> {
     config.projectRoot,
     config.project_name,
     undefined, // mcpConfig - loaded separately if mcp.yaml exists
-    config.claude?.settings // Claude platform-specific settings
+    config.claude?.settings, // Claude platform-specific settings
+    config.factory?.settings // Factory platform-specific settings
   );
 
   // Step 4: Run generators for each target

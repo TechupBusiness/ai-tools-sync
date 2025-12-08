@@ -124,6 +124,43 @@ export interface ClaudeConfig {
 }
 
 /**
+ * Factory hook configuration (for config.yaml)
+ * Same structure as ClaudeHookConfig - Factory uses same event system
+ */
+export interface FactoryHookConfig {
+  /** Hook identifier for logging/debugging */
+  name?: string;
+  /** Tool/pattern to match (e.g., 'Bash(*rm*)', 'Write|Edit') */
+  matcher?: string;
+  /** Shell command to execute */
+  command: string;
+  /** Hook type (defaults to 'command') */
+  type?: 'command' | 'validation' | 'notification';
+  /** Action for PreToolUse hooks (warn shows message, block stops) */
+  action?: 'warn' | 'block';
+  /** User-facing message */
+  message?: string;
+}
+
+/**
+ * Factory settings configuration
+ */
+export interface FactorySettingsConfig {
+  /** Environment variables for Factory */
+  env?: Record<string, string>;
+  /** Hooks configuration by event type */
+  hooks?: Record<string, FactoryHookConfig[]>;
+}
+
+/**
+ * Factory platform-specific configuration
+ */
+export interface FactoryConfig {
+  /** Factory settings */
+  settings?: FactorySettingsConfig;
+}
+
+/**
  * Main configuration structure for .ai/config.yaml
  */
 export interface Config {
@@ -140,6 +177,9 @@ export interface Config {
   
   /** Claude Code platform-specific settings */
   claude?: ClaudeConfig;
+
+  /** Factory platform-specific settings */
+  factory?: FactoryConfig;
 }
 
 /**
