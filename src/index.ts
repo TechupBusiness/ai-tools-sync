@@ -77,6 +77,12 @@ export type {
   ClaudeAgentFrontmatter,
 } from './loaders/claude-plugin.js';
 export {
+  PluginLoader,
+  createPluginLoader,
+  PLUGIN_PREFIXES,
+} from './loaders/plugin.js';
+export type { PluginLoaderOptions, ParsedPluginSource } from './loaders/plugin.js';
+export {
   UrlLoader,
   createUrlLoader,
   clearUrlCache,
