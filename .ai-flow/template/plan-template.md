@@ -11,7 +11,7 @@ Lessons learned from these tasks can be found in `{{LEARNINGS_PATH}}`.
 - **Priority**: 🟢 P0 (MVP), 🟠 P1 (Important), 🔴 P2 (Nice to have)
 - **Status**: `[ ]` Todo, `[~]` In Progress, `[x]` Done
 - **Wave**: Execution order (Wave 1 first, then Wave 2, etc.)
-- **Task ID Format**: `W{wave}-{track}-{counter}` (e.g., W001-A-01)
+- **Task ID Format**: `W{wave}-{track}-{order}` (Wave-Track-Order-Number, e.g., W001-A-01)
 
 ---
 
@@ -19,12 +19,12 @@ Lessons learned from these tasks can be found in `{{LEARNINGS_PATH}}`.
 
 ### Overview
 
-| Phase | Description | Tasks | Status |
-|-------|-------------|-------|--------|
-| **Phase 1** | {{PHASE_1_DESCRIPTION}} | {{PHASE_1_TASK_RANGE}} | ✅ {{PHASE_1_SUMMARY}} |
-| **Phase 2** | {{PHASE_2_DESCRIPTION}} | {{PHASE_2_TASK_RANGE}} | ✅ {{PHASE_2_SUMMARY}} |
-| **Phase 3** | {{PHASE_3_DESCRIPTION}} | {{PHASE_3_TASK_RANGE}} | ✅ {{PHASE_3_SUMMARY}} |
-<!-- Add more phases as needed -->
+| Wave | Description | Tasks | Status |
+|------|-------------|-------|--------|
+| **Wave 1** | {{WAVE_1_DESCRIPTION}} | {{WAVE_1_TASK_RANGE}} | ✅ {{WAVE_1_SUMMARY}} |
+| **Wave 2** | {{WAVE_2_DESCRIPTION}} | {{WAVE_2_TASK_RANGE}} | ✅ {{WAVE_2_SUMMARY}} |
+| **Wave 3** | {{WAVE_3_DESCRIPTION}} | {{WAVE_3_TASK_RANGE}} | ✅ {{WAVE_3_SUMMARY}} |
+<!-- Add more waves as needed -->
 
 ---
 

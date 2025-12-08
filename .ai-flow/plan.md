@@ -200,7 +200,7 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
 
 #### Track A: Rule Composition (P2)
 
-- [ ] **T225** - Implement import/include syntax in rules
+- [x] **T225** - Implement import/include syntax in rules
   - Syntax: `@include shared/base-rules.md`
   - Resolve relative paths from rule file location
   - Detect circular includes
