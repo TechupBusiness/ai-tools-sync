@@ -9,12 +9,9 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
-import { fileExists } from '../../../src/utils/fs.js';
 import {
   MANIFEST_FILENAME,
-  parseManifest,
-  formatManifest,
-  createManifest,
+  validateManifest,
   createManifestV2,
   readManifest,
   writeManifest,
@@ -24,11 +21,11 @@ import {
   isManifestV2,
   type ManifestFileEntry,
   type ManifestV2,
-  type Manifest,
 } from '../../../src/utils/manifest.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TESTS_TMP_DIR = path.resolve(__dirname, '..', '..', '.tmp');
+const VALID_HASH = `sha256:${'a'.repeat(64)}`;
 
 describe('Manifest Utilities', () => {
   let testDir: string;
@@ -46,130 +43,61 @@ describe('Manifest Utilities', () => {
     }
   });
 
-  describe('parseManifest', () => {
-    it('should parse a valid manifest file', () => {
-      const content = `# AI Tool Sync Generated Files
-# This file is auto-generated. Do not edit manually.
-#
-# version: 1.0.0
-# timestamp: 2024-01-15T10:30:00.000Z
-#
-# Directories:
-.cursor/rules/
-.claude/
-#
-# Files:
-CLAUDE.md
-AGENTS.md
-.cursor/rules/core.mdc
-`;
+  describe('validateManifest', () => {
+    const baseManifest: ManifestV2 = {
+      version: '2.0.0',
+      timestamp: new Date().toISOString(),
+      files: [{ path: 'file.txt', hash: VALID_HASH }],
+      directories: ['.cursor/'],
+    };
 
-      const manifest = parseManifest(content);
-
-      expect(manifest.version).toBe('1.0.0');
-      expect(manifest.timestamp).toBe('2024-01-15T10:30:00.000Z');
-      expect(manifest.directories).toEqual(['.cursor/rules/', '.claude/']);
-      expect(manifest.files).toEqual(['CLAUDE.md', 'AGENTS.md', '.cursor/rules/core.mdc']);
+    it('should accept valid V2 manifest', () => {
+      const result = validateManifest(baseManifest);
+      expect(result.ok).toBe(true);
     });
 
-    it('should handle empty manifest', () => {
-      const content = '# Empty manifest\n';
-      const manifest = parseManifest(content);
+    it('should reject missing version', () => {
+      const invalid = { ...baseManifest } as Record<string, unknown>;
+      delete invalid.version;
 
-      expect(manifest.version).toBe('');
-      expect(manifest.timestamp).toBe('');
-      expect(manifest.files).toEqual([]);
-      expect(manifest.directories).toEqual([]);
+      const result = validateManifest(invalid);
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.message).toContain('version');
+      }
     });
 
-    it('should skip comments and empty lines', () => {
-      const content = `# Comment 1
-# Comment 2
+    it('should reject invalid hash format', () => {
+      const invalid = {
+        ...baseManifest,
+        files: [{ path: 'file.txt', hash: 'sha256:not-a-hash' }],
+      } as unknown;
 
-.cursor/rules/
-# Another comment
-CLAUDE.md
+      const result = validateManifest(invalid);
 
-`;
-      const manifest = parseManifest(content);
-
-      expect(manifest.directories).toEqual(['.cursor/rules/']);
-      expect(manifest.files).toEqual(['CLAUDE.md']);
-    });
-  });
-
-  describe('formatManifest', () => {
-    it('should format a manifest correctly', () => {
-      const manifest: Manifest = {
-        version: '1.0.0',
-        timestamp: '2024-01-15T10:30:00.000Z',
-        files: ['CLAUDE.md', 'AGENTS.md'],
-        directories: ['.cursor/rules/', '.claude/'],
-      };
-
-      const content = formatManifest(manifest);
-
-      expect(content).toContain('# version: 1.0.0');
-      expect(content).toContain('# timestamp: 2024-01-15T10:30:00.000Z');
-      expect(content).toContain('.cursor/rules/');
-      expect(content).toContain('.claude/');
-      expect(content).toContain('CLAUDE.md');
-      expect(content).toContain('AGENTS.md');
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.message).toContain('hash');
+      }
     });
 
-    it('should sort directories and files', () => {
-      const manifest: Manifest = {
-        version: '1.0.0',
-        timestamp: '2024-01-15T10:30:00.000Z',
-        files: ['AGENTS.md', 'CLAUDE.md'],
-        directories: ['.factory/', '.claude/', '.cursor/rules/'],
-      };
+    it('should reject directories without trailing slash', () => {
+      const invalid = {
+        ...baseManifest,
+        directories: ['.cursor'],
+      } as unknown;
 
-      const content = formatManifest(manifest);
-      const lines = content.split('\n');
-      
-      // Find directory lines
-      const dirLines = lines.filter(l => l.endsWith('/') && !l.startsWith('#'));
-      expect(dirLines[0]).toBe('.claude/');
-      expect(dirLines[1]).toBe('.cursor/rules/');
-      expect(dirLines[2]).toBe('.factory/');
-      
-      // Find file lines
-      const fileLines = lines.filter(l => !l.endsWith('/') && !l.startsWith('#') && l.trim());
-      expect(fileLines[0]).toBe('AGENTS.md');
-      expect(fileLines[1]).toBe('CLAUDE.md');
+      const result = validateManifest(invalid);
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.message).toContain('directories');
+      }
     });
   });
 
-  describe('createManifest', () => {
-    it('should create a manifest with current timestamp', () => {
-      const beforeTime = Date.now();
-      const manifest = createManifest(['CLAUDE.md'], ['.cursor/'], '1.0.0');
-      const afterTime = Date.now();
-
-      expect(manifest.version).toBe('1.0.0');
-      expect(manifest.files).toEqual(['CLAUDE.md']);
-      expect(manifest.directories).toEqual(['.cursor/']);
-
-      // Check timestamp is recent
-      const timestamp = new Date(manifest.timestamp).getTime();
-      expect(timestamp).toBeGreaterThanOrEqual(beforeTime);
-      expect(timestamp).toBeLessThanOrEqual(afterTime);
-    });
-
-    it('should deduplicate files and directories', () => {
-      const manifest = createManifest(
-        ['CLAUDE.md', 'CLAUDE.md', 'AGENTS.md'],
-        ['.cursor/', '.cursor/', '.claude/'],
-        '1.0.0'
-      );
-
-      expect(manifest.files).toEqual(['AGENTS.md', 'CLAUDE.md']);
-      expect(manifest.directories).toEqual(['.claude/', '.cursor/']);
-    });
-  });
-
-  describe('readManifest / writeManifest', () => {
+  describe('readManifest', () => {
     it('should return null when manifest does not exist', async () => {
       const result = await readManifest(testDir);
 
@@ -179,30 +107,72 @@ CLAUDE.md
       }
     });
 
-    it('should read and write manifest correctly', async () => {
-      const manifest: Manifest = {
-        version: '1.0.0',
+    it('should parse valid V2 JSON', async () => {
+      const manifest: ManifestV2 = {
+        version: '2.0.0',
         timestamp: '2024-01-15T10:30:00.000Z',
-        files: ['CLAUDE.md', 'AGENTS.md'],
+        files: [{ path: 'CLAUDE.md', hash: VALID_HASH }],
         directories: ['.cursor/rules/'],
       };
 
-      // Write manifest
+      await fs.writeFile(
+        path.join(testDir, MANIFEST_FILENAME),
+        JSON.stringify(manifest, null, 2)
+      );
+
+      const result = await readManifest(testDir);
+
+      expect(result.ok).toBe(true);
+      if (result.ok && result.value) {
+        expect(result.value.version).toBe('2.0.0');
+        expect(result.value.files[0]?.path).toBe('CLAUDE.md');
+      }
+    });
+
+    it('should reject invalid JSON', async () => {
+      await fs.writeFile(path.join(testDir, MANIFEST_FILENAME), '{');
+
+      const result = await readManifest(testDir);
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.message).toContain('Failed to parse manifest JSON');
+      }
+    });
+  });
+
+  describe('writeManifest', () => {
+    it('should write valid JSON with formatting', async () => {
+      const manifest: ManifestV2 = {
+        version: '2.0.0',
+        timestamp: '2024-01-15T10:30:00.000Z',
+        files: [{ path: 'file.txt', hash: VALID_HASH }],
+        directories: ['.cursor/'],
+      };
+
       const writeResult = await writeManifest(testDir, manifest);
       expect(writeResult.ok).toBe(true);
 
-      // Check file exists
-      expect(await fileExists(path.join(testDir, MANIFEST_FILENAME))).toBe(true);
+      const content = await fs.readFile(path.join(testDir, MANIFEST_FILENAME), 'utf-8');
+      expect(content.endsWith('\n')).toBe(true);
+      expect(JSON.parse(content)).toEqual(manifest);
+    });
 
-      // Read manifest back
+    it('should round-trip correctly', async () => {
+      const manifest: ManifestV2 = createManifestV2(
+        [{ path: 'file.txt', hash: VALID_HASH }],
+        ['.cursor/'],
+        '2.0.0'
+      );
+
+      await writeManifest(testDir, manifest);
       const readResult = await readManifest(testDir);
+
       expect(readResult.ok).toBe(true);
       if (readResult.ok && readResult.value) {
-        expect(readResult.value.version).toBe('1.0.0');
-        expect(readResult.value.timestamp).toBe('2024-01-15T10:30:00.000Z');
-        expect(readResult.value.files).toContain('CLAUDE.md');
-        expect(readResult.value.files).toContain('AGENTS.md');
-        expect(readResult.value.directories).toContain('.cursor/rules/');
+        expect(readResult.value.version).toBe('2.0.0');
+        expect(readResult.value.files[0]?.hash).toBe(VALID_HASH);
+        expect(readResult.value.directories).toContain('.cursor/');
       }
     });
   });
@@ -257,14 +227,14 @@ CLAUDE.md
 
   describe('getGitignorePaths', () => {
     it('should return only top-level generated directories and root files', () => {
-      const manifest: Manifest = {
-        version: '1.0.0',
+      const manifest: ManifestV2 = {
+        version: '2.0.0',
         timestamp: '2024-01-15T10:30:00.000Z',
         files: [
-          'CLAUDE.md',
-          'AGENTS.md',
-          '.cursor/rules/core.mdc',
-          '.claude/skills/core/SKILL.md',
+          { path: 'CLAUDE.md', hash: VALID_HASH },
+          { path: 'AGENTS.md', hash: VALID_HASH },
+          { path: '.cursor/rules/core.mdc', hash: VALID_HASH },
+          { path: '.claude/skills/core/SKILL.md', hash: VALID_HASH },
         ],
         directories: [
           '.cursor/rules/',
@@ -276,20 +246,16 @@ CLAUDE.md
 
       const paths = getGitignorePaths(manifest);
 
-      // Should include top-level directories
       expect(paths).toContain('.cursor/rules/');
       expect(paths).toContain('.cursor/commands/');
       expect(paths).toContain('.claude/');
       expect(paths).toContain('.factory/');
 
-      // Should include root files
       expect(paths).toContain('CLAUDE.md');
       expect(paths).toContain('AGENTS.md');
 
-      // Should include manifest file itself
       expect(paths).toContain(MANIFEST_FILENAME);
 
-      // Should not include nested paths
       expect(paths).not.toContain('.cursor/rules/core.mdc');
       expect(paths).not.toContain('.claude/skills/core/SKILL.md');
     });
@@ -340,7 +306,7 @@ CLAUDE.md
   describe('ManifestV2 integration', () => {
     it('should write and read a v2 manifest', async () => {
       const entries: ManifestFileEntry[] = [
-        { path: 'file.txt', hash: 'sha256:abc' },
+        { path: 'file.txt', hash: VALID_HASH },
       ];
 
       const manifest: ManifestV2 = createManifestV2(entries, [], '2.0.0');
@@ -352,7 +318,7 @@ CLAUDE.md
       if (readResult.ok && readResult.value) {
         expect(isManifestV2(readResult.value)).toBe(true);
         const readManifestData = readResult.value as ManifestV2;
-        expect(readManifestData.files[0]?.hash).toBe('sha256:abc');
+        expect(readManifestData.files[0]?.hash).toBe(VALID_HASH);
       }
     });
   });

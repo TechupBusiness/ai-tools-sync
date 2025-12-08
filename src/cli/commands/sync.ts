@@ -32,19 +32,15 @@ import {
   getLoadResultStats,
 } from '../../loaders/base.js';
 import { createLocalLoader } from '../../loaders/local.js';
-import { updateGitignore } from '../../utils/gitignore.js';
+import { updateGitignore, updateToolFolderGitignores } from '../../utils/gitignore.js';
 import { logger } from '../../utils/logger.js';
 import {
   collectGeneratedPaths,
-  createManifest,
   createManifestV2,
   MANIFEST_FILENAME,
   collectFileEntriesWithHashes,
-  isManifestV2,
   saveHistorySnapshot,
   writeManifest,
-  type Manifest,
-  type ManifestData,
   type ManifestV2,
 } from '../../utils/manifest.js';
 import {
@@ -461,15 +457,10 @@ async function generateManifestAndGitignore(
       : String(entriesResult.error);
     result.warnings.push(`Failed to collect file hashes: ${message}`);
     logger.warn(`Failed to collect file hashes: ${message}`);
+    return result;
   }
 
-  let manifest: ManifestData;
-
-  if (entriesResult.ok) {
-    manifest = createManifestV2(entriesResult.value, directories, MANIFEST_VERSION);
-  } else {
-    manifest = createManifest(generatedFiles, directories, '1.0.0');
-  }
+  const manifest: ManifestV2 = createManifestV2(entriesResult.value, directories, MANIFEST_VERSION);
 
   const manifestResult = await writeManifest(config.projectRoot, manifest);
 
@@ -477,19 +468,16 @@ async function generateManifestAndGitignore(
     result.manifestWritten = true;
     logger.debug(`Wrote manifest: ${MANIFEST_FILENAME}`);
 
-    if (entriesResult.ok) {
-      const manifestV2 = manifest as ManifestV2;
-      const historyResult = await saveHistorySnapshot(config.projectRoot, manifestV2, {
-        configDir: config.aiDir,
-      });
+    const historyResult = await saveHistorySnapshot(config.projectRoot, manifest, {
+      configDir: config.aiDir,
+    });
 
-      if (!historyResult.ok) {
-        const message = historyResult.error instanceof Error
-          ? historyResult.error.message
-          : String(historyResult.error);
-        result.warnings.push(`Failed to save history snapshot: ${message}`);
-        logger.warn(`Failed to save history snapshot: ${message}`);
-      }
+    if (!historyResult.ok) {
+      const message = historyResult.error instanceof Error
+        ? historyResult.error.message
+        : String(historyResult.error);
+      result.warnings.push(`Failed to save history snapshot: ${message}`);
+      logger.warn(`Failed to save history snapshot: ${message}`);
     }
   } else {
     result.warnings.push(`Failed to write manifest: ${manifestResult.error.message}`);
@@ -500,16 +488,7 @@ async function generateManifestAndGitignore(
   const shouldUpdateGitignore = options.updateGitignore ?? config.output?.update_gitignore ?? true;
 
   if (shouldUpdateGitignore) {
-    const manifestForGitignore: Manifest = isManifestV2(manifest)
-      ? {
-          version: manifest.version,
-          timestamp: manifest.timestamp,
-          files: manifest.files.map((file) => file.path),
-          directories: manifest.directories,
-        }
-      : manifest;
-
-    const gitignoreResult = await updateGitignore(config.projectRoot, manifestForGitignore, {
+    const gitignoreResult = await updateGitignore(config.projectRoot, manifest, {
       createIfMissing: false, // Don't create .gitignore if it doesn't exist during sync
     });
 
@@ -522,6 +501,26 @@ async function generateManifestAndGitignore(
     } else {
       result.warnings.push(`Failed to update .gitignore: ${gitignoreResult.error.message}`);
       logger.warn(`Failed to update .gitignore: ${gitignoreResult.error.message}`);
+    }
+
+    const toolFolderOptions = options.dryRun === undefined ? {} : { dryRun: options.dryRun };
+
+    const toolFolderResult = await updateToolFolderGitignores(
+      config.projectRoot,
+      manifest,
+      toolFolderOptions
+    );
+
+    if (toolFolderResult.ok) {
+      for (const folderResult of toolFolderResult.value) {
+        if (folderResult.changed) {
+          result.gitignoreUpdated = true;
+          printSuccess(`${folderResult.folder}/.gitignore updated`);
+        }
+      }
+    } else {
+      result.warnings.push(`Failed to update tool folder gitignores: ${toolFolderResult.error.message}`);
+      logger.warn(`Failed to update tool folder gitignores: ${toolFolderResult.error.message}`);
     }
   }
 

@@ -190,7 +190,7 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
 
 #### Track A: Per-Tool Gitignores (P2)
 
-- [ ] **T223** - Implement per-tool-folder gitignores
+- [x] **T223** - Implement per-tool-folder gitignores
   - Generate `.cursor/.gitignore`, `.claude/.gitignore`, `.factory/.gitignore`
   - Each uses inline auto-managed section (preserves user additions)
   - Contents: Relative paths within that tool folder

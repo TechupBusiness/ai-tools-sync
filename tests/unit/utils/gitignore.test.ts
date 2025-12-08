@@ -20,12 +20,15 @@ import {
   getDefaultGitignorePaths,
   updateGitignore,
   removeManagedSection,
+  groupFilesByToolFolder,
+  updateToolFolderGitignores,
 } from '../../../src/utils/gitignore.js';
 
-import type { Manifest } from '../../../src/utils/manifest.js';
+import type { ManifestV2 } from '../../../src/utils/manifest.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TESTS_TMP_DIR = path.resolve(__dirname, '..', '..', '.tmp');
+const VALID_HASH = `sha256:${'a'.repeat(64)}`;
 
 describe('Gitignore Utilities', () => {
   let testDir: string;
@@ -229,6 +232,41 @@ ${GITIGNORE_END_MARKER}`;
     });
   });
 
+  describe('groupFilesByToolFolder', () => {
+    it('should group files by their tool folder', () => {
+      const paths = [
+        '.cursor/rules/core.mdc',
+        '.cursor/commands/deploy.md',
+        '.claude/skills/test/SKILL.md',
+        '.factory/droids/impl.md',
+        'CLAUDE.md',
+      ];
+
+      const grouped = groupFilesByToolFolder(paths, ['.cursor', '.claude', '.factory']);
+
+      expect(grouped.get('.cursor')).toEqual(['rules/core.mdc', 'commands/deploy.md']);
+      expect(grouped.get('.claude')).toEqual(['skills/test/SKILL.md']);
+      expect(grouped.get('.factory')).toEqual(['droids/impl.md']);
+    });
+
+    it('should handle files not in any tool folder', () => {
+      const paths = ['README.md', 'AGENTS.md', '.cursor/rules/core.mdc'];
+
+      const grouped = groupFilesByToolFolder(paths, ['.cursor', '.claude']);
+
+      expect(grouped.get('.cursor')).toEqual(['rules/core.mdc']);
+      expect(grouped.get('.claude')).toEqual([]);
+    });
+
+    it('should handle nested paths within tool folders', () => {
+      const paths = ['.cursor/commands/nested/path/file.md'];
+
+      const grouped = groupFilesByToolFolder(paths, ['.cursor']);
+
+      expect(grouped.get('.cursor')).toEqual(['commands/nested/path/file.md']);
+    });
+  });
+
   describe('updateGitignore', () => {
     it('should not create gitignore when createIfMissing is false', async () => {
       const result = await updateGitignore(testDir, null, { createIfMissing: false });
@@ -285,10 +323,13 @@ ${GITIGNORE_END_MARKER}`;
     });
 
     it('should use paths from manifest when provided', async () => {
-      const manifest: Manifest = {
-        version: '1.0.0',
+      const manifest: ManifestV2 = {
+        version: '2.0.0',
         timestamp: '2024-01-15T10:30:00.000Z',
-        files: ['CLAUDE.md', 'AGENTS.md'],
+        files: [
+          { path: 'CLAUDE.md', hash: VALID_HASH },
+          { path: 'AGENTS.md', hash: VALID_HASH },
+        ],
         directories: ['.cursor/rules/', '.claude/'],
       };
 
@@ -344,6 +385,174 @@ coverage/`
         expect(content.value).toContain('coverage/');
         expect(hasManagedSection(content.value)).toBe(true);
       }
+    });
+  });
+
+  describe('updateToolFolderGitignores', () => {
+    it('should create gitignores with relative paths', async () => {
+      await fs.mkdir(path.join(testDir, '.cursor', 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, '.cursor', 'commands'), { recursive: true });
+      await fs.mkdir(path.join(testDir, '.claude', 'skills', 'test'), { recursive: true });
+
+      const manifest: ManifestV2 = {
+        version: '2.0.0',
+        timestamp: new Date().toISOString(),
+        files: [
+          { path: '.cursor/rules/core.mdc', hash: VALID_HASH },
+          { path: '.cursor/rules/database.mdc', hash: VALID_HASH },
+          { path: '.cursor/commands/deploy.md', hash: VALID_HASH },
+          { path: '.claude/skills/test/SKILL.md', hash: VALID_HASH },
+          { path: 'CLAUDE.md', hash: VALID_HASH },
+        ],
+        directories: ['.cursor/rules/', '.cursor/commands/', '.claude/skills/'],
+      };
+
+      const result = await updateToolFolderGitignores(testDir, manifest);
+
+      expect(result.ok).toBe(true);
+
+      const cursorGitignore = await readFile(path.join(testDir, '.cursor', '.gitignore'));
+      expect(cursorGitignore.ok).toBe(true);
+      if (cursorGitignore.ok) {
+        expect(cursorGitignore.value).toContain('rules/core.mdc');
+        expect(cursorGitignore.value).toContain('rules/database.mdc');
+        expect(cursorGitignore.value).toContain('commands/deploy.md');
+        expect(cursorGitignore.value).not.toContain('.cursor/');
+      }
+
+      const claudeGitignore = await readFile(path.join(testDir, '.claude', '.gitignore'));
+      expect(claudeGitignore.ok).toBe(true);
+      if (claudeGitignore.ok) {
+        expect(claudeGitignore.value).toContain('skills/test/SKILL.md');
+        expect(claudeGitignore.value).not.toContain('.claude/');
+      }
+
+      expect(await fileExists(path.join(testDir, '.factory', '.gitignore'))).toBe(false);
+    });
+
+    it('should skip folders with no generated content', async () => {
+      await fs.mkdir(path.join(testDir, '.cursor'), { recursive: true });
+      await fs.mkdir(path.join(testDir, '.claude', 'skills'), { recursive: true });
+
+      const manifest: ManifestV2 = {
+        version: '2.0.0',
+        timestamp: new Date().toISOString(),
+        files: [{ path: '.claude/skills/test/SKILL.md', hash: VALID_HASH }],
+        directories: ['.claude/skills/'],
+      };
+
+      const result = await updateToolFolderGitignores(testDir, manifest);
+
+      expect(result.ok).toBe(true);
+      expect(await fileExists(path.join(testDir, '.cursor', '.gitignore'))).toBe(false);
+      expect(await fileExists(path.join(testDir, '.claude', '.gitignore'))).toBe(true);
+    });
+
+    it('should use default paths when manifest is null', async () => {
+      await fs.mkdir(path.join(testDir, '.cursor', 'rules'), { recursive: true });
+      await fs.mkdir(path.join(testDir, '.cursor', 'commands'), { recursive: true });
+
+      const result = await updateToolFolderGitignores(testDir, null);
+
+      expect(result.ok).toBe(true);
+      expect(await fileExists(path.join(testDir, '.cursor', '.gitignore'))).toBe(true);
+
+      const cursorGitignore = await readFile(path.join(testDir, '.cursor', '.gitignore'));
+      expect(cursorGitignore.ok).toBe(true);
+      if (cursorGitignore.ok) {
+        expect(cursorGitignore.value).toContain('commands/');
+        expect(cursorGitignore.value).toContain('rules/');
+      }
+    });
+
+    it('should preserve existing user content', async () => {
+      await fs.mkdir(path.join(testDir, '.cursor'), { recursive: true });
+      await fs.writeFile(
+        path.join(testDir, '.cursor', '.gitignore'),
+        `# Custom ignores
+*.log
+
+# More
+temp/
+`
+      );
+
+      const manifest: ManifestV2 = {
+        version: '2.0.0',
+        timestamp: new Date().toISOString(),
+        files: [{ path: '.cursor/rules/core.mdc', hash: VALID_HASH }],
+        directories: ['.cursor/rules/'],
+      };
+
+      const result = await updateToolFolderGitignores(testDir, manifest);
+
+      expect(result.ok).toBe(true);
+
+      const content = await readFile(path.join(testDir, '.cursor', '.gitignore'));
+      expect(content.ok).toBe(true);
+      if (content.ok) {
+        expect(content.value).toContain('# Custom ignores');
+        expect(content.value).toContain('*.log');
+        expect(content.value).toContain('temp/');
+        expect(content.value).toContain(GITIGNORE_START_MARKER);
+        expect(content.value).toContain('rules/core.mdc');
+        expect(content.value).toContain(GITIGNORE_END_MARKER);
+      }
+    });
+
+    it('should update managed section on re-run', async () => {
+      await fs.mkdir(path.join(testDir, '.cursor', 'rules'), { recursive: true });
+
+      const manifest1: ManifestV2 = {
+        version: '2.0.0',
+        timestamp: new Date().toISOString(),
+        files: [{ path: '.cursor/rules/old.mdc', hash: VALID_HASH }],
+        directories: ['.cursor/rules/'],
+      };
+
+      const manifest2: ManifestV2 = {
+        version: '2.0.0',
+        timestamp: new Date().toISOString(),
+        files: [
+          { path: '.cursor/rules/new.mdc', hash: VALID_HASH },
+          { path: '.cursor/rules/another.mdc', hash: VALID_HASH },
+        ],
+        directories: ['.cursor/rules/'],
+      };
+
+      await updateToolFolderGitignores(testDir, manifest1);
+      await updateToolFolderGitignores(testDir, manifest2);
+
+      const content = await readFile(path.join(testDir, '.cursor', '.gitignore'));
+
+      expect(content.ok).toBe(true);
+      if (content.ok) {
+        expect(content.value).not.toContain('old.mdc');
+        expect(content.value).toContain('rules/new.mdc');
+        expect(content.value).toContain('rules/another.mdc');
+        const startCount = (content.value.match(new RegExp(GITIGNORE_START_MARKER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
+        expect(startCount).toBe(1);
+      }
+    });
+
+    it('should not write files in dry run mode', async () => {
+      await fs.mkdir(path.join(testDir, '.cursor', 'rules'), { recursive: true });
+
+      const manifest: ManifestV2 = {
+        version: '2.0.0',
+        timestamp: new Date().toISOString(),
+        files: [{ path: '.cursor/rules/core.mdc', hash: VALID_HASH }],
+        directories: ['.cursor/rules/'],
+      };
+
+      const result = await updateToolFolderGitignores(testDir, manifest, { dryRun: true });
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value[0]?.created).toBe(true);
+        expect(result.value[0]?.changed).toBe(true);
+      }
+      expect(await fileExists(path.join(testDir, '.cursor', '.gitignore'))).toBe(false);
     });
   });
 

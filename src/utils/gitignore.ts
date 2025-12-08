@@ -9,8 +9,10 @@
 import * as path from 'node:path';
 
 import { fileExists, readFile, writeFile } from './fs.js';
-import { MANIFEST_FILENAME, getGitignorePaths, type Manifest } from './manifest.js';
+import { MANIFEST_FILENAME, getGitignorePaths, type ManifestV2 } from './manifest.js';
 import { ok, err, type Result } from './result.js';
+
+const DEFAULT_TOOL_FOLDERS = ['.cursor', '.claude', '.factory'] as const;
 
 /**
  * Markers for the auto-managed section
@@ -46,6 +48,40 @@ export interface GitignoreUpdateResult {
    * Paths that were added to the managed section
    */
   paths: string[];
+}
+
+/**
+ * Tool folder configuration for gitignore generation
+ */
+export interface ToolFolderGitignoreConfig {
+  /** Tool folder path relative to project root (e.g., '.cursor') */
+  folder: string;
+  /** Relative paths within the folder to ignore (e.g., ['rules/', 'commands/']) */
+  paths: string[];
+}
+
+/**
+ * Result of updating tool folder gitignores
+ */
+export interface ToolFolderGitignoreResult {
+  /** Tool folder path */
+  folder: string;
+  /** Whether gitignore was created (vs updated) */
+  created: boolean;
+  /** Whether any changes were made */
+  changed: boolean;
+  /** Paths added to the managed section */
+  paths: string[];
+}
+
+/**
+ * Options for updating tool folder gitignores
+ */
+export interface UpdateToolFolderGitignoreOptions {
+  /** Whether to create .gitignore if it doesn't exist (default: true) */
+  createIfMissing?: boolean;
+  /** Dry run mode - don't write files */
+  dryRun?: boolean;
 }
 
 /**
@@ -147,7 +183,7 @@ export function getDefaultGitignorePaths(): string[] {
  */
 export async function updateGitignore(
   projectRoot: string,
-  manifest: Manifest | null,
+  manifest: ManifestV2 | null,
   options: UpdateGitignoreOptions = {}
 ): Promise<Result<GitignoreUpdateResult>> {
   const gitignorePath = path.join(projectRoot, '.gitignore');
@@ -211,6 +247,139 @@ export async function updateGitignore(
     changed: true,
     paths,
   });
+}
+
+function getRelativePathInFolder(fullPath: string, folder: string): string | null {
+  const prefix = `${folder}/`;
+
+  if (!fullPath.startsWith(prefix)) {
+    return null;
+  }
+
+  return fullPath.slice(prefix.length);
+}
+
+export function groupFilesByToolFolder(
+  paths: string[],
+  toolFolders: readonly string[] = DEFAULT_TOOL_FOLDERS
+): Map<string, string[]> {
+  const groups = new Map<string, string[]>();
+
+  for (const folder of toolFolders) {
+    groups.set(folder, []);
+  }
+
+  for (const filePath of paths) {
+    for (const folder of toolFolders) {
+      const relativePath = getRelativePathInFolder(filePath, folder);
+
+      if (relativePath !== null && relativePath.length > 0) {
+        groups.get(folder)!.push(relativePath);
+        break;
+      }
+    }
+  }
+
+  return groups;
+}
+
+async function updateGitignoreInFolder(
+  gitignorePath: string,
+  paths: string[],
+  options: UpdateToolFolderGitignoreOptions
+): Promise<Result<{ created: boolean; changed: boolean }>> {
+  const shouldCreate = options.createIfMissing ?? true;
+  const exists = await fileExists(gitignorePath);
+
+  if (!exists) {
+    if (!shouldCreate) {
+      return ok({ created: false, changed: false });
+    }
+
+    if (options.dryRun) {
+      return ok({ created: true, changed: true });
+    }
+
+    const content = createManagedSection(paths) + '\n';
+    const result = await writeFile(gitignorePath, content);
+
+    if (!result.ok) {
+      return err(result.error);
+    }
+
+    return ok({ created: true, changed: true });
+  }
+
+  const existingResult = await readFile(gitignorePath);
+
+  if (!existingResult.ok) {
+    return err(existingResult.error);
+  }
+
+  const existingContent = existingResult.value;
+  const newContent = updateGitignoreContent(existingContent, paths);
+
+  if (existingContent === newContent) {
+    return ok({ created: false, changed: false });
+  }
+
+  if (options.dryRun) {
+    return ok({ created: false, changed: true });
+  }
+
+  const writeResult = await writeFile(gitignorePath, newContent);
+
+  if (!writeResult.ok) {
+    return err(writeResult.error);
+  }
+
+  return ok({ created: false, changed: true });
+}
+
+/**
+ * Update gitignore files within each tool folder
+ */
+export async function updateToolFolderGitignores(
+  projectRoot: string,
+  manifest: ManifestV2 | null,
+  options: UpdateToolFolderGitignoreOptions = {}
+): Promise<Result<ToolFolderGitignoreResult[]>> {
+  const toolFolders = [...DEFAULT_TOOL_FOLDERS];
+  const allPaths = manifest
+    ? [...manifest.files.map(entry => entry.path), ...manifest.directories]
+    : getDefaultGitignorePaths();
+
+  const grouped = groupFilesByToolFolder(allPaths, toolFolders);
+  const results: ToolFolderGitignoreResult[] = [];
+
+  for (const [folder, folderPaths] of grouped.entries()) {
+    if (folderPaths.length === 0) {
+      continue;
+    }
+
+    const folderPath = path.join(projectRoot, folder);
+
+    if (!(await fileExists(folderPath))) {
+      continue;
+    }
+
+    const uniquePaths = [...new Set(folderPaths)].sort();
+    const gitignorePath = path.join(folderPath, '.gitignore');
+    const updateResult = await updateGitignoreInFolder(gitignorePath, uniquePaths, options);
+
+    if (!updateResult.ok) {
+      return err(updateResult.error);
+    }
+
+    results.push({
+      folder,
+      created: updateResult.value.created,
+      changed: updateResult.value.changed,
+      paths: uniquePaths,
+    });
+  }
+
+  return ok(results);
 }
 
 /**
