@@ -1,0 +1,6 @@
+{
+  "name": "mcp-test-plugin",
+  "version": "1.0.0",
+  "description": "Plugin with MCP servers",
+  "mcpServers": ".mcp.json"
+}

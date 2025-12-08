@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    "local-server": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-server/index.js"],
+      "env": {
+        "DEBUG": "true",
+        "API_KEY": "${MCP_API_KEY}"
+      },
+      "cwd": "${CLAUDE_PLUGIN_ROOT}",
+      "description": "Local MCP server bundled with plugin"
+    },
+    "remote-api": {
+      "type": "http",
+      "url": "https://api.example.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${API_TOKEN}",
+        "X-Custom-Header": "value"
+      },
+      "description": "Remote HTTP MCP server"
+    },
+    "sse-server": {
+      "type": "sse",
+      "url": "https://api.example.com/mcp/sse",
+      "description": "SSE-based MCP server"
+    }
+  }
+}

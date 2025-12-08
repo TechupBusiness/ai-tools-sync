@@ -17,20 +17,17 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
+import { interpolateEnvVars } from '../parsers/mcp.js';
 import { logger } from '../utils/logger.js';
 import { resolvePluginRootVariable } from '../utils/plugin-cache.js';
 import { parseYaml } from '../utils/yaml.js';
 
-import {
-  type Loader,
-  type LoaderOptions,
-  type LoadError,
-  type LoadResult,
-  emptyLoadResultWithSource,
-} from './base.js';
+import { emptyLoadResultWithSource } from './base.js';
 
+import type { Loader, LoaderOptions, LoadError, LoadResult } from './base.js';
 import type { ParsedCommand } from '../parsers/command.js';
 import type { ParsedHook, HookEvent } from '../parsers/hook.js';
+import type { McpCommandServer, McpServer, McpUrlServer } from '../parsers/mcp.js';
 import type { ParsedPersona, PersonaTool } from '../parsers/persona.js';
 import type { ParsedRule, RuleCategory } from '../parsers/rule.js';
 import type { TargetType } from '../parsers/types.js';
@@ -102,6 +99,25 @@ export interface ClaudeSettings {
   hooks?: ClaudeHooksJson['hooks'];
   mcp_servers?: Record<string, unknown>;
   [key: string]: unknown;
+}
+
+/**
+ * Claude plugin .mcp.json structure
+ * Supports stdio, HTTP, and SSE transport types
+ */
+export interface ClaudePluginMcpJson {
+  mcpServers?: Record<string, ClaudePluginMcpServer>;
+}
+
+export interface ClaudePluginMcpServer {
+  command?: string;
+  args?: string[];
+  env?: Record<string, string>;
+  cwd?: string;
+  url?: string;
+  type?: 'http' | 'sse';
+  headers?: Record<string, string>;
+  description?: string;
 }
 
 /**
@@ -309,6 +325,17 @@ export class ClaudePluginLoader implements Loader {
       const hooksResult = await this.loadHooksFromPath(hooksPath, pluginPath, options);
       result.hooks = hooksResult.items;
       errors.push(...hooksResult.errors);
+    }
+
+    // Load MCP servers - from manifest path or convention (.mcp.json)
+    const mcpPath = manifest?.mcpServers ?? this.findMcpFile(pluginPath);
+    if (mcpPath) {
+      const resolvedMcpPath = path.isAbsolute(mcpPath) ? mcpPath : path.join(pluginPath, mcpPath);
+      const mcpResult = await this.loadMcpFromPath(resolvedMcpPath, pluginPath, options);
+      if (Object.keys(mcpResult.servers).length > 0) {
+        result.mcpServers = mcpResult.servers;
+      }
+      errors.push(...mcpResult.errors);
     }
 
     // Filter by target if specified
@@ -650,6 +677,24 @@ export class ClaudePluginLoader implements Loader {
   }
 
   /**
+   * Find MCP configuration file using convention paths
+   */
+  private findMcpFile(pluginPath: string): string | undefined {
+    const candidates = [
+      path.join(pluginPath, '.mcp.json'),
+      path.join(pluginPath, 'mcp.json'),
+    ];
+
+    for (const candidate of candidates) {
+      if (this.fileExists(candidate)) {
+        return candidate;
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
    * Load skills from a specific directory
    */
   private async loadSkillsFromPath(
@@ -981,6 +1026,106 @@ export class ClaudePluginLoader implements Loader {
       content: hook.message ?? '',
       filePath,
     };
+  }
+
+  /**
+   * Load MCP server configurations from a plugin
+   */
+  private async loadMcpFromPath(
+    mcpPath: string,
+    pluginRoot: string,
+    _options?: ClaudePluginLoaderOptions
+  ): Promise<{ servers: Record<string, McpServer>; errors: LoadError[] }> {
+    const servers: Record<string, McpServer> = {};
+    const errors: LoadError[] = [];
+
+    if (!this.fileExists(mcpPath)) {
+      return { servers, errors };
+    }
+
+    try {
+      const content = await fs.promises.readFile(mcpPath, 'utf-8');
+
+      // Resolve ${CLAUDE_PLUGIN_ROOT} first
+      const resolvedContent = resolvePluginRootVariable(content, pluginRoot);
+
+      // Then interpolate environment variables
+      const interpolatedContent = interpolateEnvVars(resolvedContent);
+
+      const parsed = JSON.parse(interpolatedContent) as ClaudePluginMcpJson;
+
+      if (parsed.mcpServers) {
+        for (const [name, serverConfig] of Object.entries(parsed.mcpServers)) {
+          const transformed = this.transformMcpServer(serverConfig, name);
+          if (transformed) {
+            servers[name] = transformed;
+          }
+        }
+      }
+
+      logger.debug(`Loaded ${Object.keys(servers).length} MCP servers from plugin`);
+    } catch (error) {
+      errors.push({
+        type: 'file',
+        path: mcpPath,
+        message: `Failed to parse MCP config: ${error instanceof Error ? error.message : String(error)}`,
+      });
+    }
+
+    return { servers, errors };
+  }
+
+  /**
+   * Transform Claude plugin MCP server to generic format
+   */
+  private transformMcpServer(
+    config: ClaudePluginMcpServer,
+    name: string
+  ): McpServer | null {
+    // Command-based (stdio) server
+    if (config.command) {
+      const server: McpCommandServer = {
+        command: config.command,
+        targets: ['cursor', 'claude', 'factory'],
+        enabled: true,
+      };
+
+      if (config.args && config.args.length > 0) {
+        server.args = config.args;
+      }
+      if (config.env && Object.keys(config.env).length > 0) {
+        server.env = config.env;
+      }
+      if (config.cwd) {
+        server.cwd = config.cwd;
+      }
+      if (config.description) {
+        server.description = config.description;
+      }
+
+      return server;
+    }
+
+    // URL-based (HTTP/SSE) server
+    if (config.url) {
+      const server: McpUrlServer = {
+        url: config.url,
+        targets: ['cursor', 'claude', 'factory'],
+        enabled: true,
+      };
+
+      if (config.headers && Object.keys(config.headers).length > 0) {
+        server.headers = config.headers;
+      }
+      if (config.description) {
+        server.description = config.description;
+      }
+
+      return server;
+    }
+
+    logger.warn(`MCP server '${name}' has neither command nor url, skipping`);
+    return null;
   }
 
   /**

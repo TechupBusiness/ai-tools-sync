@@ -5,6 +5,7 @@
 
 import type { ParsedCommand } from '../parsers/command.js';
 import type { ParsedHook } from '../parsers/hook.js';
+import type { McpServer } from '../parsers/mcp.js';
 import type { ParsedPersona } from '../parsers/persona.js';
 import type { ParsedRule } from '../parsers/rule.js';
 import type { ParseError, TargetType } from '../parsers/types.js';
@@ -21,6 +22,8 @@ export interface LoadResult {
   commands: ParsedCommand[];
   /** Parsed hooks */
   hooks: ParsedHook[];
+  /** MCP servers from plugins */
+  mcpServers?: Record<string, McpServer>;
   /** Non-fatal errors encountered during loading */
   errors?: LoadError[];
   /** Source identifier (e.g., path or URL) */
@@ -148,10 +151,15 @@ export function emptyLoadResultWithSource(source: string): LoadResult {
  */
 export function mergeLoadResults(...results: LoadResult[]): LoadResult {
   const errors: LoadError[] = [];
+  let mcpServers: Record<string, McpServer> | undefined;
 
   for (const r of results) {
     if (r.errors && r.errors.length > 0) {
       errors.push(...r.errors);
+    }
+
+    if (r.mcpServers) {
+      mcpServers = { ...mcpServers, ...r.mcpServers };
     }
   }
 
@@ -161,6 +169,10 @@ export function mergeLoadResults(...results: LoadResult[]): LoadResult {
     commands: results.flatMap((r) => r.commands),
     hooks: results.flatMap((r) => r.hooks),
   };
+
+  if (mcpServers && Object.keys(mcpServers).length > 0) {
+    merged.mcpServers = mcpServers;
+  }
 
   if (errors.length > 0) {
     merged.errors = errors;

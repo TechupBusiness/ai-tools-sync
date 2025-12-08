@@ -7,6 +7,7 @@ import * as path from 'node:path';
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
+
 import {
   ClaudePluginLoader,
   createClaudePluginLoader,
@@ -14,6 +15,8 @@ import {
   getClaudePluginCacheEntries,
   CLAUDE_PLUGIN_PREFIX,
 } from '../../../src/loaders/claude-plugin.js';
+
+import type { McpCommandServer, McpUrlServer } from '../../../src/parsers/mcp.js';
 
 // Test fixtures path
 const FIXTURES_PATH = path.join(__dirname, '../../fixtures/claude-plugins');
@@ -216,6 +219,120 @@ describe('ClaudePluginLoader', () => {
       });
     });
 
+  });
+
+  describe('load() - MCP servers from .mcp.json', () => {
+    const mcpPluginPath = path.join(FIXTURES_PATH, 'mcp-plugin');
+
+    describe('server loading', () => {
+      it('should load MCP servers from .mcp.json', async () => {
+        const result = await loader.load(`claude-plugin:${mcpPluginPath}`);
+
+        expect(result.mcpServers).toBeDefined();
+        expect(Object.keys(result.mcpServers!).length).toBe(3);
+        expect(result.mcpServers!['local-server']).toBeDefined();
+        expect(result.mcpServers!['remote-api']).toBeDefined();
+        expect(result.mcpServers!['sse-server']).toBeDefined();
+      });
+
+      it('should load stdio (command) servers correctly', async () => {
+        process.env.MCP_API_KEY = 'test-key-12345';
+
+        const result = await loader.load(`claude-plugin:${mcpPluginPath}`);
+        const server = result.mcpServers!['local-server'] as McpCommandServer;
+
+        expect(server.command).toBe('node');
+        expect(server.args).toBeDefined();
+        expect(server.args?.[0]).toContain('mcp-server/index.js');
+        expect(server.env?.API_KEY).toBe('test-key-12345');
+        expect(server.env?.DEBUG).toBe('true');
+        expect(server.cwd).toContain(mcpPluginPath);
+        expect(server.description).toBe('Local MCP server bundled with plugin');
+        expect(server.targets).toEqual(['cursor', 'claude', 'factory']);
+        expect(server.enabled).toBe(true);
+
+        delete process.env.MCP_API_KEY;
+      });
+
+      it('should load HTTP servers correctly', async () => {
+        process.env.API_TOKEN = 'token-123';
+
+        const result = await loader.load(`claude-plugin:${mcpPluginPath}`);
+        const server = result.mcpServers!['remote-api'] as McpUrlServer;
+
+        expect(server.url).toBe('https://api.example.com/mcp');
+        expect(server.headers).toBeDefined();
+        expect(server.headers?.Authorization).toBe('Bearer token-123');
+        expect(server.headers?.['X-Custom-Header']).toBe('value');
+        expect(server.description).toBe('Remote HTTP MCP server');
+        expect(server.targets).toEqual(['cursor', 'claude', 'factory']);
+        expect(server.enabled).toBe(true);
+
+        delete process.env.API_TOKEN;
+      });
+
+      it('should load SSE servers', async () => {
+        const result = await loader.load(`claude-plugin:${mcpPluginPath}`);
+
+        const server = result.mcpServers!['sse-server'] as McpUrlServer;
+        expect(server.url).toBe('https://api.example.com/mcp/sse');
+        expect(server.description).toBe('SSE-based MCP server');
+        expect(server.targets).toEqual(['cursor', 'claude', 'factory']);
+        expect(server.enabled).toBe(true);
+      });
+    });
+
+    describe('variable substitution', () => {
+      it('should resolve ${CLAUDE_PLUGIN_ROOT} in server paths', async () => {
+        const result = await loader.load(`claude-plugin:${mcpPluginPath}`);
+
+        const server = result.mcpServers!['local-server'] as McpCommandServer;
+        expect(server.args?.[0]).not.toContain('${CLAUDE_PLUGIN_ROOT}');
+        expect(server.args?.[0]).toContain(mcpPluginPath);
+        expect(server.cwd).not.toContain('${CLAUDE_PLUGIN_ROOT}');
+        expect(server.cwd).toContain(mcpPluginPath);
+      });
+
+      it('should interpolate environment variables in env values', async () => {
+        process.env.MCP_API_KEY = 'interpolated-key';
+
+        const result = await loader.load(`claude-plugin:${mcpPluginPath}`);
+        const server = result.mcpServers!['local-server'] as McpCommandServer;
+        expect(server.env?.API_KEY).toBe('interpolated-key');
+
+        delete process.env.MCP_API_KEY;
+      });
+
+      it('should interpolate environment variables in headers', async () => {
+        process.env.API_TOKEN = 'headers-token';
+
+        const result = await loader.load(`claude-plugin:${mcpPluginPath}`);
+        const server = result.mcpServers!['remote-api'] as McpUrlServer;
+        expect(server.headers?.Authorization).toBe('Bearer headers-token');
+
+        delete process.env.API_TOKEN;
+      });
+    });
+
+    describe('error handling', () => {
+      it('should handle missing .mcp.json gracefully', async () => {
+        const emptyPluginPath = path.join(FIXTURES_PATH, 'empty-plugin');
+        const result = await loader.load(`claude-plugin:${emptyPluginPath}`);
+
+        expect(result.mcpServers).toBeUndefined();
+      });
+    });
+
+    describe('target assignment', () => {
+      it('should assign all targets to plugin MCP servers', async () => {
+        const result = await loader.load(`claude-plugin:${mcpPluginPath}`);
+
+        for (const server of Object.values(result.mcpServers!)) {
+          expect(server.targets).toEqual(['cursor', 'claude', 'factory']);
+          expect(server.enabled).toBe(true);
+        }
+      });
+    });
   });
 
   describe('load() - flat skills', () => {
