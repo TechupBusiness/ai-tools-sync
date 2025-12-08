@@ -33,6 +33,11 @@ export interface PluginLoaderOptions extends LoaderOptions {
    * Whether to force refresh (ignore cache)
    */
   forceRefresh?: boolean;
+
+  /**
+   * Timeout for underlying git operations (ms)
+   */
+  timeout?: number;
 }
 
 /**
