@@ -695,45 +695,6 @@ describe('FactoryGenerator', () => {
         expect(hooks?.PostToolUse?.[0].command).toBe('echo "done"');
       });
 
-      it('should map legacy PreMessage to UserPromptSubmit', async () => {
-        const hook = createMockHook('prompt-check', ['factory'], {
-          event: 'PreMessage',
-          execute: 'echo "before prompt"',
-        });
-
-        const content = createMockContent({
-          projectRoot: tempDir,
-          hooks: [hook],
-        });
-
-        await generator.generate(content);
-
-        const settings = await readSettings(tempDir);
-        const hooks = (settings as { hooks?: Record<string, unknown[]> }).hooks;
-
-        expect(hooks?.UserPromptSubmit).toHaveLength(1);
-        expect(hooks?.UserPromptSubmit?.[0].command).toBe('echo "before prompt"');
-      });
-
-      it('should map legacy PreCommit to PreToolUse with default matcher', async () => {
-        const hook = createMockHook('lint-check', ['factory'], {
-          event: 'PreCommit',
-          execute: './scripts/lint.sh',
-        });
-
-        const content = createMockContent({
-          projectRoot: tempDir,
-          hooks: [hook],
-        });
-
-        await generator.generate(content);
-
-        const settings = await readSettings(tempDir);
-        const hooks = (settings as { hooks?: Record<string, unknown[]> }).hooks;
-
-        expect(hooks?.PreToolUse?.[0].matcher).toBe('Bash(git commit*)');
-      });
-
       it('should skip unsupported events', async () => {
         const hook = createMockHook('unsupported', ['factory'], {
           // @ts-expect-error - intentionally using unsupported event for testing

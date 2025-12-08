@@ -121,7 +121,6 @@ interface FactorySettings {
  */
 function mapEventToFactory(event: string): FactoryHookEvent | null {
   const eventMap: Record<string, FactoryHookEvent> = {
-    // Direct mappings (same as Claude)
     PreToolUse: 'PreToolUse',
     PostToolUse: 'PostToolUse',
     UserPromptSubmit: 'UserPromptSubmit',
@@ -131,10 +130,6 @@ function mapEventToFactory(event: string): FactoryHookEvent | null {
     SessionStart: 'SessionStart',
     SessionEnd: 'SessionEnd',
     PreCompact: 'PreCompact',
-    // Legacy event mappings
-    PreMessage: 'UserPromptSubmit',
-    PostMessage: 'PostToolUse',
-    PreCommit: 'PreToolUse',
   };
 
   return eventMap[event] ?? null;
@@ -667,11 +662,6 @@ export class FactoryGenerator implements Generator {
 
     if (hook.frontmatter.tool_match && hook.frontmatter.tool_match !== '*') {
       output.matcher = hook.frontmatter.tool_match;
-    }
-
-    // Handle legacy PreCommit event - add default matcher if not specified
-    if (hook.frontmatter.event === 'PreCommit' && !output.matcher) {
-      output.matcher = 'Bash(git commit*)';
     }
 
     if (factoryExt?.action) {

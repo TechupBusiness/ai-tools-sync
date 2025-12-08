@@ -25,32 +25,23 @@ import {
  * 
  * Common events across platforms:
  * - PreToolUse, PostToolUse - Before/after tool execution
- * - UserPromptSubmit - Before processing user prompt (Claude's name for PreMessage)
+ * - UserPromptSubmit - Before processing user prompt
  * 
- * Claude-specific events:
+ * Claude/Factory-specific events:
  * - Notification, Stop, SubagentStop, SessionStart, SessionEnd, PreCompact
- * 
- * Legacy events (for backwards compatibility):
- * - PreMessage - Maps to UserPromptSubmit
- * - PostMessage - Maps to PostToolUse
- * - PreCommit - Maps to PreToolUse with Bash(git commit*) matcher
  */
 export type HookEvent =
   // Core events (common across platforms)
   | 'PreToolUse'
   | 'PostToolUse'
   | 'UserPromptSubmit'
-  // Claude-specific events
+  // Claude/Factory-specific events
   | 'Notification'
   | 'Stop'
   | 'SubagentStop'
   | 'SessionStart'
   | 'SessionEnd'
-  | 'PreCompact'
-  // Legacy (for backwards compatibility - will be mapped)
-  | 'PreMessage'
-  | 'PostMessage'
-  | 'PreCommit';
+  | 'PreCompact';
 
 /**
  * Hook frontmatter structure
@@ -80,17 +71,13 @@ const VALID_EVENTS: HookEvent[] = [
   'PreToolUse',
   'PostToolUse',
   'UserPromptSubmit',
-  // Claude-specific
+  // Claude/Factory-specific
   'Notification',
   'Stop',
   'SubagentStop',
   'SessionStart',
   'SessionEnd',
   'PreCompact',
-  // Legacy (backwards compat)
-  'PreMessage',
-  'PostMessage',
-  'PreCommit',
 ];
 
 /**

@@ -72,7 +72,7 @@ const CURSOR_HOOKS_FILE = '.cursor/hooks.json';
 const HOOK_EVENT_MAP: Partial<Record<HookEvent, CursorHookEvent>> = {
   PreToolUse: 'beforeShellExecution',
   PostToolUse: 'afterFileEdit',
-  PreMessage: 'beforeSubmitPrompt',
+  UserPromptSubmit: 'beforeSubmitPrompt',
 };
 
 /**

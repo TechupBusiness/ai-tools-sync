@@ -637,20 +637,13 @@ export class ClaudePluginLoader implements Loader {
    *
    * Looks for:
    * 1. <pluginPath>/hooks/hooks.json
-   * 2. <pluginPath>/settings.json (legacy)
    *
    * @returns Path to hooks file or undefined
    */
   private findHooksFile(pluginPath: string): string | undefined {
-    const candidates = [
-      path.join(pluginPath, 'hooks', 'hooks.json'),
-      path.join(pluginPath, 'settings.json'),
-    ];
-
-    for (const candidate of candidates) {
-      if (this.fileExists(candidate)) {
-        return candidate;
-      }
+    const hooksPath = path.join(pluginPath, 'hooks', 'hooks.json');
+    if (this.fileExists(hooksPath)) {
+      return hooksPath;
     }
 
     return undefined;
@@ -935,10 +928,6 @@ export class ClaudePluginLoader implements Loader {
       SessionStart: 'SessionStart',
       SessionEnd: 'SessionEnd',
       PreCompact: 'PreCompact',
-      // Legacy mappings for backwards compatibility
-      PreMessage: 'PreMessage',
-      PostMessage: 'PostMessage',
-      PreCommit: 'PreCommit',
     };
 
     const mappedEvent = eventMap[eventType];

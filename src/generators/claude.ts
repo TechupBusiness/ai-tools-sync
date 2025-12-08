@@ -113,7 +113,6 @@ interface ClaudeCommandConfig {
  */
 function mapEventToClaude(event: string): ClaudeHookEvent | null {
   const eventMap: Record<string, ClaudeHookEvent> = {
-    // Direct mappings
     'PreToolUse': 'PreToolUse',
     'PostToolUse': 'PostToolUse',
     'UserPromptSubmit': 'UserPromptSubmit',
@@ -123,10 +122,6 @@ function mapEventToClaude(event: string): ClaudeHookEvent | null {
     'SessionStart': 'SessionStart',
     'SessionEnd': 'SessionEnd',
     'PreCompact': 'PreCompact',
-    // Legacy event mappings
-    'PreMessage': 'UserPromptSubmit',
-    'PostMessage': 'PostToolUse',
-    'PreCommit': 'PreToolUse',
   };
   
   return eventMap[event] ?? null;
@@ -652,11 +647,6 @@ export class ClaudeGenerator implements Generator {
     // Set matcher (from tool_match, default to undefined = match all)
     if (hook.frontmatter.tool_match && hook.frontmatter.tool_match !== '*') {
       output.matcher = hook.frontmatter.tool_match;
-    }
-
-    // Handle legacy PreCommit event - add default matcher if not specified
-    if (hook.frontmatter.event === 'PreCommit' && !output.matcher) {
-      output.matcher = 'Bash(git commit*)';
     }
 
     // Set action (only for PreToolUse)

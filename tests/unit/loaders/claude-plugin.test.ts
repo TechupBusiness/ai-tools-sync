@@ -124,43 +124,6 @@ describe('ClaudePluginLoader', () => {
     });
   });
 
-  describe('load() - hooks from settings.json', () => {
-    const hooksPluginPath = path.join(FIXTURES_PATH, 'hooks-plugin');
-
-    it('should load hooks from settings.json', async () => {
-      const result = await loader.load(`claude-plugin:${hooksPluginPath}`);
-
-      expect(result.hooks.length).toBe(3);
-    });
-
-    it('should transform PreToolUse hooks correctly', async () => {
-      const result = await loader.load(`claude-plugin:${hooksPluginPath}`);
-
-      const securityHook = result.hooks.find((h) => h.frontmatter.name === 'security-check');
-      expect(securityHook).toBeDefined();
-      expect(securityHook!.frontmatter.event).toBe('PreToolUse');
-      expect(securityHook!.frontmatter.tool_match).toBe('Bash(*rm*)|Edit(*.env*)');
-      expect(securityHook!.content).toBe('Potentially dangerous operation detected');
-    });
-
-    it('should transform PostToolUse hooks correctly', async () => {
-      const result = await loader.load(`claude-plugin:${hooksPluginPath}`);
-
-      const logHook = result.hooks.find((h) => h.frontmatter.name === 'log-changes');
-      expect(logHook).toBeDefined();
-      expect(logHook!.frontmatter.event).toBe('PostToolUse');
-      expect(logHook!.frontmatter.execute).toBe('./scripts/log-changes.sh');
-    });
-
-    it('should set hooks target to claude only', async () => {
-      const result = await loader.load(`claude-plugin:${hooksPluginPath}`);
-
-      for (const hook of result.hooks) {
-        expect(hook.frontmatter.targets).toEqual(['claude']);
-      }
-    });
-  });
-
   describe('load() - hooks from hooks/hooks.json', () => {
     const fullHooksPluginPath = path.join(FIXTURES_PATH, 'full-hooks-plugin');
 
@@ -253,15 +216,6 @@ describe('ClaudePluginLoader', () => {
       });
     });
 
-    describe('priority', () => {
-      it('should prefer hooks/hooks.json over settings.json when both exist', async () => {
-        const result = await loader.load(`claude-plugin:${fullHooksPluginPath}`);
-
-        const legacyHook = result.hooks.find((h) => h.frontmatter.name === 'legacy-hook');
-        expect(legacyHook).toBeUndefined();
-        expect(result.hooks.find((h) => h.frontmatter.name === 'prompt-filter')).toBeDefined();
-      });
-    });
   });
 
   describe('load() - flat skills', () => {
@@ -315,8 +269,8 @@ describe('ClaudePluginLoader', () => {
     });
 
     it('should exclude hooks when filtering for non-claude targets', async () => {
-      const hooksPluginPath = path.join(FIXTURES_PATH, 'hooks-plugin');
-      const result = await loader.load(`claude-plugin:${hooksPluginPath}`, {
+      const fullHooksPluginPath = path.join(FIXTURES_PATH, 'full-hooks-plugin');
+      const result = await loader.load(`claude-plugin:${fullHooksPluginPath}`, {
         targets: ['cursor'],
       });
 
@@ -325,12 +279,13 @@ describe('ClaudePluginLoader', () => {
     });
 
     it('should include hooks when filtering for claude target', async () => {
-      const hooksPluginPath = path.join(FIXTURES_PATH, 'hooks-plugin');
-      const result = await loader.load(`claude-plugin:${hooksPluginPath}`, {
+      const fullHooksPluginPath = path.join(FIXTURES_PATH, 'full-hooks-plugin');
+      const result = await loader.load(`claude-plugin:${fullHooksPluginPath}`, {
         targets: ['claude'],
       });
 
-      expect(result.hooks.length).toBe(3);
+      // full-hooks-plugin has 9+ hooks in hooks/hooks.json
+      expect(result.hooks.length).toBeGreaterThanOrEqual(9);
     });
   });
 

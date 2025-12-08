@@ -109,7 +109,17 @@ Content`;
     });
 
     it('should accept all valid event types', () => {
-      const events = ['PreToolUse', 'PostToolUse', 'PreMessage', 'PostMessage', 'PreCommit'];
+      const events = [
+        'PreToolUse',
+        'PostToolUse',
+        'UserPromptSubmit',
+        'Notification',
+        'Stop',
+        'SubagentStop',
+        'SessionStart',
+        'SessionEnd',
+        'PreCompact',
+      ];
 
       for (const event of events) {
         const content = `---
@@ -122,6 +132,24 @@ Content`;
         expect(isOk(result)).toBe(true);
         if (isOk(result)) {
           expect(result.value.frontmatter.event).toBe(event);
+        }
+      }
+    });
+
+    it('should reject legacy event types', () => {
+      const legacyEvents = ['PreMessage', 'PostMessage', 'PreCommit'];
+
+      for (const event of legacyEvents) {
+        const content = `---
+name: test-${event}
+event: ${event}
+---
+Content`;
+
+        const result = parseHook(content);
+        expect(isErr(result)).toBe(true);
+        if (isErr(result)) {
+          expect(result.error.validationErrors?.some((e) => e.path === 'event')).toBe(true);
         }
       }
     });

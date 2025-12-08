@@ -342,42 +342,6 @@ describe('ClaudeGenerator', () => {
       expect(settings.hooks.PostToolUse).toHaveLength(1);
     });
 
-    it('should map PreMessage to UserPromptSubmit', async () => {
-      const content = createMockContent({
-        projectRoot: tempDir,
-        hooks: [createMockHook('prompt-check', 'PreMessage', { execute: 'echo check' })],
-      });
-
-      await generator.generate(content);
-      const settingsContent = await fs.readFile(
-        path.join(tempDir, '.claude/settings.json'),
-        'utf-8'
-      );
-      const settings = JSON.parse(settingsContent);
-
-      expect(settings.hooks.PreMessage).toBeUndefined();
-      expect(settings.hooks.UserPromptSubmit).toBeDefined();
-      expect(settings.hooks.UserPromptSubmit[0].command).toBe('echo check');
-    });
-
-    it('should map PreCommit to PreToolUse with default matcher', async () => {
-      const content = createMockContent({
-        projectRoot: tempDir,
-        hooks: [createMockHook('pre-commit', 'PreCommit', { execute: 'npm run lint' })],
-      });
-
-      await generator.generate(content);
-      const settingsContent = await fs.readFile(
-        path.join(tempDir, '.claude/settings.json'),
-        'utf-8'
-      );
-      const settings = JSON.parse(settingsContent);
-
-      expect(settings.hooks.PreCommit).toBeUndefined();
-      expect(settings.hooks.PreToolUse).toBeDefined();
-      expect(settings.hooks.PreToolUse[0].matcher).toBe('Bash(git commit*)');
-    });
-
     it('should support claude extension for action and message', async () => {
       const content = createMockContent({
         projectRoot: tempDir,
