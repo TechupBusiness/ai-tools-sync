@@ -322,7 +322,10 @@ export class ClaudePluginLoader implements Loader {
     // Load hooks - from manifest path, settings.json, or hooks/hooks.json
     const hooksPath = manifest?.hooks ?? this.findHooksFile(pluginPath);
     if (hooksPath) {
-      const hooksResult = await this.loadHooksFromPath(hooksPath, pluginPath, options);
+      const resolvedHooksPath = path.isAbsolute(hooksPath)
+        ? hooksPath
+        : path.join(pluginPath, hooksPath);
+      const hooksResult = await this.loadHooksFromPath(resolvedHooksPath, pluginPath, options);
       result.hooks = hooksResult.items;
       errors.push(...hooksResult.errors);
     }
@@ -588,8 +591,8 @@ export class ClaudePluginLoader implements Loader {
     pluginPath: string
   ): Promise<{ ok: true; value: ClaudePluginManifest } | { ok: false; value: null }> {
     const possiblePaths = [
-      path.join(pluginPath, 'plugin.json'),
       path.join(pluginPath, '.claude-plugin', 'plugin.json'),
+      path.join(pluginPath, 'plugin.json'),
     ];
 
     for (const manifestPath of possiblePaths) {

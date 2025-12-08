@@ -1,0 +1,13 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "name": "minimal-hook",
+        "type": "command",
+        "command": "echo 'minimal'",
+        "match": "Write(*)"
+      }
+    ]
+  }
+}
+

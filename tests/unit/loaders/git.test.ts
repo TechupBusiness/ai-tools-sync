@@ -441,6 +441,42 @@ describe('GitLoader', () => {
 
       expect(fs.existsSync(path.join(tempDir, DEFAULT_PLUGIN_CACHE_DIR))).toBe(false);
     });
+
+    it('should refetch when cache TTL is expired', async () => {
+      const metadataPath = path.join(mockRepoPath, '.ai-tool-sync-metadata.json');
+      const expiredMetadata = {
+        source: 'github:user/repo',
+        cloneUrl: 'https://github.com/user/repo.git',
+        lastFetched: Date.now() - DEFAULT_GIT_CACHE_TTL_MS - 1000,
+        commitSha: 'stale123',
+      };
+      fs.writeFileSync(metadataPath, JSON.stringify(expiredMetadata));
+
+      const mockExec = vi.mocked(exec);
+      mockExec.mockClear();
+
+      await loader.load('github:user/repo', {
+        cacheDir: tempDir,
+        useCache: true,
+        cacheTtl: DEFAULT_GIT_CACHE_TTL_MS,
+      });
+
+      expect(mockExec).toHaveBeenCalled();
+    });
+
+    it('should refetch when forceRefresh is true even with valid cache', async () => {
+      const mockExec = vi.mocked(exec);
+      mockExec.mockClear();
+
+      await loader.load('github:user/repo', {
+        cacheDir: tempDir,
+        useCache: true,
+        cacheTtl: DEFAULT_GIT_CACHE_TTL_MS,
+        forceRefresh: true,
+      });
+
+      expect(mockExec).toHaveBeenCalled();
+    });
   });
 });
 

@@ -1,0 +1,5 @@
+{
+  "name": "hooks-json-plugin",
+  "hooks": "hooks/hooks.json"
+}
+

@@ -1,0 +1,81 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "name": "prompt-logger",
+        "type": "command",
+        "command": "echo 'Prompt submitted'",
+        "action": "allow"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "name": "security-check",
+        "match": "Bash(*rm*)",
+        "type": "command",
+        "command": "sh -c \"${CLAUDE_PLUGIN_ROOT}/hooks/security.sh\"",
+        "action": "warn",
+        "message": "Destructive command detected"
+      },
+      {
+        "name": "format-check",
+        "match": "Write|Edit",
+        "type": "command",
+        "command": "sh -c \"${CLAUDE_PLUGIN_ROOT}/hooks/format.sh\""
+      }
+    ],
+    "PostToolUse": [
+      {
+        "name": "log-changes",
+        "match": "Edit|Write",
+        "type": "command",
+        "command": "sh -c \"${CLAUDE_PLUGIN_ROOT}/hooks/log.sh\""
+      }
+    ],
+    "Notification": [
+      {
+        "name": "notify-complete",
+        "type": "notification",
+        "message": "Task completed"
+      }
+    ],
+    "Stop": [
+      {
+        "name": "cleanup",
+        "type": "command",
+        "command": "sh -c \"${CLAUDE_PLUGIN_ROOT}/hooks/cleanup.sh\""
+      }
+    ],
+    "SubagentStop": [
+      {
+        "name": "delegate-cleanup",
+        "type": "notification",
+        "message": "Subagent cleanup complete"
+      }
+    ],
+    "SessionStart": [
+      {
+        "name": "session-start",
+        "type": "command",
+        "command": "sh -c \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh\"",
+        "action": "allow"
+      }
+    ],
+    "SessionEnd": [
+      {
+        "name": "session-end",
+        "type": "command",
+        "command": "sh -c \"${CLAUDE_PLUGIN_ROOT}/hooks/session-end.sh\"",
+        "message": "Ending session"
+      }
+    ],
+    "PreCompact": [
+      {
+        "name": "pre-compact",
+        "type": "validation",
+        "message": "Preparing to compact conversation"
+      }
+    ]
+  }
+}
+

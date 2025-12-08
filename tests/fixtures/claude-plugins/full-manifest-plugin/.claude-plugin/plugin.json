@@ -1,0 +1,23 @@
+{
+  "name": "full-test-plugin",
+  "version": "1.2.3",
+  "description": "A complete plugin for testing all features",
+  "author": {
+    "name": "Test Author",
+    "email": "test@example.com",
+    "url": "https://example.com"
+  },
+  "homepage": "https://github.com/test/plugin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/test/plugin.git"
+  },
+  "license": "MIT",
+  "keywords": ["claude-code", "testing", "typescript"],
+  "skills": "skills/",
+  "commands": "commands/",
+  "agents": "agents/",
+  "hooks": "hooks/hooks.json",
+  "mcpServers": ".mcp.json"
+}
+

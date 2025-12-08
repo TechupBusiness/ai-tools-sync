@@ -1,0 +1,6 @@
+{
+  "name": "minimal-test-plugin",
+  "skills": "skills/",
+  "hooks": "hooks/hooks.json"
+}
+

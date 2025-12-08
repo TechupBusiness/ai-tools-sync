@@ -3,6 +3,8 @@
  * @description Tests for loading content from Claude-native plugin format
  */
 
+import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -219,6 +221,52 @@ describe('ClaudePluginLoader', () => {
       });
     });
 
+    describe('hooks-json plugin coverage', () => {
+      const hooksJsonPath = path.join(FIXTURES_PATH, 'hooks-json-plugin');
+
+      it('should transform all hook event types from hooks.json', async () => {
+        const result = await loader.load(`claude-plugin:${hooksJsonPath}`);
+        const events = result.hooks.map((h) => h.frontmatter.event);
+
+        expect(events).toEqual(
+          expect.arrayContaining([
+            'UserPromptSubmit',
+            'PreToolUse',
+            'PostToolUse',
+            'Notification',
+            'Stop',
+            'SubagentStop',
+            'SessionStart',
+            'SessionEnd',
+            'PreCompact',
+          ])
+        );
+      });
+
+      it('should map hook fields to tool_match, execute, and claude extensions', async () => {
+        const result = await loader.load(`claude-plugin:${hooksJsonPath}`);
+        const preHook = result.hooks.find((h) => h.frontmatter.name === 'pre-tool-guard');
+        const postHook = result.hooks.find((h) => h.frontmatter.name === 'post-tool-log');
+
+        expect(preHook?.frontmatter.tool_match).toBe('Bash(*rm*)');
+        expect(preHook?.frontmatter.execute).toContain('guard');
+        expect(preHook?.frontmatter.claude?.action).toBe('warn');
+        expect(preHook?.frontmatter.claude?.message).toBe('dangerous');
+
+        expect(postHook?.frontmatter.tool_match).toBe('Write|Edit');
+        expect(postHook?.frontmatter.execute).toContain('post');
+      });
+
+      it('should preserve notification and validation hook types', async () => {
+        const result = await loader.load(`claude-plugin:${hooksJsonPath}`);
+
+        const notification = result.hooks.find((h) => h.frontmatter.name === 'notify-hook');
+        const validation = result.hooks.find((h) => h.frontmatter.name === 'pre-compact-hook');
+
+        expect(notification?.frontmatter.claude?.type).toBe('notification');
+        expect(validation?.frontmatter.claude?.type).toBe('validation');
+      });
+    });
   });
 
   describe('load() - MCP servers from .mcp.json', () => {
@@ -279,6 +327,15 @@ describe('ClaudePluginLoader', () => {
         expect(server.description).toBe('SSE-based MCP server');
         expect(server.targets).toEqual(['cursor', 'claude', 'factory']);
         expect(server.enabled).toBe(true);
+      });
+
+      it('should load SSE server headers from manifest mcpServers path', async () => {
+        const fullManifestPath = path.join(FIXTURES_PATH, 'full-manifest-plugin');
+        const result = await loader.load(`claude-plugin:${fullManifestPath}`);
+
+        const server = result.mcpServers?.['remote-sse'] as McpUrlServer | undefined;
+        expect(server).toBeDefined();
+        expect(server?.headers?.Authorization).toBe('Bearer ${API_KEY}');
       });
     });
 
@@ -432,6 +489,20 @@ describe('ClaudePluginLoader', () => {
 
       expect(result.rules.length).toBe(2);
     });
+
+    it('should resolve ${CLAUDE_PLUGIN_ROOT} placeholders in markdown content', async () => {
+      const pluginPath = path.join(FIXTURES_PATH, 'full-manifest-plugin');
+      const result = await loader.load(`claude-plugin:${pluginPath}`);
+
+      const skill = result.rules.find((r) => r.frontmatter.name === 'typescript-full');
+      const persona = result.personas.find((p) => p.frontmatter.name === 'test-agent');
+      const command = result.commands.find((c) => c.frontmatter.name === 'test-command');
+
+      expect(skill?.content).toContain(pluginPath);
+      expect(skill?.content).not.toContain('${CLAUDE_PLUGIN_ROOT}');
+      expect(persona?.content).toContain(pluginPath);
+      expect(command?.content).toContain(pluginPath);
+    });
   });
 
   describe('caching', () => {
@@ -464,6 +535,76 @@ describe('ClaudePluginLoader', () => {
 
   describe('load() - plugin.json manifest', () => {
     const manifestPluginPath = path.join(FIXTURES_PATH, 'manifest-plugin');
+    const fullManifestPluginPath = path.join(FIXTURES_PATH, 'full-manifest-plugin');
+    const minimalManifestPath = path.join(FIXTURES_PATH, 'minimal-manifest-plugin');
+
+    it('should parse manifest from .claude-plugin directory', async () => {
+      const result = await loader.load(`claude-plugin:${fullManifestPluginPath}`);
+
+      expect(result.metadata?.pluginName).toBe('full-test-plugin');
+      expect(result.metadata?.pluginVersion).toBe('1.2.3');
+      expect(result.rules.some((r) => r.frontmatter.name === 'typescript-full')).toBe(true);
+      expect(result.personas.some((p) => p.frontmatter.name === 'test-agent')).toBe(true);
+      expect(result.commands.some((c) => c.frontmatter.name === 'test-command')).toBe(true);
+      expect(result.hooks.length).toBeGreaterThan(0);
+      expect(result.mcpServers).toBeDefined();
+    });
+
+    it('should prefer .claude-plugin/plugin.json over root plugin.json', async () => {
+      const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-manifest-pref-'));
+      const claudeDir = path.join(tempDir, '.claude-plugin');
+      const skillsDir = path.join(tempDir, 'skills', 'pref');
+
+      try {
+        fs.mkdirSync(claudeDir, { recursive: true });
+        fs.mkdirSync(skillsDir, { recursive: true });
+
+        fs.writeFileSync(
+          path.join(tempDir, 'plugin.json'),
+          JSON.stringify({ name: 'root-manifest', skills: 'skills' }, null, 2)
+        );
+
+        fs.writeFileSync(
+          path.join(claudeDir, 'plugin.json'),
+          JSON.stringify({ name: 'nested-manifest', skills: 'skills' }, null, 2)
+        );
+
+        fs.writeFileSync(path.join(skillsDir, 'SKILL.md'), '---\nname: nested-skill\n---\ncontent');
+
+        const result = await loader.load(`claude-plugin:${tempDir}`);
+
+        expect(result.metadata?.pluginName).toBe('nested-manifest');
+        expect(result.rules[0]?.frontmatter.name).toBe('nested-skill');
+      } finally {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      }
+    });
+
+    it('should resolve manifest-declared component paths', async () => {
+      const result = await loader.load(`claude-plugin:${minimalManifestPath}`);
+
+      expect(result.metadata?.pluginName).toBe('minimal-test-plugin');
+      expect(result.rules.length).toBe(1);
+      expect(result.hooks.length).toBe(1);
+    });
+
+    it('should ignore manifest without required name field', async () => {
+      const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-manifest-missing-'));
+      const skillsDir = path.join(tempDir, 'skills', 'missing');
+
+      try {
+        fs.mkdirSync(skillsDir, { recursive: true });
+        fs.writeFileSync(path.join(tempDir, 'plugin.json'), JSON.stringify({ skills: 'skills' }, null, 2));
+        fs.writeFileSync(path.join(skillsDir, 'SKILL.md'), '---\nname: nameless\n---\ncontent');
+
+        const result = await loader.load(`claude-plugin:${tempDir}`);
+
+        expect(result.metadata).toBeUndefined();
+        expect(result.rules[0]?.frontmatter.name).toBe('nameless');
+      } finally {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      }
+    });
 
     it('should load manifest and use custom paths', async () => {
       const result = await loader.load(`claude-plugin:${manifestPluginPath}`);

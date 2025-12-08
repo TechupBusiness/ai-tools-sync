@@ -1,0 +1,73 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "name": "user-prompt-log",
+        "type": "validation",
+        "command": "echo 'user prompt'",
+        "message": "Validating prompt"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "name": "pre-tool-guard",
+        "match": "Bash(*rm*)",
+        "type": "command",
+        "command": "echo 'guard'",
+        "action": "warn",
+        "message": "dangerous"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "name": "post-tool-log",
+        "type": "command",
+        "command": "echo 'post'",
+        "match": "Write|Edit"
+      }
+    ],
+    "Notification": [
+      {
+        "name": "notify-hook",
+        "type": "notification",
+        "message": "notify"
+      }
+    ],
+    "Stop": [
+      {
+        "name": "stop-hook",
+        "type": "command",
+        "command": "echo 'stop'"
+      }
+    ],
+    "SubagentStop": [
+      {
+        "name": "subagent-stop-hook",
+        "type": "notification",
+        "message": "subagent done"
+      }
+    ],
+    "SessionStart": [
+      {
+        "name": "session-start-hook",
+        "type": "command",
+        "command": "echo 'session start'"
+      }
+    ],
+    "SessionEnd": [
+      {
+        "name": "session-end-hook",
+        "type": "command",
+        "command": "echo 'session end'"
+      }
+    ],
+    "PreCompact": [
+      {
+        "name": "pre-compact-hook",
+        "type": "validation",
+        "message": "compact"
+      }
+    ]
+  }
+}
+
