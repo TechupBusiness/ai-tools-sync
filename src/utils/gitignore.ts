@@ -9,7 +9,12 @@
 import * as path from 'node:path';
 
 import { fileExists, readFile, writeFile } from './fs.js';
-import { MANIFEST_FILENAME, getGitignorePaths, type ManifestV2 } from './manifest.js';
+import {
+  DEFAULT_GENERATED_DIRECTORIES,
+  MANIFEST_FILENAME,
+  getGitignorePaths,
+  type ManifestV2,
+} from './manifest.js';
 import { ok, err, type Result } from './result.js';
 
 const DEFAULT_TOOL_FOLDERS = ['.cursor', '.claude', '.factory'] as const;
@@ -164,13 +169,10 @@ export function updateGitignoreContent(existingContent: string, paths: string[])
 
 /**
  * Get default paths for gitignore when no manifest exists
+ * Only includes root-level files; tool folders manage their own gitignores
  */
 export function getDefaultGitignorePaths(): string[] {
   return [
-    '.cursor/rules/',
-    '.cursor/commands/',
-    '.claude/',
-    '.factory/',
     'CLAUDE.md',
     'AGENTS.md',
     'mcp.json',
@@ -347,7 +349,7 @@ export async function updateToolFolderGitignores(
   const toolFolders = [...DEFAULT_TOOL_FOLDERS];
   const allPaths = manifest
     ? [...manifest.files.map(entry => entry.path), ...manifest.directories]
-    : getDefaultGitignorePaths();
+    : [...DEFAULT_GENERATED_DIRECTORIES];
 
   const grouped = groupFilesByToolFolder(allPaths, toolFolders);
   const results: ToolFolderGitignoreResult[] = [];

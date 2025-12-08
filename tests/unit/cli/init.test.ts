@@ -162,8 +162,13 @@ describe('Init Command', () => {
       expect(content.ok).toBe(true);
       if (content.ok) {
         expect(content.value).toContain('AI Tool Sync Generated');
-        expect(content.value).toContain('.cursor/rules/');
         expect(content.value).toContain('CLAUDE.md');
+        expect(content.value).toContain('AGENTS.md');
+        expect(content.value).toContain('mcp.json');
+        expect(content.value).toContain('.ai-tool-sync-generated');
+        expect(content.value).not.toContain('.cursor/');
+        expect(content.value).not.toContain('.claude/');
+        expect(content.value).not.toContain('.factory/');
       }
     });
 

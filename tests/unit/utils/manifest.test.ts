@@ -226,7 +226,7 @@ describe('Manifest Utilities', () => {
   });
 
   describe('getGitignorePaths', () => {
-    it('should return only top-level generated directories and root files', () => {
+    it('should return only root-level generated files and manifest', () => {
       const manifest: ManifestV2 = {
         version: '2.0.0',
         timestamp: '2024-01-15T10:30:00.000Z',
@@ -246,18 +246,50 @@ describe('Manifest Utilities', () => {
 
       const paths = getGitignorePaths(manifest);
 
-      expect(paths).toContain('.cursor/rules/');
-      expect(paths).toContain('.cursor/commands/');
-      expect(paths).toContain('.claude/');
-      expect(paths).toContain('.factory/');
-
       expect(paths).toContain('CLAUDE.md');
       expect(paths).toContain('AGENTS.md');
-
       expect(paths).toContain(MANIFEST_FILENAME);
 
+      expect(paths).not.toContain('.cursor/rules/');
+      expect(paths).not.toContain('.cursor/commands/');
+      expect(paths).not.toContain('.claude/');
+      expect(paths).not.toContain('.factory/');
       expect(paths).not.toContain('.cursor/rules/core.mdc');
       expect(paths).not.toContain('.claude/skills/core/SKILL.md');
+    });
+
+    it('should only include root files present in the manifest', () => {
+      const manifest: ManifestV2 = {
+        version: '2.0.0',
+        timestamp: '2024-01-15T10:30:00.000Z',
+        files: [
+          { path: 'CLAUDE.md', hash: VALID_HASH },
+          { path: '.cursor/rules/core.mdc', hash: VALID_HASH },
+        ],
+        directories: ['.cursor/rules/'],
+      };
+
+      const paths = getGitignorePaths(manifest);
+
+      expect(paths).toContain('CLAUDE.md');
+      expect(paths).toContain(MANIFEST_FILENAME);
+      expect(paths).not.toContain('AGENTS.md');
+      expect(paths).not.toContain('mcp.json');
+      expect(paths).not.toContain('.cursor/rules/');
+      expect(paths).not.toContain('.cursor/rules/core.mdc');
+    });
+
+    it('should include only manifest file when no root files exist', () => {
+      const manifest: ManifestV2 = {
+        version: '2.0.0',
+        timestamp: '2024-01-15T10:30:00.000Z',
+        files: [],
+        directories: ['.cursor/rules/', '.claude/'],
+      };
+
+      const paths = getGitignorePaths(manifest);
+
+      expect(paths).toEqual([MANIFEST_FILENAME]);
     });
   });
 

@@ -23,8 +23,7 @@ import {
   groupFilesByToolFolder,
   updateToolFolderGitignores,
 } from '../../../src/utils/gitignore.js';
-
-import type { ManifestV2 } from '../../../src/utils/manifest.js';
+import { MANIFEST_FILENAME, type ManifestV2 } from '../../../src/utils/manifest.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TESTS_TMP_DIR = path.resolve(__dirname, '..', '..', '.tmp');
@@ -218,17 +217,14 @@ ${GITIGNORE_END_MARKER}`;
   });
 
   describe('getDefaultGitignorePaths', () => {
-    it('should return expected default paths', () => {
+    it('should return only root-level default paths', () => {
       const paths = getDefaultGitignorePaths();
 
-      expect(paths).toContain('.cursor/rules/');
-      expect(paths).toContain('.cursor/commands/');
-      expect(paths).toContain('.claude/');
-      expect(paths).toContain('.factory/');
-      expect(paths).toContain('CLAUDE.md');
-      expect(paths).toContain('AGENTS.md');
-      expect(paths).toContain('mcp.json');
-      expect(paths).toContain('.ai-tool-sync-generated');
+      expect(paths).toEqual(['CLAUDE.md', 'AGENTS.md', 'mcp.json', MANIFEST_FILENAME]);
+      expect(paths).not.toContain('.cursor/rules/');
+      expect(paths).not.toContain('.cursor/commands/');
+      expect(paths).not.toContain('.claude/');
+      expect(paths).not.toContain('.factory/');
     });
   });
 
@@ -329,6 +325,8 @@ ${GITIGNORE_END_MARKER}`;
         files: [
           { path: 'CLAUDE.md', hash: VALID_HASH },
           { path: 'AGENTS.md', hash: VALID_HASH },
+          { path: 'mcp.json', hash: VALID_HASH },
+          { path: '.cursor/rules/core.mdc', hash: VALID_HASH },
         ],
         directories: ['.cursor/rules/', '.claude/'],
       };
@@ -338,9 +336,12 @@ ${GITIGNORE_END_MARKER}`;
       expect(result.ok).toBe(true);
       if (result.ok) {
         expect(result.value.created).toBe(true);
-        expect(result.value.paths).toContain('.cursor/rules/');
-        expect(result.value.paths).toContain('.claude/');
         expect(result.value.paths).toContain('CLAUDE.md');
+        expect(result.value.paths).toContain('AGENTS.md');
+        expect(result.value.paths).toContain('mcp.json');
+        expect(result.value.paths).not.toContain('.cursor/rules/');
+        expect(result.value.paths).not.toContain('.claude/');
+        expect(result.value.paths).not.toContain('.cursor/rules/core.mdc');
       }
     });
 

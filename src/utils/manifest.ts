@@ -63,6 +63,13 @@ export const DEFAULT_GENERATED_FILES: readonly string[] = [
   'mcp.json',
 ] as const;
 
+/**
+ * Root-level files that may be generated (not inside tool folders)
+ */
+export const DEFAULT_GENERATED_ROOT_FILES: readonly string[] = [
+  ...DEFAULT_GENERATED_FILES,
+] as const;
+
 const ajv = new Ajv({ allErrors: true });
 addFormats(ajv);
 const validateSchema = ajv.compile<ManifestV2>(manifestSchema);
@@ -187,17 +194,10 @@ export function collectGeneratedPaths(files: string[], projectRoot: string): {
  */
 export function getGitignorePaths(manifest: ManifestV2): string[] {
   const paths: string[] = [];
-  const generatedDirs: string[] = [...DEFAULT_GENERATED_DIRECTORIES];
-  const generatedFiles: string[] = [...DEFAULT_GENERATED_FILES];
-
-  for (const dir of manifest.directories) {
-    if (generatedDirs.includes(dir)) {
-      paths.push(dir);
-    }
-  }
+  const generatedRootFiles: string[] = [...DEFAULT_GENERATED_ROOT_FILES];
 
   for (const file of manifest.files) {
-    if (generatedFiles.includes(file.path)) {
+    if (generatedRootFiles.includes(file.path)) {
       paths.push(file.path);
     }
   }

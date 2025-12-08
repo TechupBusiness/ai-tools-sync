@@ -187,15 +187,11 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
   - Reuse existing `updateGitignore()` with target path parameter
   - **Deps: T188-T190 ✅**
 
-- [ ] **T224** - Simplify root gitignore
+- [x] **T224** - Simplify root gitignore
   - Only contains non-tool-folder files: `CLAUDE.md`, `AGENTS.md`, `mcp.json`
   - Contains manifest file: `.ai-tool-sync-generated`
-  - NOT the tool folders (let each folder manage its own ignores)
-  - Configuration:
-    ```yaml
-    output:
-      distributed_gitignore: true  # Default: false for backwards compat
-    ```
+  - NOT the tool folders (per-folder gitignores handle those)
+  - No configuration flag; this is the default behavior post-T223
   - **Deps: T223**
 
 ---
