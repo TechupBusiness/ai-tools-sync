@@ -13,6 +13,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
 import { fileExists, readFile, writeFile } from './fs.js';
+import { logger } from './logger.js';
 import { ok, err, tryCatchAsync, type Result } from './result.js';
 
 /**
@@ -355,4 +356,38 @@ export function createManifestV2(
     directories: [...directories],
   };
 }
+
+/**
+ * Collect file entries with SHA256 hashes
+ */
+export async function collectFileEntriesWithHashes(
+  files: string[],
+  projectRoot: string
+): Promise<Result<ManifestFileEntry[]>> {
+  const entries: ManifestFileEntry[] = [];
+  const errors: string[] = [];
+
+  for (const file of files) {
+    const filePath = path.join(projectRoot, file);
+    const hashResult = await computeFileHash(filePath);
+
+    if (hashResult.ok) {
+      entries.push({ path: file, hash: hashResult.value });
+    } else {
+      const message = hashResult.error instanceof Error ? hashResult.error.message : String(hashResult.error);
+      errors.push(`Failed to hash ${file}: ${message}`);
+    }
+  }
+
+  if (errors.length > 0) {
+    logger.warn(`Hash collection warnings: ${errors.length} file(s) skipped`);
+    for (const error of errors) {
+      logger.debug(error);
+    }
+  }
+
+  return ok(entries);
+}
+
+export * from './manifest-history.js';
 

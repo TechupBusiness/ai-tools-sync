@@ -37,8 +37,15 @@ import { logger } from '../../utils/logger.js';
 import {
   collectGeneratedPaths,
   createManifest,
+  createManifestV2,
   MANIFEST_FILENAME,
+  collectFileEntriesWithHashes,
+  isManifestV2,
+  saveHistorySnapshot,
   writeManifest,
+  type Manifest,
+  type ManifestData,
+  type ManifestV2,
 } from '../../utils/manifest.js';
 import {
   printHeader,
@@ -57,7 +64,7 @@ import type { ResolvedConfig } from '../../config/types.js';
 /**
  * Current version for manifest
  */
-const MANIFEST_VERSION = '1.0.0';
+const MANIFEST_VERSION = '2.0.0';
 
 /**
  * Options for the sync command
@@ -195,7 +202,7 @@ export async function sync(options: SyncOptions = {}): Promise<SyncResult> {
     if (manifestResult.manifestWritten) {
       generateResult.files.push(MANIFEST_FILENAME);
     }
-    if (manifestResult.gitignoreUpdated) {
+    if (manifestResult.warnings.length > 0) {
       generateResult.warnings.push(...manifestResult.warnings);
     }
   }
@@ -446,13 +453,44 @@ async function generateManifestAndGitignore(
     config.projectRoot
   );
 
-  // Create and write manifest
-  const manifest = createManifest(generatedFiles, directories, MANIFEST_VERSION);
+  const entriesResult = await collectFileEntriesWithHashes(generatedFiles, config.projectRoot);
+
+  if (!entriesResult.ok) {
+    const message = entriesResult.error instanceof Error
+      ? entriesResult.error.message
+      : String(entriesResult.error);
+    result.warnings.push(`Failed to collect file hashes: ${message}`);
+    logger.warn(`Failed to collect file hashes: ${message}`);
+  }
+
+  let manifest: ManifestData;
+
+  if (entriesResult.ok) {
+    manifest = createManifestV2(entriesResult.value, directories, MANIFEST_VERSION);
+  } else {
+    manifest = createManifest(generatedFiles, directories, '1.0.0');
+  }
+
   const manifestResult = await writeManifest(config.projectRoot, manifest);
 
   if (manifestResult.ok) {
     result.manifestWritten = true;
     logger.debug(`Wrote manifest: ${MANIFEST_FILENAME}`);
+
+    if (entriesResult.ok) {
+      const manifestV2 = manifest as ManifestV2;
+      const historyResult = await saveHistorySnapshot(config.projectRoot, manifestV2, {
+        configDir: config.aiDir,
+      });
+
+      if (!historyResult.ok) {
+        const message = historyResult.error instanceof Error
+          ? historyResult.error.message
+          : String(historyResult.error);
+        result.warnings.push(`Failed to save history snapshot: ${message}`);
+        logger.warn(`Failed to save history snapshot: ${message}`);
+      }
+    }
   } else {
     result.warnings.push(`Failed to write manifest: ${manifestResult.error.message}`);
     logger.warn(`Failed to write manifest: ${manifestResult.error.message}`);
@@ -462,7 +500,16 @@ async function generateManifestAndGitignore(
   const shouldUpdateGitignore = options.updateGitignore ?? config.output?.update_gitignore ?? true;
 
   if (shouldUpdateGitignore) {
-    const gitignoreResult = await updateGitignore(config.projectRoot, manifest, {
+    const manifestForGitignore: Manifest = isManifestV2(manifest)
+      ? {
+          version: manifest.version,
+          timestamp: manifest.timestamp,
+          files: manifest.files.map((file) => file.path),
+          directories: manifest.directories,
+        }
+      : manifest;
+
+    const gitignoreResult = await updateGitignore(config.projectRoot, manifestForGitignore, {
       createIfMissing: false, // Don't create .gitignore if it doesn't exist during sync
     });
 

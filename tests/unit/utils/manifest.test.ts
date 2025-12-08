@@ -15,10 +15,15 @@ import {
   parseManifest,
   formatManifest,
   createManifest,
+  createManifestV2,
   readManifest,
   writeManifest,
   collectGeneratedPaths,
   getGitignorePaths,
+  collectFileEntriesWithHashes,
+  isManifestV2,
+  type ManifestFileEntry,
+  type ManifestV2,
   type Manifest,
 } from '../../../src/utils/manifest.js';
 
@@ -287,6 +292,68 @@ CLAUDE.md
       // Should not include nested paths
       expect(paths).not.toContain('.cursor/rules/core.mdc');
       expect(paths).not.toContain('.claude/skills/core/SKILL.md');
+    });
+  });
+
+  describe('collectFileEntriesWithHashes', () => {
+    it('should compute hashes for all files', async () => {
+      const fileA = path.join(testDir, 'a.txt');
+      const fileB = path.join(testDir, 'b.txt');
+      await fs.writeFile(fileA, 'hello');
+      await fs.writeFile(fileB, 'world');
+
+      const result = await collectFileEntriesWithHashes(['a.txt', 'b.txt'], testDir);
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toHaveLength(2);
+        expect(result.value[0].hash.startsWith('sha256:')).toBe(true);
+      }
+    });
+
+    it('should skip files that do not exist', async () => {
+      const fileA = path.join(testDir, 'a.txt');
+      await fs.writeFile(fileA, 'hello');
+
+      const result = await collectFileEntriesWithHashes(['a.txt', 'missing.txt'], testDir);
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toHaveLength(1);
+        expect(result.value[0].path).toBe('a.txt');
+      }
+    });
+
+    it('should produce stable hashes for the same content', async () => {
+      const fileA = path.join(testDir, 'a.txt');
+      await fs.writeFile(fileA, 'stable');
+
+      const first = await collectFileEntriesWithHashes(['a.txt'], testDir);
+      const second = await collectFileEntriesWithHashes(['a.txt'], testDir);
+
+      expect(first.ok).toBe(true);
+      expect(second.ok).toBe(true);
+      if (first.ok && second.ok) {
+        expect(first.value[0].hash).toBe(second.value[0].hash);
+      }
+    });
+  });
+
+  describe('ManifestV2 integration', () => {
+    it('should write and read a v2 manifest', async () => {
+      const entries: ManifestFileEntry[] = [
+        { path: 'file.txt', hash: 'sha256:abc' },
+      ];
+
+      const manifest: ManifestV2 = createManifestV2(entries, [], '2.0.0');
+      const writeResult = await writeManifest(testDir, manifest);
+      expect(writeResult.ok).toBe(true);
+
+      const readResult = await readManifest(testDir);
+      expect(readResult.ok).toBe(true);
+      if (readResult.ok && readResult.value) {
+        expect(isManifestV2(readResult.value)).toBe(true);
+        const readManifestData = readResult.value as ManifestV2;
+        expect(readManifestData.files[0]?.hash).toBe('sha256:abc');
+      }
     });
   });
 });
