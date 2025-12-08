@@ -180,6 +180,211 @@ describe('FactoryGenerator', () => {
       expect(result.files).toContain('.factory/skills/factory-only/SKILL.md');
       expect(result.files).not.toContain('.factory/skills/cursor-only/SKILL.md');
     });
+
+    describe('frontmatter', () => {
+      it('should include YAML frontmatter with name', async () => {
+        const content = createMockContent({
+          projectRoot: tempDir,
+          rules: [createMockRule('test-skill')],
+        });
+
+        await generator.generate(content);
+
+        const fileContent = await fs.readFile(
+          path.join(tempDir, '.factory/skills/test-skill/SKILL.md'),
+          'utf-8'
+        );
+
+        expect(fileContent).toContain('---');
+        expect(fileContent).toContain('name: test-skill');
+      });
+
+      it('should include description in frontmatter when present', async () => {
+        const content = createMockContent({
+          projectRoot: tempDir,
+          rules: [createMockRule('described-skill', { description: 'A skill with description' })],
+        });
+
+        await generator.generate(content);
+
+        const fileContent = await fs.readFile(
+          path.join(tempDir, '.factory/skills/described-skill/SKILL.md'),
+          'utf-8'
+        );
+
+        expect(fileContent).toContain('name: described-skill');
+        expect(fileContent).toContain('description: A skill with description');
+      });
+
+      it('should include allowed-tools when factory extension specifies', async () => {
+        const content = createMockContent({
+          projectRoot: tempDir,
+          rules: [
+            createMockRule('tool-restricted', {
+              factory: {
+                'allowed-tools': ['read', 'edit', 'search'],
+              },
+            }),
+          ],
+        });
+
+        await generator.generate(content);
+
+        const fileContent = await fs.readFile(
+          path.join(tempDir, '.factory/skills/tool-restricted/SKILL.md'),
+          'utf-8'
+        );
+
+        expect(fileContent).toContain('allowed-tools:');
+        expect(fileContent).toContain('read');
+        expect(fileContent).toContain('edit');
+        expect(fileContent).toContain('search');
+      });
+
+      it('should include allowed-tools when factory.tools is specified', async () => {
+        const content = createMockContent({
+          projectRoot: tempDir,
+          rules: [
+            createMockRule('tools-alias', {
+              factory: {
+                tools: ['read', 'write'],
+              },
+            }),
+          ],
+        });
+
+        await generator.generate(content);
+
+        const fileContent = await fs.readFile(
+          path.join(tempDir, '.factory/skills/tools-alias/SKILL.md'),
+          'utf-8'
+        );
+
+        expect(fileContent).toContain('allowed-tools:');
+        expect(fileContent).toContain('read');
+        expect(fileContent).toContain('write');
+      });
+
+      it('should omit allowed-tools when not specified', async () => {
+        const content = createMockContent({
+          projectRoot: tempDir,
+          rules: [createMockRule('no-tools')],
+        });
+
+        await generator.generate(content);
+
+        const fileContent = await fs.readFile(
+          path.join(tempDir, '.factory/skills/no-tools/SKILL.md'),
+          'utf-8'
+        );
+
+        expect(fileContent).not.toContain('allowed-tools');
+      });
+
+      it('should omit allowed-tools when empty array', async () => {
+        const content = createMockContent({
+          projectRoot: tempDir,
+          rules: [
+            createMockRule('empty-tools', {
+              factory: {
+                'allowed-tools': [],
+              },
+            }),
+          ],
+        });
+
+        await generator.generate(content);
+
+        const fileContent = await fs.readFile(
+          path.join(tempDir, '.factory/skills/empty-tools/SKILL.md'),
+          'utf-8'
+        );
+
+        expect(fileContent).not.toContain('allowed-tools');
+      });
+
+      it('should map tool names using factory tool mapping', async () => {
+        const content = createMockContent({
+          projectRoot: tempDir,
+          rules: [
+            createMockRule('mapped-tools', {
+              factory: {
+                'allowed-tools': ['ls', 'execute'],
+              },
+            }),
+          ],
+        });
+
+        await generator.generate(content);
+
+        const fileContent = await fs.readFile(
+          path.join(tempDir, '.factory/skills/mapped-tools/SKILL.md'),
+          'utf-8'
+        );
+
+        // 'ls' maps to 'list' in Factory
+        expect(fileContent).toContain('list');
+        expect(fileContent).toContain('execute');
+      });
+
+      it('should have correct file structure with frontmatter', async () => {
+        const content = createMockContent({
+          projectRoot: tempDir,
+          rules: [
+            createMockRule('full-skill', {
+              description: 'Full skill description',
+              factory: {
+                'allowed-tools': ['read'],
+              },
+            }),
+          ],
+        });
+
+        await generator.generate(content);
+
+        const fileContent = await fs.readFile(
+          path.join(tempDir, '.factory/skills/full-skill/SKILL.md'),
+          'utf-8'
+        );
+
+        // Check structure: frontmatter block, then title, then description
+        const lines = fileContent.split('\n');
+        const firstDash = lines.indexOf('---');
+        const secondDash = lines.indexOf('---', firstDash + 1);
+
+        expect(firstDash).toBeGreaterThanOrEqual(0);
+        expect(secondDash).toBeGreaterThan(firstDash);
+
+        // Title should come after frontmatter
+        const titleIndex = lines.findIndex((l) => l.startsWith('# full-skill'));
+        expect(titleIndex).toBeGreaterThan(secondDash);
+      });
+
+      it('should prefer allowed-tools over tools when both are specified', async () => {
+        const content = createMockContent({
+          projectRoot: tempDir,
+          rules: [
+            createMockRule('both-specified', {
+              factory: {
+                'allowed-tools': ['read', 'edit'],
+                tools: ['write', 'search'],
+              },
+            }),
+          ],
+        });
+
+        await generator.generate(content);
+
+        const fileContent = await fs.readFile(
+          path.join(tempDir, '.factory/skills/both-specified/SKILL.md'),
+          'utf-8'
+        );
+
+        // Should use allowed-tools (read, edit) not tools (write, search)
+        expect(fileContent).toContain('read');
+        expect(fileContent).toContain('edit');
+      });
+    });
   });
 
   describe('generate() - droids (personas)', () => {
@@ -1100,7 +1305,7 @@ describe('MCP generation', () => {
     expect(mcpJson.mcpServers.filesystem.command).toBe('npx');
   });
 
-  it('should add experimental warning for Factory MCP', async () => {
+  it('should NOT add experimental warning for Factory MCP (T208)', async () => {
     const content = createMockContent({
       projectRoot: tempDir,
       mcpConfig: {
@@ -1116,7 +1321,7 @@ describe('MCP generation', () => {
 
     const result = await generator.generate(content);
 
-    expect(result.warnings.some(w => w.includes('experimental'))).toBe(true);
+    expect(result.warnings.some(w => w.includes('experimental'))).toBe(false);
   });
 
   it('should not generate mcp.json when no MCP config', async () => {
@@ -1155,6 +1360,80 @@ describe('MCP generation', () => {
     const mcpJson = JSON.parse(mcpContent);
     expect(mcpJson.mcpServers.factoryOnly).toBeDefined();
     expect(mcpJson.mcpServers.cursorOnly).toBeUndefined();
+  });
+
+  it('should include type: "stdio" for command servers (T208)', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      mcpConfig: {
+        servers: {
+          local: {
+            command: 'node',
+            args: ['server.js'],
+            targets: ['factory'],
+            enabled: true,
+          },
+        },
+      },
+    });
+
+    await generator.generate(content);
+
+    const mcpContent = await fs.readFile(path.join(tempDir, '.factory/mcp.json'), 'utf-8');
+    const mcpJson = JSON.parse(mcpContent);
+    expect(mcpJson.mcpServers.local.type).toBe('stdio');
+  });
+
+  it('should include type: "http" for URL servers (T208)', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      mcpConfig: {
+        servers: {
+          remote: {
+            url: 'https://api.example.com/mcp',
+            targets: ['factory'],
+            enabled: true,
+          },
+        },
+      },
+    });
+
+    await generator.generate(content);
+
+    const mcpContent = await fs.readFile(path.join(tempDir, '.factory/mcp.json'), 'utf-8');
+    const mcpJson = JSON.parse(mcpContent);
+    expect(mcpJson.mcpServers.remote.type).toBe('http');
+  });
+
+  it('should handle mixed stdio and http servers with correct types (T208)', async () => {
+    const content = createMockContent({
+      projectRoot: tempDir,
+      mcpConfig: {
+        servers: {
+          local: {
+            command: 'npx',
+            args: ['mcp-server'],
+            targets: ['factory'],
+            enabled: true,
+          },
+          remote: {
+            url: 'https://mcp.example.com',
+            headers: { Authorization: 'Bearer token' },
+            targets: ['factory'],
+            enabled: true,
+          },
+        },
+      },
+    });
+
+    await generator.generate(content);
+
+    const mcpContent = await fs.readFile(path.join(tempDir, '.factory/mcp.json'), 'utf-8');
+    const mcpJson = JSON.parse(mcpContent);
+    expect(mcpJson.mcpServers.local.type).toBe('stdio');
+    expect(mcpJson.mcpServers.local.command).toBe('npx');
+    expect(mcpJson.mcpServers.remote.type).toBe('http');
+    expect(mcpJson.mcpServers.remote.url).toBe('https://mcp.example.com');
   });
 });
 

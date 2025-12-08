@@ -18,6 +18,7 @@ import {
   isCommandServer,
   type McpConfig,
 } from '../parsers/mcp.js';
+import { serializeFrontmatter } from '../transformers/frontmatter.js';
 import { mapModel } from '../transformers/model-mapper.js';
 import { mapTools } from '../transformers/tool-mapper.js';
 import {
@@ -208,13 +209,9 @@ export class FactoryGenerator implements Generator {
     generated.push(agentsMd);
 
     // Generate MCP config if we have MCP config
-    // Note: Factory MCP support is not officially documented, using standard format
     if (factoryContent.mcpConfig && Object.keys(factoryContent.mcpConfig.servers).length > 0) {
       const mcpFile = this.generateMcpConfig(factoryContent.mcpConfig, options);
       generated.push(mcpFile);
-      result.warnings.push(
-        'Factory MCP support is experimental. Generated mcp.json may need manual adjustment.'
-      );
     }
 
     // Write files if not dry run
@@ -313,6 +310,27 @@ export class FactoryGenerator implements Generator {
       parts.push(DO_NOT_EDIT_HEADER.trim());
       parts.push('');
     }
+
+    // Build YAML frontmatter
+    const frontmatter: Record<string, unknown> = {
+      name: rule.frontmatter.name,
+    };
+    if (rule.frontmatter.description) {
+      frontmatter.description = rule.frontmatter.description;
+    }
+
+    // Add allowed-tools if specified in factory extension
+    const factoryExt = rule.frontmatter.factory;
+    const allowedTools = factoryExt?.['allowed-tools'] ?? factoryExt?.tools;
+    if (allowedTools && allowedTools.length > 0) {
+      frontmatter['allowed-tools'] = mapTools(allowedTools, 'factory');
+    }
+
+    // Output YAML frontmatter block
+    parts.push('---');
+    parts.push(serializeFrontmatter(frontmatter));
+    parts.push('---');
+    parts.push('');
 
     // Add title with description
     parts.push(`# ${rule.frontmatter.name}`);
@@ -847,7 +865,7 @@ export class FactoryGenerator implements Generator {
 
   /**
    * Generate MCP configuration file for Factory
-   * Note: Factory MCP support is experimental/undocumented
+   * Outputs type: 'stdio' for command servers and type: 'http' for URL servers
    */
   private generateMcpConfig(
     mcpConfig: McpConfig,
@@ -859,6 +877,7 @@ export class FactoryGenerator implements Generator {
     for (const [name, server] of Object.entries(mcpConfig.servers)) {
       if (isCommandServer(server)) {
         const factoryServer: FactoryMcpServerCommand = {
+          type: 'stdio',
           command: server.command,
         };
         if (server.args && server.args.length > 0) {
@@ -874,6 +893,7 @@ export class FactoryGenerator implements Generator {
       } else {
         // URL-based server
         const factoryServer: FactoryMcpServerUrl = {
+          type: 'http',
           url: server.url,
         };
         if (server.headers && Object.keys(server.headers).length > 0) {
@@ -902,9 +922,10 @@ export class FactoryGenerator implements Generator {
 }
 
 /**
- * Factory MCP server (command-based)
+ * Factory MCP server (command-based / stdio transport)
  */
 interface FactoryMcpServerCommand {
+  type: 'stdio';
   command: string;
   args?: string[];
   env?: Record<string, string>;
@@ -912,9 +933,10 @@ interface FactoryMcpServerCommand {
 }
 
 /**
- * Factory MCP server (URL-based)
+ * Factory MCP server (URL-based / http transport)
  */
 interface FactoryMcpServerUrl {
+  type: 'http';
   url: string;
   headers?: Record<string, string>;
 }
