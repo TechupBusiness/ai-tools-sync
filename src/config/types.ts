@@ -3,6 +3,9 @@
  * @description Type definitions for .ai/config.yaml
  */
 
+import type { LoaderOptions, LoadResult } from '../loaders/base.js';
+import type { PluginCache } from '../utils/plugin-cache.js';
+
 /**
  * Plugin configuration
  */
@@ -13,6 +16,36 @@ export interface PluginConfig {
   enabled: boolean;
   include?: string[];
   exclude?: string[];
+}
+
+export interface PluginLoaderOptions extends LoaderOptions {
+  /**
+   * Plugin cache instance (for version-aware caching)
+   */
+  pluginCache?: PluginCache;
+
+  /**
+   * Plugin configuration from config.yaml
+   */
+  config?: PluginConfig;
+
+  /**
+   * Whether to force refresh (ignore cache)
+   */
+  forceRefresh?: boolean;
+}
+
+/**
+ * Plugin loader result with metadata
+ */
+export interface PluginLoadResult extends LoadResult {
+  /** Plugin metadata from manifest or source */
+  pluginInfo?: {
+    name: string;
+    version?: string;
+    source: string;
+    description?: string;
+  };
 }
 
 /**
