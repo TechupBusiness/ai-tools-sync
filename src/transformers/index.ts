@@ -8,4 +8,5 @@ export * from './model-mapper.js';
 export * from './frontmatter.js';
 export * from './glob-matcher.js';
 export * from './conditional-content.js';
+export * from './include-resolver.js';
 
