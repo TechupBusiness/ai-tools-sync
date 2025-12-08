@@ -8,7 +8,7 @@ pnpm test
 ```
 Run each separately. Fix all errors before proceeding.
 
-### 2. Check Against Project Standards
+### 2. Check Against Project Standards - Worklist
 
 IMPORTANT!!! Review your work against:
 - .ai-flow/project.md - Project plan & Architecture
@@ -43,7 +43,7 @@ IMPORTANT!!! Review your work against:
 **Deviations from spec:** [List or "None"]
 **Uncertain about:** [List or "None"]
 **Commands:** typecheck ✅/❌ | lint ✅/❌ | test ✅/❌
-**Docs updated:** plan.md ✅/N/A | project.md ✅/N/A
+**Docs updated:** plan.md ✅/❌ | project.md ✅/❌
 ```
 
 ### 4. Action

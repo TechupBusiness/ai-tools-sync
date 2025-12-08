@@ -35,6 +35,25 @@ git commit -m "feat(loaders): add watch mode to sync command
 git commit -m "feat: add something" -m "- bullet 1" -m "- bullet 2"
 ```
 
+## Commit Approval Flow (AI Assistants)
+
+Before staging or committing, the AI must present the plan for approval:
+
+```
+Planned files to stage:
+- path/to/file1
+- path/to/file2
+
+Proposed commit message:
+<type>(<scope>): <description>
+
+- bullet 1
+- bullet 2
+- bullet 3
+```
+
+Only after the user confirms should the AI run `git add ...` followed by the single `git commit -m "..."` command.
+
 ## Types
 
 | Type | Description | Triggers Version Bump |
@@ -116,5 +135,4 @@ Before committing, verify:
 - [ ] Changes are logically grouped
 - [ ] **No Co-authored-by lines**
 - [ ] Only committing your own changes
-- [ ] Never commit files from `.ai-flow` directory unless explicitly instructed
-- [ ] User has reviewed the changes before final `git commit`
+- [ ] User has reviewed the changes before final `git commit` !! WAIT BEFORE YOU COMMIT!!!!

@@ -11,6 +11,6 @@ Before completing: Append lessons to `.ai-flow/learnings.md`
 - Impact indicator: 🔴 critical | 🟡 moderate | 🟢 minor
 
 **Restriction:**
-- Only add non obvious use-ful learnings. Just add nothing if there was no relevant learning.
+- IMPRTANT: Only add non obvious use-ful learnings. Just add nothing if there was no relevant learning.
 
 STOP and write useful learnings before saying "task complete".
