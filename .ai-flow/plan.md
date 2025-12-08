@@ -12,9 +12,9 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
 
 ---
 
-## Completed Work Summary
+## Completed Work Summary ✅ (844+ tests passing)
 
-### MVP Complete ✅ (844+ tests passing)
+### Core MVP (Phases 1-14)
 
 | Phase | Description | Tasks | Status |
 |-------|-------------|-------|--------|
@@ -32,7 +32,7 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
 | **Phase 12** | CI/CD | T140-T143 | ✅ GitHub Actions workflows |
 | **Phase 14** | Code Quality | T160-T171 | ✅ ESLint, TypeScript strict mode fixes |
 
-### Post-MVP Complete ✅
+### Post-MVP Features
 
 | Feature | Tasks | Status |
 |---------|-------|--------|
@@ -45,183 +45,276 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
 | Cursor tool restrictions | T199 | ✅ `allowedTools` support for commands |
 | Platform parity tests | T201 | ✅ Frontmatter, tool restrictions, variables |
 | Cursor hooks | T211 | ✅ `.cursor/hooks.json` generation |
-| Claude Code settings.json | T202 | ✅ Permissions, env vars, hooks configuration |
+
+### Plugin & Platform Features
+
+| Feature | Tasks | Status |
+|---------|-------|--------|
 | Plugin caching | T150 | ✅ `.ai-tool-sync/plugins/` with version-aware caching |
+| Plugin manifest support | T155 | ✅ `plugin.json` parsing with component paths |
+| Plugin update mechanism | T151 | ✅ `ai-sync plugins update [name]` command |
+| Plugin hooks.json parsing | T156 | ✅ All events, match patterns, hook types |
+| Plugin MCP extraction | T157 | ✅ Parse `.mcp.json`, variable substitution |
+| CLI --merge command | T153 | ✅ Process `.ai/input/` files, compare, report |
+| CLI --watch flag | T154 | ✅ Watch for changes, auto-regenerate, debounce |
+
+### Claude Code Platform
+
+| Feature | Tasks | Status |
+|---------|-------|--------|
+| Settings.json generation | T202 | ✅ Permissions, env vars, hooks configuration |
+| Commands support | T204 | ✅ `.claude/commands/*.md` with `$ARGUMENTS` |
+| Agent tool restrictions | T205 | ✅ `claude.tools`, `claude.model` frontmatter |
+| Hooks support | T203 | ✅ PreToolUse, PostToolUse events, matcher patterns |
+
+### Factory Platform
+
+| Feature | Tasks | Status |
+|---------|-------|--------|
+| Command variables | T200 | ✅ `$ARGUMENTS`, `$FACTORY_PROJECT_DIR` |
+| Droids support | T206 | ✅ Personas → droids with tools, model, reasoningEffort |
+| Hooks support | T207 | ✅ Factory hook events, matcher patterns |
+| MCP generation | T208 | ✅ `.factory/mcp.json` with stdio/http types |
+| Skills support | T209 | ✅ Rules → skills in `.factory/skills/*/SKILL.md` |
+| Factory tests | T210 | ✅ Droids, hooks, MCP, skills generation |
+
+### Pre-Release Cleanup
+
+| Feature | Tasks | Status |
+|---------|-------|--------|
+| Remove backward compat | T212 | ✅ Legacy events, settings.json fallback, field mappings |
 
 ---
 
 ## Remaining Work - Execution Plan
 
-### Wave 1: Foundation (No Dependencies on Remaining Tasks)
-
-All Wave 1 tasks can be started immediately. Tasks within the same track should be worked sequentially to avoid merge conflicts. Different tracks can be worked in parallel.
+### Wave 1: Plugin System Core (No Dependencies)
 
 #### Track A: Plugin Infrastructure (P2)
 
-- [x] **T150** - Implement plugin caching in `.ai-tool-sync/plugins/`
-  - Cache downloaded plugins from Git sources
-  - Version-aware caching (semantic versioning, exact pins only)
-  - Cache invalidation on version change
-  - Support `${CLAUDE_PLUGIN_ROOT}` path resolution
-
-- [x] **T155** - Add plugin.json manifest support to claude-plugin loader
-  - Parse `.claude-plugin/plugin.json` manifest (required field: `name`)
-  - Support optional fields: `version`, `description`, `author`, `homepage`, `repository`, `license`, `keywords`
-  - Support component paths: `commands`, `agents`, `hooks`, `mcpServers`
-  - Resolve `${CLAUDE_PLUGIN_ROOT}` variable in paths
-
-#### Track B: CLI Features (P2)
-
-- [x] **T153** - Implement `--merge` command
-  - Process `.ai/input/` files
-  - Compare with existing content
-  - Report differences
-
-- [x] **T154** - Implement `--watch` flag
-  - Watch for changes in `.ai/`
-  - Auto-regenerate on change
-  - Debounce rapid changes
-
-#### Track C: Claude Code Platform (P1)
-
-- [x] **T202** - Add Claude Code settings.json generation
-  - Generate `.claude/settings.json` from config
-  - Support permissions (allow/deny/ask) mapping
-  - Support environment variables mapping
-  - Support hooks configuration (combined from hook files and config.yaml)
-
-- [x] **T204** - Add Claude Code commands support
-  - Generate `.claude/commands/*.md` files
-  - Support `$ARGUMENTS` variable syntax
-  - Distinct from agents (commands are prompt templates)
-
-- [x] **T205** - Add Claude Code agent tool restrictions
-  - Add `claude.tools` frontmatter extension for personas → agents
-  - Add `claude.model` for per-agent model override
-  - Available tools: `Bash`, `Read`, `Grep`, `Edit`, etc.
-
-#### Track D: Factory Platform (P1)
-
-- [x] **T200** - Add Factory command variables support
-  - Variables expand to everything typed after command name
-  - Built-in: `$ARGUMENTS`, `$FACTORY_PROJECT_DIR` (in hooks)
-  - Add `variables` to command schema
-
-- [x] **T206** - Add Factory droids support
-  - Map personas → droids with frontmatter: `name`, `description`, `model`, `tools`, `reasoningEffort`
-  - Add `factory.tools` extension for tool restrictions
-  - Add `factory.model` for per-droid model override
-  - Add `factory.reasoningEffort` for reasoning control (`low`, `medium`, `high`)
-
-- [ ] **T207** - Add Factory hooks support
-  - Map our hooks to Factory hook events in `~/.factory/settings.json`
-  - Events: `PreToolUse`, `PostToolUse`, `UserPromptSubmit`, `Notification`, `Stop`, etc.
-  - Support `matcher` regex patterns for tool scoping
-
-- [ ] **T208** - Add Factory MCP generation
-  - Generate `.factory/mcp.json` from config MCP servers section
-  - Support both `stdio` (command, args, env) and `http` (url, headers) types
-
-- [ ] **T209** - Add Factory skills support
-  - Map rules → skills in `.factory/skills/<skill-name>/SKILL.md`
-  - Frontmatter: `name`, `description`, `allowed-tools` (reserved)
-  - Support optional files: `references.md`, `schemas/`, `checklists.md`
-
----
-
-### Wave 2: Depends on Wave 1
-
-Start these after their dependencies from Wave 1 are complete.
-
-#### Track A: Plugin System (continued)
-
-- [x] **T151** - Implement plugin update mechanism
-  - Detect outdated plugins via Git tags
-  - Update to latest versions (no range support, exact pins)
-  - Preserve local configuration
-  - CLI: `ai-sync plugins update [name]`
-  - **Deps: T150**
-
-- [ ] **T156** - Add plugin hooks.json parsing
-  - Parse `hooks/hooks.json` from Claude plugins
-  - Support all events: `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Notification`, `Stop`, `SubagentStop`, `SessionStart`, `SessionEnd`, `PreCompact`
-  - Support `match` patterns for tool filtering (e.g., `"Bash(*rm*)"`, `"Write|Edit"`)
-  - Support hook types: `command`, `validation`, `notification`
-  - Transform to generic hook format
-  - **Deps: T155**
-
-- [ ] **T157** - Add plugin MCP server extraction
-  - Parse `.mcp.json` from Claude plugins
-  - Support stdio, HTTP, SSE transport types
-  - Handle `${CLAUDE_PLUGIN_ROOT}` and env variable substitution
-  - Merge with project MCP config
-  - **Deps: T155**
-
-- [ ] **T158** - Implement Git-based plugin loader
+- [x] **T158** - Implement Git-based plugin loader
   - Support GitHub URLs: `github:owner/repo[@version]`
   - Support GitLab URLs: `gitlab:owner/repo[@version]`
   - Support full Git URLs: `git:https://...`
   - Clone/fetch to cache directory
   - Checkout specific tags for versioning
-  - **Deps: T150**
-
-#### Track C: Claude Code (continued)
-
-- [ ] **T203** - Add Claude Code hooks support
-  - Map our hooks to Claude Code's hook events (PreToolUse, PostToolUse, etc.)
-  - Generate hooks config in settings.json
-  - Support matcher patterns for tool scoping
-  - **Deps: T202**
-
-#### Track D: Factory (continued)
-
-- [ ] **T210** - Write tests for Factory features
-  - Test droids generation with tool restrictions
-  - Test hooks configuration output
-  - Test MCP config generation (stdio and http)
-  - Test skills generation
-  - **Deps: T206, T207, T208, T209**
+  - Added plugin fixture + unit tests, lint/typecheck/test passing
+  - **Deps: T150 ✅**
 
 ---
 
-### Wave 3: Depends on Wave 2
+### Wave 2: Plugin System Extended (Depends on Wave 1)
 
-#### Track A: Plugin System (continued)
+#### Track A: Plugin Configuration (P2)
 
-- [ ] **T159** - Add marketplace.yaml support
-  - Define plugin sources in config:
-    ```yaml
-    plugins:
-      - name: my-plugin
-        source: github:anthropics/example-plugin@1.0.0
-        enabled: true
-        include: [rules, personas]
-    ```
-  - Auto-discovery of plugins from marketplace repos
+- [x] **T159** - Add marketplace-style plugin configuration support
+  - Load `use.plugins` entries (git + local) via unified PluginLoader (git→claude-plugin)
+  - Config version overrides source ref; include/exclude filtering; enabled=false returns empty
+  - Respects plugin cache; cache invalidation on version mismatch; metadata surfaced
+  - Tests added for local load, include/exclude, disabled, cached version override, invalid/missing sources
   - **Deps: T158**
 
-- [ ] **T161** - Write tests for plugin system
+- [x] **T161** - Write tests for plugin system
   - Test plugin.json parsing
   - Test hooks.json transformation
   - Test MCP extraction
   - Test Git-based loading
   - Test version caching
-  - **Deps: T155, T156, T157, T158**
+  - Added fixtures + unit/integration coverage for manifest, hooks, MCP
+  - **Deps: T155 ✅, T156 ✅, T157 ✅, T158**
 
 ---
 
-### Wave 4: Depends on Wave 3
+### Wave 3: Plugin CLI (Depends on Wave 2)
 
-#### Track A: Plugin System (final)
+#### Track A: Plugin Management (P2)
 
-- [ ] **T160** - Add plugin CLI commands
+- [x] **T160** - Add plugin CLI commands
   - `ai-sync plugins list` - List installed plugins
   - `ai-sync plugins add <source>` - Add plugin from Git URL
   - `ai-sync plugins remove <name>` - Remove plugin
   - `ai-sync plugins update [name]` - Update plugin(s)
   - **Deps: T158, T159**
 
------
+---
+
+## Future Feature Ideas (Backlog)
+
+### Wave 4: Generated File Tracking & Cleanup (Depends on Wave 3)
+
+**Current State**: Single manifest file (`.ai-tool-sync-generated`) tracks all generated paths. No content hashing, no per-run history.
+
+**Problem**: Cannot safely detect if user edited a generated file before overwriting. Cleanup cannot distinguish between stale generated files and user-modified ones.
+
+#### Track A: Manifest Infrastructure (P2)
+
+- [x] **T220** - Implement per-run manifest with file hashes
+  - Store manifest snapshots: `.ai-tool-sync/history/<timestamp>.json`
+  - Contents: File paths + SHA256 content hashes at generation time
+  - Cleanup workflow: compare current hash vs last-generated hash
+  - If hash matches: safe to delete (unchanged since generation)
+  - If hash differs: warn user, skip deletion (user edited the file)
+  - **Deps: T188-T190 ✅**
+
+- [ ] **T221** - Implement manifest schema v2
+  - Schema:
+    ```json
+    {
+      "version": "2.0.0",
+      "timestamp": "2024-01-15T10:30:00.000Z",
+      "files": [
+        { "path": ".cursor/rules/core.mdc", "hash": "sha256:abc123..." },
+        { "path": "CLAUDE.md", "hash": "sha256:def456..." }
+      ],
+      "directories": [".cursor/rules/", ".claude/"]
+    }
+    ```
+  - Migration from v1 manifest format
+  - **Deps: T220**
+
+#### Track B: CLI Commands (P2)
+
+- [x] **T222** - Add cleanup CLI commands
+  - `ai-sync clean` - Remove generated files (with hash-based safety)
+  - `ai-sync clean --force` - Remove even modified files (with warnings)
+  - `ai-sync status` - Show which generated files have been modified
+  - **Deps: T221**
+
+---
+
+### Wave 5: Distributed Gitignore Generation (Depends on Wave 4)
+
+**Current State**: Single root `.gitignore` with auto-managed section containing all generated paths.
+
+**Problem**: Users must look at root gitignore to understand what's generated. Tool-specific ignores are mixed together.
+
+#### Track A: Per-Tool Gitignores (P2)
+
+- [ ] **T223** - Implement per-tool-folder gitignores
+  - Generate `.cursor/.gitignore`, `.claude/.gitignore`, `.factory/.gitignore`
+  - Each uses inline auto-managed section (preserves user additions)
+  - Contents: Relative paths within that tool folder
+  - Reuse existing `updateGitignore()` with target path parameter
+  - **Deps: T188-T190 ✅**
+
+- [ ] **T224** - Simplify root gitignore
+  - Only contains non-tool-folder files: `CLAUDE.md`, `AGENTS.md`, `mcp.json`
+  - Contains manifest file: `.ai-tool-sync-generated`
+  - NOT the tool folders (let each folder manage its own ignores)
+  - Configuration:
+    ```yaml
+    output:
+      distributed_gitignore: true  # Default: false for backwards compat
+    ```
+  - **Deps: T223**
+
+---
+
+### Wave 6: Content Composition (Depends on Wave 5)
+
+#### Track A: Rule Composition (P2)
+
+- [ ] **T225** - Implement import/include syntax in rules
+  - Syntax: `@include shared/base-rules.md`
+  - Resolve relative paths from rule file location
+  - Detect circular includes
+  - **Deps: T040-T046 ✅**
+
+- [ ] **T226** - Implement conditional rules
+  - Syntax: `when: typescript_project == true`
+  - Evaluate conditions from project context (package.json, file existence)
+  - Support basic operators: `==`, `!=`, `&&`, `||`
+  - **Deps: T225**
+
+#### Track B: Persona Composition (P2)
+
+- [ ] **T227** - Implement persona inheritance
+  - Syntax: `extends: base-implementer`
+  - Merge frontmatter fields (child overrides parent)
+  - Concatenate content sections
+  - **Deps: T040-T046 ✅**
+
+---
+
+### Wave 7: Platform-Conditional Content (Depends on Wave 6)
+
+#### Track A: Conditional Blocks (P2)
+
+- [ ] **T228** - Implement platform-conditional inline content
+  - Allow platform-specific blocks in markdown body
+  - Custom Mustache-inspired syntax (no external dependency)
+  - Syntax:
+    ```
+    {{#claude}}Claude-only content{{/claude}}
+    {{#!cursor}}Excluded from Cursor{{/!cursor}}
+    {{#claude|factory}}Either platform{{/claude|factory}}
+    {{#claude&!cursor}}Claude but not Cursor{{/claude&!cursor}}
+    ```
+  - Operators: `|` (OR), `&` (AND), `!` (NOT/negation)
+  - Implementation: Add `transformConditionalContent(content, target)` in `src/transformers/`
+  - **Deps: T050-T054 ✅**
+
+---
+
+### Wave 8: Template Variables (Depends on Wave 7)
+
+#### Track A: Variable Substitution (P2)
+
+- [ ] **T229** - Implement template variable substitution
+  - Syntax: `{{project_name}}`, `{{date}}`, `{{version}}`, `{{author}}`
+  - Sources: package.json, git, config.yaml, environment
+  - Implementation: Regex-based substitution, ~50 lines
+  - **Deps: T228**
+
+---
+
+### Wave 9: Developer Experience (Depends on Wave 8)
+
+#### Track A: Remote Content (P2)
+
+- [ ] **T230** - Implement remote rule sources
+  - Fetch rules from URLs during sync
+  - Cache fetched content with TTL
+  - Support authentication headers
+  - **Deps: T060-T069 ✅**
+
+#### Track B: Validation & Preview (P2)
+
+- [ ] **T231** - Implement rule linting
+  - Validate rules for common issues
+  - Check frontmatter schema compliance
+  - Warn on deprecated fields
+  - **Deps: T090-T096 ✅**
+
+- [ ] **T232** - Implement diff mode
+  - `ai-sync --diff` to preview changes
+  - Show unified diff output
+  - Exit code indicates changes needed
+  - **Deps: T090-T096 ✅**
+
+#### Track C: Sharing & Templates (P2)
+
+- [ ] **T233** - Implement export/import
+  - Share configs between projects
+  - Export to portable format
+  - Import with conflict resolution
+  - **Deps: T090-T096 ✅**
+
+- [ ] **T234** - Implement template gallery
+  - `ai-sync init --template react-typescript`
+  - Fetch templates from remote registry
+  - List available templates
+  - **Deps: T233**
+
+#### Track D: Monorepo Support (P2)
+
+- [ ] **T235** - Implement multi-project support
+  - Better monorepo handling
+  - Shared config inheritance
+  - Per-package overrides
+  - **Deps: T120-T123 ✅**
+
+---
 
 ## Platform Research Reference
 
@@ -252,21 +345,6 @@ Start these after their dependencies from Wave 1 are complete.
 | Skills | `.factory/skills/*/SKILL.md` | Auto-invoked by context |
 | MCP | `.factory/mcp.json` | `stdio` and `http` types |
 | Hooks | In settings | Same events as Claude Code |
-
----
-
-## Future Feature Ideas (Backlog)
-
-1. Import/include syntax in rules - `@include shared/base-rules.md`
-2. Conditional rules - `when: typescript_project == true`
-3. Template variables - `{{project_name}}`, `{{date}}`, `{{version}}`
-4. Persona inheritance - `extends: base-implementer`
-5. Remote rule sources - Fetch rules from URLs during sync
-6. Rule linting - Validate rules for common issues
-7. Diff mode - `ai-sync --diff` to preview changes
-8. Export/import - Share configs between projects
-9. Template gallery - `ai-sync init --template react-typescript`
-10. Multi-project support - Better monorepo handling
 
 ---
 
