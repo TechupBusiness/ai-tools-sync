@@ -226,7 +226,7 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
 
 #### Track A: Conditional Blocks (P2)
 
-- [ ] **T228** - Implement platform-conditional inline content
+- [x] **T228** - Implement platform-conditional inline content
   - Allow platform-specific blocks in markdown body
   - Custom Mustache-inspired syntax (no external dependency)
   - Syntax:

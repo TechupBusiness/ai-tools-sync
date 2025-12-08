@@ -19,6 +19,7 @@
 - [T156] 🟡 **Types**: Expanded hook `action` union in loader but forgot generator union → Keep action/type/timeout unions aligned across parser/loader/generator before typecheck; rerun `npm run typecheck`
 - [T159] 🟡 **Exact optional props**: `exactOptionalPropertyTypes` rejects `undefined` in Result payloads and options objects → When passing optional fields through wrappers (cache metadata, loader options), strip or conditionally include keys and return non-optional types (e.g., `NonNullable<T>`) for metadata helpers before assigning.
 - [T161] 🟡 **Manifest precedence**: Loader manifest search order matters (`.claude-plugin/plugin.json` should win over root `plugin.json`) → Explicitly order possible manifest paths by priority and add tests that assert the chosen metadata matches the preferred location.
+- [T228] 🟢 **Type/value imports**: ESLint `import/order` flags separate type/value imports from the same module (`import type { T } ... import { fn } ...`) → Prefer a single combined import with `type` inline (`import { fn, type T } from '...';`) to satisfy ordering rules.
 
 ## Tooling & Config
 
