@@ -91,7 +91,7 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
   - Add animated GIF/demo showing workflow
   - **Deps: All previous features ✅**
 
-- [ ] **T241** - Create CHANGELOG.md
+- [x] **T241** - Create CHANGELOG.md
   - Document all features from 0.1.0
   - Follow Keep a Changelog format
   - Include migration notes from tool-specific configs
