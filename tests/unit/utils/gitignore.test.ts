@@ -33,7 +33,10 @@ describe('Gitignore Utilities', () => {
   let testDir: string;
 
   beforeEach(async () => {
-    testDir = path.join(TESTS_TMP_DIR, `gitignore-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = path.join(
+      TESTS_TMP_DIR,
+      `gitignore-test-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    );
     await fs.mkdir(testDir, { recursive: true });
   });
 
@@ -181,8 +184,16 @@ dist/`;
       expect(updated).toContain('dist/');
 
       // Should only have one managed section
-      const startCount = (updated.match(new RegExp(GITIGNORE_START_MARKER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
-      const endCount = (updated.match(new RegExp(GITIGNORE_END_MARKER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
+      const startCount = (
+        updated.match(
+          new RegExp(GITIGNORE_START_MARKER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')
+        ) || []
+      ).length;
+      const endCount = (
+        updated.match(
+          new RegExp(GITIGNORE_END_MARKER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')
+        ) || []
+      ).length;
       expect(startCount).toBe(1);
       expect(endCount).toBe(1);
     });
@@ -296,10 +307,7 @@ ${GITIGNORE_END_MARKER}`;
 
     it('should update existing gitignore', async () => {
       // Create initial gitignore
-      await fs.writeFile(
-        path.join(testDir, '.gitignore'),
-        'node_modules/\ndist/\n'
-      );
+      await fs.writeFile(path.join(testDir, '.gitignore'), 'node_modules/\ndist/\n');
 
       const result = await updateGitignore(testDir, null);
 
@@ -531,7 +539,11 @@ temp/
         expect(content.value).not.toContain('old.mdc');
         expect(content.value).toContain('rules/new.mdc');
         expect(content.value).toContain('rules/another.mdc');
-        const startCount = (content.value.match(new RegExp(GITIGNORE_START_MARKER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
+        const startCount = (
+          content.value.match(
+            new RegExp(GITIGNORE_START_MARKER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')
+          ) || []
+        ).length;
         expect(startCount).toBe(1);
       }
     });
@@ -568,10 +580,7 @@ temp/
     });
 
     it('should return false when no managed section exists', async () => {
-      await fs.writeFile(
-        path.join(testDir, '.gitignore'),
-        'node_modules/\ndist/\n'
-      );
+      await fs.writeFile(path.join(testDir, '.gitignore'), 'node_modules/\ndist/\n');
 
       const result = await removeManagedSection(testDir);
 
@@ -657,4 +666,3 @@ ${GITIGNORE_END_MARKER}`
     });
   });
 });
-

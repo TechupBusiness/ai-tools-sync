@@ -22,11 +22,11 @@ import {
 
 /**
  * Hook event types
- * 
+ *
  * Common events across platforms:
  * - PreToolUse, PostToolUse - Before/after tool execution
  * - UserPromptSubmit - Before processing user prompt
- * 
+ *
  * Claude/Factory-specific events:
  * - Notification, Stop, SubagentStop, SessionStart, SessionEnd, PreCompact
  */
@@ -179,7 +179,11 @@ function validateHookFields(data: Record<string, unknown>): ContentValidationErr
   // Validate platform extensions (must be objects if present)
   for (const platform of ['cursor', 'claude', 'factory'] as const) {
     if (data[platform] !== undefined) {
-      if (typeof data[platform] !== 'object' || data[platform] === null || Array.isArray(data[platform])) {
+      if (
+        typeof data[platform] !== 'object' ||
+        data[platform] === null ||
+        Array.isArray(data[platform])
+      ) {
         errors.push({
           path: platform,
           message: `${platform} extension must be an object`,
@@ -244,11 +248,13 @@ export function parseHook(content: string, filePath?: string): Result<ParsedHook
 
   if (!frontmatterResult.ok) {
     const fmError = frontmatterResult.error;
-    return err(createParseError(fmError.message, {
-      filePath,
-      line: fmError.line,
-      column: fmError.column,
-    }));
+    return err(
+      createParseError(fmError.message, {
+        filePath,
+        line: fmError.line,
+        column: fmError.column,
+      })
+    );
   }
 
   const { data, content: bodyContent, isEmpty } = frontmatterResult.value;
@@ -262,10 +268,12 @@ export function parseHook(content: string, filePath?: string): Result<ParsedHook
   const validationErrors = validateHookFields(data);
 
   if (validationErrors.length > 0) {
-    return err(createParseError('Hook validation failed', {
-      filePath,
-      validationErrors,
-    }));
+    return err(
+      createParseError('Hook validation failed', {
+        filePath,
+        validationErrors,
+      })
+    );
   }
 
   // Apply defaults and create hook object

@@ -104,11 +104,7 @@ export interface MapModelOptions {
  * mapModel('inherit', 'cursor')  // 'inherit'
  * mapModel('gpt-4', 'cursor')    // 'gpt-4' (passed through)
  */
-export function mapModel(
-  model: string,
-  target: TargetType,
-  options?: MapModelOptions
-): string {
+export function mapModel(model: string, target: TargetType, options?: MapModelOptions): string {
   const targetConfig = DEFAULT_MODEL_MAPPINGS[target];
   if (!targetConfig) {
     // Unknown target, return model as-is

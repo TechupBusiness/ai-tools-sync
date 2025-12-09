@@ -82,7 +82,7 @@ describe('Plugin Cache Integration', () => {
   describe('${CLAUDE_PLUGIN_ROOT} variable resolution', () => {
     it('should resolve variable in skill content', async () => {
       const loader = new ClaudePluginLoader();
-      
+
       // Create a test plugin with ${CLAUDE_PLUGIN_ROOT} variable
       const pluginPath = path.join(tempDir, 'test-plugin');
       const skillsDir = path.join(pluginPath, 'skills', 'test-skill');
@@ -105,4 +105,3 @@ This skill references \${CLAUDE_PLUGIN_ROOT}/path/to/file.md`;
     });
   });
 });
-

@@ -1,10 +1,10 @@
 /**
  * @file Migrate Command
  * @description Scan for existing AI tool configurations and help migrate them
- * 
+ *
  * This command discovers existing AI tool configurations in a project and
  * helps users migrate them to the unified .ai-tool-sync format.
- * 
+ *
  * Supported discovery:
  * - .cursor/rules/*.mdc (Cursor rules)
  * - .cursorrules (deprecated Cursor format)
@@ -19,13 +19,7 @@ import * as readline from 'node:readline';
 
 import { getAiPaths, resolveConfigDir } from '../../config/loader.js';
 import { parseFrontmatter, hasFrontmatter } from '../../parsers/frontmatter.js';
-import {
-  ensureDir,
-  glob,
-  readFile,
-  writeFile,
-  copyFile,
-} from '../../utils/fs.js';
+import { ensureDir, glob, readFile, writeFile, copyFile } from '../../utils/fs.js';
 import { logger } from '../../utils/logger.js';
 import {
   printHeader,
@@ -130,22 +124,50 @@ const DISCOVERY_PATTERNS = [
   // Cursor
   { pattern: '.cursor/rules/**/*.mdc', platform: 'cursor' as const, contentType: 'rule' as const },
   { pattern: '.cursor/rules/**/*.md', platform: 'cursor' as const, contentType: 'rule' as const },
-  { pattern: '.cursor/commands/**/*.md', platform: 'cursor' as const, contentType: 'command' as const },
+  {
+    pattern: '.cursor/commands/**/*.md',
+    platform: 'cursor' as const,
+    contentType: 'command' as const,
+  },
   { pattern: '.cursorrules', platform: 'cursor' as const, contentType: 'rule' as const },
-  
+
   // Claude
   { pattern: 'CLAUDE.md', platform: 'claude' as const, contentType: 'mixed' as const },
-  { pattern: '.claude/skills/**/SKILL.md', platform: 'claude' as const, contentType: 'rule' as const },
+  {
+    pattern: '.claude/skills/**/SKILL.md',
+    platform: 'claude' as const,
+    contentType: 'rule' as const,
+  },
   { pattern: '.claude/skills/**/*.md', platform: 'claude' as const, contentType: 'rule' as const },
-  { pattern: '.claude/agents/**/*.md', platform: 'claude' as const, contentType: 'persona' as const },
+  {
+    pattern: '.claude/agents/**/*.md',
+    platform: 'claude' as const,
+    contentType: 'persona' as const,
+  },
   { pattern: '.claude/settings.json', platform: 'claude' as const, contentType: 'config' as const },
-  
+
   // Factory
   { pattern: 'AGENTS.md', platform: 'factory' as const, contentType: 'mixed' as const },
-  { pattern: '.factory/skills/**/SKILL.md', platform: 'factory' as const, contentType: 'rule' as const },
-  { pattern: '.factory/skills/**/*.md', platform: 'factory' as const, contentType: 'rule' as const },
-  { pattern: '.factory/droids/**/*.md', platform: 'factory' as const, contentType: 'persona' as const },
-  { pattern: '.factory/commands/**/*.md', platform: 'factory' as const, contentType: 'command' as const },
+  {
+    pattern: '.factory/skills/**/SKILL.md',
+    platform: 'factory' as const,
+    contentType: 'rule' as const,
+  },
+  {
+    pattern: '.factory/skills/**/*.md',
+    platform: 'factory' as const,
+    contentType: 'rule' as const,
+  },
+  {
+    pattern: '.factory/droids/**/*.md',
+    platform: 'factory' as const,
+    contentType: 'persona' as const,
+  },
+  {
+    pattern: '.factory/commands/**/*.md',
+    platform: 'factory' as const,
+    contentType: 'command' as const,
+  },
 ];
 
 /**
@@ -154,15 +176,15 @@ const DISCOVERY_PATTERNS = [
 function analyzeContent(content: string): { topics: string[]; shouldSplit: boolean } {
   const topics: string[] = [];
   const lines = content.split('\n');
-  
+
   // Look for H1 and H2 headers that indicate separate topics
   let h1Count = 0;
   let h2Count = 0;
-  
+
   for (const line of lines) {
     const h1Match = line.match(/^#\s+(.+)/);
     const h2Match = line.match(/^##\s+(.+)/);
-    
+
     if (h1Match?.[1]) {
       h1Count++;
       topics.push(h1Match[1]);
@@ -174,10 +196,10 @@ function analyzeContent(content: string): { topics: string[]; shouldSplit: boole
       }
     }
   }
-  
+
   // A file should be split if it has multiple H1 sections or many H2 sections
   const shouldSplit = h1Count > 1 || h2Count > 5;
-  
+
   return { topics, shouldSplit };
 }
 
@@ -196,13 +218,22 @@ function detectContentType(
     if (frontmatter.event || frontmatter.tool_match) return 'hook';
     if (frontmatter.globs || frontmatter.always_apply || frontmatter.alwaysApply) return 'rule';
   }
-  
+
   // Check file path patterns
   const lowerPath = filePath.toLowerCase();
-  if (lowerPath.includes('/rules/') || lowerPath.includes('/skills/') || lowerPath.endsWith('.mdc')) {
+  if (
+    lowerPath.includes('/rules/') ||
+    lowerPath.includes('/skills/') ||
+    lowerPath.endsWith('.mdc')
+  ) {
     return 'rule';
   }
-  if (lowerPath.includes('/personas/') || lowerPath.includes('/agents/') || lowerPath.includes('/droids/') || lowerPath.includes('/roles/')) {
+  if (
+    lowerPath.includes('/personas/') ||
+    lowerPath.includes('/agents/') ||
+    lowerPath.includes('/droids/') ||
+    lowerPath.includes('/roles/')
+  ) {
     return 'persona';
   }
   if (lowerPath.includes('/commands/') && !lowerPath.includes('/roles/')) {
@@ -214,19 +245,23 @@ function detectContentType(
   if (lowerPath.endsWith('.json')) {
     return 'config';
   }
-  
+
   // Check content patterns
   const lowerContent = content.toLowerCase();
-  if (lowerContent.includes('# you are') || lowerContent.includes('persona') || lowerContent.includes('your role')) {
+  if (
+    lowerContent.includes('# you are') ||
+    lowerContent.includes('persona') ||
+    lowerContent.includes('your role')
+  ) {
     return 'persona';
   }
-  
+
   // CLAUDE.md and AGENTS.md are typically mixed
   const fileName = path.basename(filePath).toLowerCase();
   if (fileName === 'claude.md' || fileName === 'agents.md') {
     return 'mixed';
   }
-  
+
   return 'rule'; // Default to rule for .md files
 }
 
@@ -260,32 +295,32 @@ export async function discover(projectRoot: string): Promise<DiscoveryResult> {
     },
     warnings: [],
   };
-  
+
   const platformsFound = new Set<string>();
-  
+
   for (const pattern of DISCOVERY_PATTERNS) {
     const files = await glob(pattern.pattern, {
       cwd: projectRoot,
       absolute: true,
       dot: true,
     });
-    
+
     for (const filePath of files) {
       // Skip files we've already processed (in case of overlapping patterns)
-      if (result.files.some(f => f.path === filePath)) {
+      if (result.files.some((f) => f.path === filePath)) {
         continue;
       }
-      
+
       try {
         const stats = await fs.stat(filePath);
         const relativePath = path.relative(projectRoot, filePath);
         const contentResult = await readFile(filePath);
         const content = contentResult.ok ? contentResult.value : '';
-        
+
         // Parse frontmatter
         let frontmatter: Record<string, unknown> | undefined;
         let hasFm = false;
-        
+
         if (content && hasFrontmatter(content)) {
           const parsed = parseFrontmatter(content);
           if (parsed.ok && !parsed.value.isEmpty) {
@@ -293,13 +328,13 @@ export async function discover(projectRoot: string): Promise<DiscoveryResult> {
             hasFm = true;
           }
         }
-        
+
         // Analyze content
         const analysis = analyzeContent(content);
-        
+
         // Detect content type
         const contentType = detectContentType(content, filePath, frontmatter);
-        
+
         // Build warnings
         const warnings: string[] = [];
         if (analysis.shouldSplit) {
@@ -308,7 +343,7 @@ export async function discover(projectRoot: string): Promise<DiscoveryResult> {
         if (!hasFm && (pattern.contentType === 'rule' || pattern.contentType === 'persona')) {
           warnings.push('No frontmatter detected - will need manual metadata');
         }
-        
+
         const discovered: DiscoveredFile = {
           path: filePath,
           relativePath,
@@ -321,25 +356,26 @@ export async function discover(projectRoot: string): Promise<DiscoveryResult> {
           detectedTopics: analysis.topics,
           warnings,
         };
-        
+
         result.files.push(discovered);
         result.byPlatform[pattern.platform].push(discovered);
         platformsFound.add(pattern.platform);
-        
+
         // Update stats
         result.stats.totalFiles++;
         result.stats.totalSize += stats.size;
         if (hasFm) result.stats.filesWithFrontmatter++;
         if (analysis.shouldSplit) result.stats.filesNeedingSplit++;
-        
       } catch (error) {
-        result.warnings.push(`Failed to analyze ${filePath}: ${error instanceof Error ? error.message : String(error)}`);
+        result.warnings.push(
+          `Failed to analyze ${filePath}: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
     }
   }
-  
+
   result.stats.platforms = Array.from(platformsFound);
-  
+
   return result;
 }
 
@@ -354,17 +390,17 @@ async function createBackup(
 ): Promise<string> {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   const backupDir = path.join(projectRoot, configDir, 'backups', timestamp);
-  
+
   if (!dryRun) {
     await ensureDir(backupDir);
-    
+
     for (const file of files) {
       const destPath = path.join(backupDir, file.relativePath);
       await ensureDir(path.dirname(destPath));
       await copyFile(file.path, destPath);
     }
   }
-  
+
   return backupDir;
 }
 
@@ -376,7 +412,7 @@ async function prompt(question: string, defaultValue?: string): Promise<string> 
     input: process.stdin,
     output: process.stdout,
   });
-  
+
   return new Promise((resolve) => {
     const suffix = defaultValue ? ` [${defaultValue}]` : '';
     rl.question(`${question}${suffix}: `, (answer) => {
@@ -392,7 +428,7 @@ async function prompt(question: string, defaultValue?: string): Promise<string> 
 async function confirm(question: string, defaultYes: boolean = true): Promise<boolean> {
   const hint = defaultYes ? '(Y/n)' : '(y/N)';
   const answer = await prompt(`${question} ${hint}`);
-  
+
   if (!answer) return defaultYes;
   return answer.toLowerCase().startsWith('y');
 }
@@ -454,7 +490,7 @@ targets: [cursor, claude, factory]
 Current frontmatter (if any): ${file.frontmatter ? JSON.stringify(file.frontmatter, null, 2) : 'None'}
 
 Topics detected in file:
-${file.detectedTopics.map(t => `- ${t}`).join('\n') || '- (no clear topics detected)'}
+${file.detectedTopics.map((t) => `- ${t}`).join('\n') || '- (no clear topics detected)'}
 `.trim();
 
   return content;
@@ -465,29 +501,35 @@ ${file.detectedTopics.map(t => `- ${t}`).join('\n') || '- (no clear topics detec
  */
 function printDiscoveryResults(discovery: DiscoveryResult): void {
   printSubHeader('Discovered Files');
-  
+
   if (discovery.files.length === 0) {
     printInfo('No existing AI tool configuration files found.');
     return;
   }
-  
+
   // Print summary by platform
   for (const platform of ['cursor', 'claude', 'factory'] as const) {
     const files = discovery.byPlatform[platform];
     if (files.length > 0) {
       printNewLine();
       printInfo(`${platform.charAt(0).toUpperCase() + platform.slice(1)} (${files.length} files):`);
-      
+
       for (const file of files) {
         const sizeStr = formatSize(file.size);
-        const typeIcon = file.contentType === 'mixed' ? '📁' : 
-                        file.contentType === 'rule' ? '📜' :
-                        file.contentType === 'persona' ? '👤' :
-                        file.contentType === 'command' ? '⚡' : '📄';
+        const typeIcon =
+          file.contentType === 'mixed'
+            ? '📁'
+            : file.contentType === 'rule'
+              ? '📜'
+              : file.contentType === 'persona'
+                ? '👤'
+                : file.contentType === 'command'
+                  ? '⚡'
+                  : '📄';
         const fmIcon = file.hasFrontmatter ? '✓' : '○';
-        
+
         printListItem(`${typeIcon} ${file.relativePath} (${sizeStr}) [fm:${fmIcon}]`);
-        
+
         if (file.warnings.length > 0) {
           for (const warning of file.warnings) {
             printListItem(`⚠ ${warning}`, 1);
@@ -496,7 +538,7 @@ function printDiscoveryResults(discovery: DiscoveryResult): void {
       }
     }
   }
-  
+
   // Print statistics
   printNewLine();
   printSubHeader('Summary');
@@ -505,7 +547,7 @@ function printDiscoveryResults(discovery: DiscoveryResult): void {
   printKeyValue('Files with frontmatter', discovery.stats.filesWithFrontmatter.toString());
   printKeyValue('Files needing split', discovery.stats.filesNeedingSplit.toString());
   printKeyValue('Platforms found', discovery.stats.platforms.join(', ') || 'none');
-  
+
   // Print warnings
   if (discovery.warnings.length > 0) {
     printNewLine();
@@ -521,27 +563,33 @@ function printDiscoveryResults(discovery: DiscoveryResult): void {
  */
 export async function migrate(options: MigrateOptions = {}): Promise<MigrateResult> {
   const projectRoot = path.resolve(options.projectRoot ?? process.cwd());
-  const configDirName = options.configDir ?? await resolveConfigDir({ projectRoot });
+  const configDirName = options.configDir ?? (await resolveConfigDir({ projectRoot }));
   const paths = getAiPaths(projectRoot, configDirName);
-  
+
   const result: MigrateResult = {
     success: true,
     discovery: {
       files: [],
       byPlatform: { cursor: [], claude: [], factory: [], unknown: [] },
-      stats: { totalFiles: 0, totalSize: 0, filesWithFrontmatter: 0, filesNeedingSplit: 0, platforms: [] },
+      stats: {
+        totalFiles: 0,
+        totalSize: 0,
+        filesWithFrontmatter: 0,
+        filesNeedingSplit: 0,
+        platforms: [],
+      },
       warnings: [],
     },
     migratedFiles: [],
     errors: [],
   };
-  
+
   printHeader('Migration Wizard');
-  
+
   // Phase 1: Discovery
   const spinner = createSpinner('Scanning for existing AI tool configurations...');
   spinner.start();
-  
+
   try {
     result.discovery = await discover(projectRoot);
     spinner.stop(`Found ${result.discovery.stats.totalFiles} files`, true);
@@ -551,10 +599,10 @@ export async function migrate(options: MigrateOptions = {}): Promise<MigrateResu
     result.errors.push(error instanceof Error ? error.message : String(error));
     return result;
   }
-  
+
   // Print discovery results
   printDiscoveryResults(result.discovery);
-  
+
   // If discovery only, stop here
   if (options.discoveryOnly) {
     printSummary({
@@ -563,7 +611,7 @@ export async function migrate(options: MigrateOptions = {}): Promise<MigrateResu
     });
     return result;
   }
-  
+
   // If no files found, nothing to migrate
   if (result.discovery.files.length === 0) {
     printSummary({
@@ -572,10 +620,10 @@ export async function migrate(options: MigrateOptions = {}): Promise<MigrateResu
     });
     return result;
   }
-  
+
   // Check if user wants to continue
   printNewLine();
-  
+
   if (!options.yes && !options.dryRun) {
     const shouldContinue = await confirm('Would you like to proceed with migration?', true);
     if (!shouldContinue) {
@@ -583,13 +631,13 @@ export async function migrate(options: MigrateOptions = {}): Promise<MigrateResu
       return result;
     }
   }
-  
+
   // Phase 2: Backup (if requested)
   if (options.backup) {
     printNewLine();
     const backupSpinner = createSpinner('Creating backup...');
     backupSpinner.start();
-    
+
     try {
       result.backupPath = await createBackup(
         projectRoot,
@@ -601,16 +649,18 @@ export async function migrate(options: MigrateOptions = {}): Promise<MigrateResu
     } catch (error) {
       backupSpinner.stop('Backup failed', false);
       result.success = false;
-      result.errors.push(`Backup failed: ${error instanceof Error ? error.message : String(error)}`);
+      result.errors.push(
+        `Backup failed: ${error instanceof Error ? error.message : String(error)}`
+      );
       return result;
     }
   }
-  
+
   // Phase 3: Interactive migration
   if (!options.dryRun) {
     printNewLine();
     printSubHeader('Migration');
-    
+
     // Ensure config directory exists
     await ensureDir(paths.aiDir);
     await ensureDir(paths.rulesDir);
@@ -618,22 +668,25 @@ export async function migrate(options: MigrateOptions = {}): Promise<MigrateResu
     await ensureDir(paths.commandsDir);
     await ensureDir(paths.hooksDir);
     await ensureDir(path.join(paths.aiDir, 'input'));
-    
+
     for (const file of result.discovery.files) {
       printNewLine();
       printInfo(`Processing: ${file.relativePath}`);
-      
+
       // For complex files, suggest AI-assisted migration
       if (file.shouldSplit || !file.hasFrontmatter || file.contentType === 'mixed') {
         if (!options.yes) {
           printWarning('This file may need AI-assisted conversion.');
-          const action = await prompt('Action: (c)opy to input folder, (s)kip, (m)igration prompt', 'c');
-          
+          const action = await prompt(
+            'Action: (c)opy to input folder, (s)kip, (m)igration prompt',
+            'c'
+          );
+
           if (action.toLowerCase() === 's') {
             printListItem('Skipped');
             continue;
           }
-          
+
           if (action.toLowerCase() === 'm') {
             // Print migration prompt
             printNewLine();
@@ -641,7 +694,7 @@ export async function migrate(options: MigrateOptions = {}): Promise<MigrateResu
             printInfo(generateMigrationPrompt(file));
             printInfo('=== End Migration Prompt ===');
             printNewLine();
-            
+
             // Also copy to input folder
             const destPath = path.join(paths.aiDir, 'input', file.relativePath);
             await ensureDir(path.dirname(destPath));
@@ -651,7 +704,7 @@ export async function migrate(options: MigrateOptions = {}): Promise<MigrateResu
             continue;
           }
         }
-        
+
         // Copy to input folder for later processing
         const destPath = path.join(paths.aiDir, 'input', file.relativePath);
         await ensureDir(path.dirname(destPath));
@@ -660,15 +713,20 @@ export async function migrate(options: MigrateOptions = {}): Promise<MigrateResu
         printSuccess(`Copied to ${path.relative(projectRoot, destPath)}`);
       } else {
         // Simple files can be directly migrated
-        const targetDir = file.contentType === 'rule' ? paths.rulesDir :
-                         file.contentType === 'persona' ? paths.personasDir :
-                         file.contentType === 'command' ? paths.commandsDir :
-                         file.contentType === 'hook' ? paths.hooksDir :
-                         path.join(paths.aiDir, 'input');
-        
+        const targetDir =
+          file.contentType === 'rule'
+            ? paths.rulesDir
+            : file.contentType === 'persona'
+              ? paths.personasDir
+              : file.contentType === 'command'
+                ? paths.commandsDir
+                : file.contentType === 'hook'
+                  ? paths.hooksDir
+                  : path.join(paths.aiDir, 'input');
+
         const fileName = path.basename(file.path).replace(/\.mdc$/, '.md');
         const destPath = path.join(targetDir, fileName);
-        
+
         // Read and potentially transform content
         const contentResult = await readFile(file.path);
         if (contentResult.ok) {
@@ -682,7 +740,7 @@ export async function migrate(options: MigrateOptions = {}): Promise<MigrateResu
       }
     }
   }
-  
+
   // Final summary
   printSummary({
     success: result.errors.length === 0,
@@ -691,17 +749,18 @@ export async function migrate(options: MigrateOptions = {}): Promise<MigrateResu
       : `Migration complete - ${result.migratedFiles.length} files processed`,
     dryRun: options.dryRun,
   });
-  
+
   if (result.migratedFiles.length > 0 && !options.dryRun) {
     printNewLine();
     logger.info('Next steps:');
     logger.list(`Review files in ${configDirName}/input/`);
     logger.list(`Convert complex files using AI assistance`);
-    logger.list(`Move converted files to ${configDirName}/rules/, ${configDirName}/personas/, etc.`);
+    logger.list(
+      `Move converted files to ${configDirName}/rules/, ${configDirName}/personas/, etc.`
+    );
     logger.list('Run ai-sync to generate tool configurations');
   }
-  
+
   result.success = result.errors.length === 0;
   return result;
 }
-

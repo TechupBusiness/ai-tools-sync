@@ -31,7 +31,10 @@ function createMockContent(overrides: Partial<ResolvedContent> = {}): ResolvedCo
 }
 
 // Helper to create mock rule
-function createMockRule(name: string, overrides: Partial<ParsedRule['frontmatter']> = {}): ParsedRule {
+function createMockRule(
+  name: string,
+  overrides: Partial<ParsedRule['frontmatter']> = {}
+): ParsedRule {
   return {
     frontmatter: {
       name,
@@ -47,7 +50,10 @@ function createMockRule(name: string, overrides: Partial<ParsedRule['frontmatter
 }
 
 // Helper to create mock persona
-function createMockPersona(name: string, overrides: Partial<ParsedPersona['frontmatter']> = {}): ParsedPersona {
+function createMockPersona(
+  name: string,
+  overrides: Partial<ParsedPersona['frontmatter']> = {}
+): ParsedPersona {
   return {
     frontmatter: {
       name,
@@ -61,7 +67,10 @@ function createMockPersona(name: string, overrides: Partial<ParsedPersona['front
 }
 
 // Helper to create mock command
-function createMockCommand(name: string, overrides: Partial<ParsedCommand['frontmatter']> = {}): ParsedCommand {
+function createMockCommand(
+  name: string,
+  overrides: Partial<ParsedCommand['frontmatter']> = {}
+): ParsedCommand {
   return {
     frontmatter: {
       name,
@@ -418,10 +427,7 @@ describe('FactoryGenerator', () => {
 
       await generator.generate(content);
 
-      const fileContent = await fs.readFile(
-        path.join(tempDir, '.factory/droids/dev.md'),
-        'utf-8'
-      );
+      const fileContent = await fs.readFile(path.join(tempDir, '.factory/droids/dev.md'), 'utf-8');
       expect(fileContent).toContain('read');
       expect(fileContent).toContain('write');
       expect(fileContent).toContain('execute');
@@ -601,7 +607,12 @@ describe('FactoryGenerator', () => {
         commands: [
           createMockCommand('build', {
             args: [
-              { name: 'env', type: 'string', default: 'development', choices: ['development', 'production'] },
+              {
+                name: 'env',
+                type: 'string',
+                default: 'development',
+                choices: ['development', 'production'],
+              },
               { name: 'watch', type: 'boolean', required: true },
             ],
           }),
@@ -1031,10 +1042,7 @@ describe('generate() - command variables', () => {
 
     await generator.generate(content);
 
-    const cmdContent = await fs.readFile(
-      path.join(tempDir, '.factory/commands/run.md'),
-      'utf-8'
-    );
+    const cmdContent = await fs.readFile(path.join(tempDir, '.factory/commands/run.md'), 'utf-8');
     expect(cmdContent).toContain('## Variables');
     expect(cmdContent).toContain('$ARGUMENTS');
     expect(cmdContent).toContain('User input after command name');
@@ -1049,9 +1057,7 @@ describe('generate() - command variables', () => {
             name: 'custom',
             args: [],
             targets: ['factory'],
-            variables: [
-              { name: 'ARGUMENTS', description: 'Custom description' },
-            ],
+            variables: [{ name: 'ARGUMENTS', description: 'Custom description' }],
           },
           content: 'Run with $ARGUMENTS',
         },
@@ -1105,10 +1111,7 @@ describe('generate() - command variables', () => {
 
     await generator.generate(content);
 
-    const cmdContent = await fs.readFile(
-      path.join(tempDir, '.factory/commands/build.md'),
-      'utf-8'
-    );
+    const cmdContent = await fs.readFile(path.join(tempDir, '.factory/commands/build.md'), 'utf-8');
     expect(cmdContent).toContain('## Variables');
     expect(cmdContent).toContain('$FACTORY_PROJECT_DIR');
     expect(cmdContent).toContain('Project root directory');
@@ -1151,9 +1154,7 @@ describe('generate() - command variables', () => {
             name: 'nodupe',
             args: [],
             targets: ['factory'],
-            variables: [
-              { name: 'ARGUMENTS', description: 'My custom description' },
-            ],
+            variables: [{ name: 'ARGUMENTS', description: 'My custom description' }],
           },
           content: 'Execute $ARGUMENTS',
         },
@@ -1166,15 +1167,18 @@ describe('generate() - command variables', () => {
       path.join(tempDir, '.factory/commands/nodupe.md'),
       'utf-8'
     );
-    
+
     // Should only list the variable once in the Variables section (with custom description)
     // Note: Body content will also contain $ARGUMENTS, but we're only checking the Variables list
     const lines = cmdContent.split('\n');
-    const varStartIdx = lines.findIndex(l => l.trim() === '## Variables');
+    const varStartIdx = lines.findIndex((l) => l.trim() === '## Variables');
     const varEndIdx = lines.findIndex((l, i) => i > varStartIdx && l.startsWith('##'));
-    const variablesLines = lines.slice(varStartIdx + 1, varEndIdx === -1 ? lines.length : varEndIdx);
+    const variablesLines = lines.slice(
+      varStartIdx + 1,
+      varEndIdx === -1 ? lines.length : varEndIdx
+    );
     const variablesSection = variablesLines.join('\n');
-    
+
     // Count how many times the variable is listed in the Variables section
     const variableListings = variablesSection.match(/^- `/gm) || [];
     expect(variableListings.length).toBe(1);
@@ -1191,9 +1195,7 @@ describe('generate() - command variables', () => {
             name: 'order',
             args: [],
             targets: ['factory'],
-            variables: [
-              { name: 'CUSTOM', description: 'Custom var' },
-            ],
+            variables: [{ name: 'CUSTOM', description: 'Custom var' }],
           },
           content: 'Run with $ARGUMENTS',
         },
@@ -1202,15 +1204,12 @@ describe('generate() - command variables', () => {
 
     await generator.generate(content);
 
-    const cmdContent = await fs.readFile(
-      path.join(tempDir, '.factory/commands/order.md'),
-      'utf-8'
-    );
-    
+    const cmdContent = await fs.readFile(path.join(tempDir, '.factory/commands/order.md'), 'utf-8');
+
     const variablesSection = cmdContent.split('## Variables')[1]?.split('##')[0] || '';
     const customIndex = variablesSection.indexOf('$CUSTOM');
     const argumentsIndex = variablesSection.indexOf('$ARGUMENTS');
-    
+
     expect(customIndex).toBeGreaterThan(-1);
     expect(argumentsIndex).toBeGreaterThan(-1);
     expect(customIndex).toBeLessThan(argumentsIndex);
@@ -1282,7 +1281,7 @@ describe('MCP generation', () => {
 
     const result = await generator.generate(content);
 
-    expect(result.warnings.some(w => w.includes('experimental'))).toBe(false);
+    expect(result.warnings.some((w) => w.includes('experimental'))).toBe(false);
   });
 
   it('should not generate mcp.json when no MCP config', async () => {
@@ -1397,4 +1396,3 @@ describe('MCP generation', () => {
     expect(mcpJson.mcpServers.remote.url).toBe('https://mcp.example.com');
   });
 });
-

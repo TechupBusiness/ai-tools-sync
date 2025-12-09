@@ -384,7 +384,10 @@ describe('Migration Command', () => {
       expect(result.backupPath).toContain('backups');
 
       // Verify backup was created
-      const backupExists = await fs.stat(result.backupPath!).then(() => true).catch(() => false);
+      const backupExists = await fs
+        .stat(result.backupPath!)
+        .then(() => true)
+        .catch(() => false);
       expect(backupExists).toBe(true);
     });
 
@@ -400,7 +403,10 @@ describe('Migration Command', () => {
 
       expect(result.success).toBe(true);
       // Config dir should not be created in dry run
-      const configDirExists = await fs.stat(path.join(testDir, DEFAULT_CONFIG_DIR)).then(() => true).catch(() => false);
+      const configDirExists = await fs
+        .stat(path.join(testDir, DEFAULT_CONFIG_DIR))
+        .then(() => true)
+        .catch(() => false);
       expect(configDirExists).toBe(false);
     });
 
@@ -456,7 +462,10 @@ Content 3.
 
       // Complex file should be copied to input folder
       const inputPath = path.join(testDir, DEFAULT_CONFIG_DIR, 'input', 'CLAUDE.md');
-      const inputExists = await fs.stat(inputPath).then(() => true).catch(() => false);
+      const inputExists = await fs
+        .stat(inputPath)
+        .then(() => true)
+        .catch(() => false);
       expect(inputExists).toBe(true);
     });
 
@@ -475,7 +484,10 @@ Content 3.
       expect(result.success).toBe(true);
 
       // Custom config dir should be created
-      const configDirExists = await fs.stat(path.join(testDir, customDir)).then(() => true).catch(() => false);
+      const configDirExists = await fs
+        .stat(path.join(testDir, customDir))
+        .then(() => true)
+        .catch(() => false);
       expect(configDirExists).toBe(true);
     });
   });
@@ -571,4 +583,3 @@ always_apply: false
     expect(result.files[0]?.contentType).toBe('rule');
   });
 });
-

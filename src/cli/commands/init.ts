@@ -220,7 +220,7 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
   const projectRoot = path.resolve(options.projectRoot ?? process.cwd());
 
   // Resolve the config directory name
-  const configDirName = options.configDir ?? await resolveConfigDir({ projectRoot });
+  const configDirName = options.configDir ?? (await resolveConfigDir({ projectRoot }));
   const paths = getAiPaths(projectRoot, configDirName);
   const filesCreated: string[] = [];
   const errors: string[] = [];
@@ -379,4 +379,3 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
     };
   }
 }
-

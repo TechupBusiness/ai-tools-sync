@@ -11,7 +11,8 @@ import { debounce } from '../../../src/utils/debounce.js';
 import type { FSWatcher } from 'node:fs';
 
 const { watchSpy } = vi.hoisted(() => ({ watchSpy: vi.fn() }));
-let changeHandler: ((event: string, filename: string | Buffer | undefined | null) => void) | null = null;
+let changeHandler: ((event: string, filename: string | Buffer | undefined | null) => void) | null =
+  null;
 let closeSpy = vi.fn();
 
 vi.mock('node:fs', async () => {
@@ -272,4 +273,3 @@ describe('Watch Command', () => {
     expect(closeSpy).toHaveBeenCalled();
   });
 });
-

@@ -61,7 +61,10 @@ export async function status(options: StatusOptions = {}): Promise<StatusResult>
 
   const manifestResult = await readManifest(projectRoot);
   if (!manifestResult.ok) {
-    const message = manifestResult.error instanceof Error ? manifestResult.error.message : String(manifestResult.error);
+    const message =
+      manifestResult.error instanceof Error
+        ? manifestResult.error.message
+        : String(manifestResult.error);
     printWarning(`Failed to read manifest: ${message}`);
     printSummary({
       success: false,
@@ -130,13 +133,14 @@ export async function status(options: StatusOptions = {}): Promise<StatusResult>
     printNewLine();
     printSubHeader('Files');
     for (const entry of statuses) {
-      const prefix = entry.status === 'modified'
-        ? '⚠'
-        : entry.status === 'missing'
-          ? '✗'
-          : entry.status === 'unknown'
-            ? '?'
-            : '✓';
+      const prefix =
+        entry.status === 'modified'
+          ? '⚠'
+          : entry.status === 'missing'
+            ? '✗'
+            : entry.status === 'unknown'
+              ? '?'
+              : '✓';
       printListItem(`${prefix} ${entry.path} (${entry.status})`);
     }
   }
@@ -218,4 +222,3 @@ function summarizeStatuses(statuses: FileStatus[]): {
     { total: 0, unchanged: 0, modified: 0, missing: 0, unknown: 0 }
   );
 }
-

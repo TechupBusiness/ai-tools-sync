@@ -101,10 +101,7 @@ version: "1.0.0"
 
     it('should resolve project root correctly', async () => {
       await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR), { recursive: true });
-      await fs.writeFile(
-        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
-        `version: "1.0.0"`
-      );
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), `version: "1.0.0"`);
 
       const result = await loadConfig({ projectRoot: testDir });
 
@@ -121,10 +118,7 @@ version: "1.0.0"
   describe('rules resolution', () => {
     it('should load rules from .ai/rules directory', async () => {
       await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
-      await fs.writeFile(
-        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
-        `version: "1.0.0"`
-      );
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), `version: "1.0.0"`);
 
       await fs.writeFile(
         path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'core.md'),
@@ -169,11 +163,10 @@ Rules for tests.
     });
 
     it('should load nested rules from subdirectories', async () => {
-      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'domain'), { recursive: true });
-      await fs.writeFile(
-        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
-        `version: "1.0.0"`
-      );
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'domain'), {
+        recursive: true,
+      });
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), `version: "1.0.0"`);
 
       await fs.writeFile(
         path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'domain', 'core.md'),
@@ -245,10 +238,7 @@ always_apply: true
 
     it('should filter rules by their target specification', async () => {
       await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
-      await fs.writeFile(
-        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
-        `version: "1.0.0"`
-      );
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), `version: "1.0.0"`);
 
       // Rule only for cursor
       await fs.writeFile(
@@ -555,4 +545,3 @@ loaders:
     });
   });
 });
-

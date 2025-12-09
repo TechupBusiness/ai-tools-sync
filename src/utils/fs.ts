@@ -40,7 +40,8 @@ export async function dirExists(dirPath: string): Promise<boolean> {
 export async function readFile(filePath: string): Promise<Result<string>> {
   return tryCatchAsync(
     () => fs.readFile(filePath, 'utf-8'),
-    (e) => new Error(`Failed to read file ${filePath}: ${e instanceof Error ? e.message : String(e)}`)
+    (e) =>
+      new Error(`Failed to read file ${filePath}: ${e instanceof Error ? e.message : String(e)}`)
   );
 }
 
@@ -240,7 +241,9 @@ export async function readJson<T>(filePath: string): Promise<Result<T>> {
     return ok(JSON.parse(content.value) as T);
   } catch (e) {
     return err(
-      new Error(`Failed to parse JSON from ${filePath}: ${e instanceof Error ? e.message : String(e)}`)
+      new Error(
+        `Failed to parse JSON from ${filePath}: ${e instanceof Error ? e.message : String(e)}`
+      )
     );
   }
 }
@@ -252,4 +255,3 @@ export async function writeJson(filePath: string, data: unknown): Promise<Result
   const content = JSON.stringify(data, null, 2) + '\n';
   return writeFile(filePath, content);
 }
-

@@ -200,11 +200,7 @@ export function mapTool(
  * mapTools(['read', 'write', 'execute'], 'claude')
  * // ['Read', 'Write', 'Bash']
  */
-export function mapTools(
-  tools: string[],
-  target: TargetType,
-  options?: MapToolOptions
-): string[] {
+export function mapTools(tools: string[], target: TargetType, options?: MapToolOptions): string[] {
   return tools
     .map((tool) => mapTool(tool, target, options))
     .filter((tool): tool is string => tool !== undefined);
@@ -232,10 +228,7 @@ export function getToolsForTarget(target: TargetType): Record<string, string> {
  * getGenericToolName('Bash', 'claude') // 'execute'
  * getGenericToolName('Read', 'cursor') // 'read'
  */
-export function getGenericToolName(
-  targetTool: string,
-  target: TargetType
-): string | undefined {
+export function getGenericToolName(targetTool: string, target: TargetType): string | undefined {
   const config = DEFAULT_TOOL_MAPPINGS[target];
   if (!config) return undefined;
 

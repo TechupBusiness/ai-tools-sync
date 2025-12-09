@@ -511,17 +511,15 @@ async function generateManifestAndGitignore(
   };
 
   // Collect all generated paths
-  const { files: generatedFiles, directories } = collectGeneratedPaths(
-    files,
-    config.projectRoot
-  );
+  const { files: generatedFiles, directories } = collectGeneratedPaths(files, config.projectRoot);
 
   const entriesResult = await collectFileEntriesWithHashes(generatedFiles, config.projectRoot);
 
   if (!entriesResult.ok) {
-    const message = entriesResult.error instanceof Error
-      ? entriesResult.error.message
-      : String(entriesResult.error);
+    const message =
+      entriesResult.error instanceof Error
+        ? entriesResult.error.message
+        : String(entriesResult.error);
     result.warnings.push(`Failed to collect file hashes: ${message}`);
     logger.warn(`Failed to collect file hashes: ${message}`);
     return result;
@@ -540,9 +538,10 @@ async function generateManifestAndGitignore(
     });
 
     if (!historyResult.ok) {
-      const message = historyResult.error instanceof Error
-        ? historyResult.error.message
-        : String(historyResult.error);
+      const message =
+        historyResult.error instanceof Error
+          ? historyResult.error.message
+          : String(historyResult.error);
       result.warnings.push(`Failed to save history snapshot: ${message}`);
       logger.warn(`Failed to save history snapshot: ${message}`);
     }
@@ -586,11 +585,12 @@ async function generateManifestAndGitignore(
         }
       }
     } else {
-      result.warnings.push(`Failed to update tool folder gitignores: ${toolFolderResult.error.message}`);
+      result.warnings.push(
+        `Failed to update tool folder gitignores: ${toolFolderResult.error.message}`
+      );
       logger.warn(`Failed to update tool folder gitignores: ${toolFolderResult.error.message}`);
     }
   }
 
   return result;
 }
-

@@ -139,7 +139,15 @@ describe('plugin update CLI', () => {
     const program = new Command();
     program.addCommand(createPluginsCommand());
 
-    await program.parseAsync(['node', 'test', 'plugins', 'update', '--project', projectRoot, '--apply']);
+    await program.parseAsync([
+      'node',
+      'test',
+      'plugins',
+      'update',
+      '--project',
+      projectRoot,
+      '--apply',
+    ]);
 
     expect(checkAllPluginsForUpdates).toHaveBeenCalled();
     expect(updatePluginMock).toHaveBeenCalled();

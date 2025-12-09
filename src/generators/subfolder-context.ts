@@ -9,11 +9,7 @@
 
 import * as path from 'node:path';
 
-import {
-  ensureDir,
-  joinPath,
-  writeFile,
-} from '../utils/fs.js';
+import { ensureDir, joinPath, writeFile } from '../utils/fs.js';
 
 import {
   type GeneratedFile,
@@ -30,7 +26,6 @@ import {
 } from './base.js';
 
 import type { TargetType } from '../parsers/types.js';
-
 
 /**
  * Configuration for a single subfolder context
@@ -166,15 +161,16 @@ export class SubfolderContextGenerator implements Generator {
 
     return {
       ...content,
-      rules: ruleNames.size > 0
-        ? content.rules.filter((r) => ruleNames.has(r.frontmatter.name))
-        : [],
-      personas: personaNames.size > 0
-        ? content.personas.filter((p) => personaNames.has(p.frontmatter.name))
-        : [],
-      commands: commandNames.size > 0
-        ? content.commands.filter((c) => commandNames.has(c.frontmatter.name))
-        : [],
+      rules:
+        ruleNames.size > 0 ? content.rules.filter((r) => ruleNames.has(r.frontmatter.name)) : [],
+      personas:
+        personaNames.size > 0
+          ? content.personas.filter((p) => personaNames.has(p.frontmatter.name))
+          : [],
+      commands:
+        commandNames.size > 0
+          ? content.commands.filter((c) => commandNames.has(c.frontmatter.name))
+          : [],
       hooks: [], // Hooks are not typically per-subfolder
     };
   }
@@ -235,9 +231,7 @@ export class SubfolderContextGenerator implements Generator {
           '.claude/agents',
           `${toSafeFilename(persona.frontmatter.name)}.md`
         );
-        const desc = persona.frontmatter.description
-          ? ` - ${persona.frontmatter.description}`
-          : '';
+        const desc = persona.frontmatter.description ? ` - ${persona.frontmatter.description}` : '';
         parts.push(`- [${persona.frontmatter.name}](${agentPath})${desc}`);
       }
       parts.push('');
@@ -249,9 +243,7 @@ export class SubfolderContextGenerator implements Generator {
       parts.push('');
       const sortedCommands = sortCommandsByName(content.commands);
       for (const cmd of sortedCommands) {
-        const desc = cmd.frontmatter.description
-          ? ` - ${cmd.frontmatter.description}`
-          : '';
+        const desc = cmd.frontmatter.description ? ` - ${cmd.frontmatter.description}` : '';
         parts.push(`- /${toSafeFilename(cmd.frontmatter.name)}${desc}`);
       }
       parts.push('');
@@ -304,9 +296,7 @@ export class SubfolderContextGenerator implements Generator {
           toSafeFilename(rule.frontmatter.name),
           'SKILL.md'
         );
-        const desc = rule.frontmatter.description
-          ? ` - ${rule.frontmatter.description}`
-          : '';
+        const desc = rule.frontmatter.description ? ` - ${rule.frontmatter.description}` : '';
         parts.push(`- [${rule.frontmatter.name}](${skillPath})${desc}`);
       }
       parts.push('');
@@ -323,9 +313,7 @@ export class SubfolderContextGenerator implements Generator {
           '.factory/droids',
           `${toSafeFilename(persona.frontmatter.name)}.md`
         );
-        const desc = persona.frontmatter.description
-          ? ` - ${persona.frontmatter.description}`
-          : '';
+        const desc = persona.frontmatter.description ? ` - ${persona.frontmatter.description}` : '';
         parts.push(`- [${persona.frontmatter.name}](${droidPath})${desc}`);
       }
       parts.push('');
@@ -342,9 +330,7 @@ export class SubfolderContextGenerator implements Generator {
           '.factory/commands',
           `${toSafeFilename(cmd.frontmatter.name)}.md`
         );
-        const desc = cmd.frontmatter.description
-          ? ` - ${cmd.frontmatter.description}`
-          : '';
+        const desc = cmd.frontmatter.description ? ` - ${cmd.frontmatter.description}` : '';
         parts.push(`- [${cmd.frontmatter.name}](${cmdPath})${desc}`);
       }
       parts.push('');
@@ -366,4 +352,3 @@ export function createSubfolderContextGenerator(
 ): SubfolderContextGenerator {
   return new SubfolderContextGenerator(subfolders);
 }
-

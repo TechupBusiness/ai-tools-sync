@@ -54,7 +54,9 @@ describe('Include Resolver', () => {
     });
 
     it('should resolve multiple includes in order', async () => {
-      const content = ['Intro', '@include base.md', 'Middle', '@include nested-c.md', 'Outro'].join('\n');
+      const content = ['Intro', '@include base.md', 'Middle', '@include nested-c.md', 'Outro'].join(
+        '\n'
+      );
       const result = await resolveIncludes(content, path.join(FIXTURES_PATH, 'multi.md'), {
         baseDir: FIXTURES_PATH,
       });
@@ -94,9 +96,13 @@ describe('Include Resolver', () => {
 
     it('should strip frontmatter from included files', async () => {
       const content = '@include with-frontmatter.md';
-      const result = await resolveIncludes(content, path.join(FIXTURES_PATH, 'frontmatter-source.md'), {
-        baseDir: FIXTURES_PATH,
-      });
+      const result = await resolveIncludes(
+        content,
+        path.join(FIXTURES_PATH, 'frontmatter-source.md'),
+        {
+          baseDir: FIXTURES_PATH,
+        }
+      );
 
       expect(result.ok).toBe(true);
       if (result.ok) {

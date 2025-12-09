@@ -14,10 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { DEFAULT_CONFIG_DIR } from '../../src/config/loader.js';
-import {
-  createResolvedContent,
-  filterContentByTarget,
-} from '../../src/generators/base.js';
+import { createResolvedContent, filterContentByTarget } from '../../src/generators/base.js';
 import {
   createCursorGenerator,
   createClaudeGenerator,
@@ -67,10 +64,10 @@ describe('Pipeline Integration', () => {
     it('should load content and generate cursor output', async () => {
       // Load from valid-source fixture
       const loader = createLocalLoader();
-      const loadResult = await loader.load(
-        path.join(FIXTURES_DIR, 'loaders', 'valid-source'),
-        { basePath: testDir, targets: ['cursor'] }
-      );
+      const loadResult = await loader.load(path.join(FIXTURES_DIR, 'loaders', 'valid-source'), {
+        basePath: testDir,
+        targets: ['cursor'],
+      });
 
       expect(loadResult.rules.length).toBeGreaterThan(0);
       expect(loadResult.personas.length).toBeGreaterThan(0);
@@ -97,10 +94,10 @@ describe('Pipeline Integration', () => {
 
     it('should load content and generate claude output', async () => {
       const loader = createLocalLoader();
-      const loadResult = await loader.load(
-        path.join(FIXTURES_DIR, 'loaders', 'valid-source'),
-        { basePath: testDir, targets: ['claude'] }
-      );
+      const loadResult = await loader.load(path.join(FIXTURES_DIR, 'loaders', 'valid-source'), {
+        basePath: testDir,
+        targets: ['claude'],
+      });
 
       const content = createResolvedContent(loadResult, testDir, 'test-project');
 
@@ -120,10 +117,10 @@ describe('Pipeline Integration', () => {
 
     it('should load content and generate factory output', async () => {
       const loader = createLocalLoader();
-      const loadResult = await loader.load(
-        path.join(FIXTURES_DIR, 'loaders', 'valid-source'),
-        { basePath: testDir, targets: ['factory'] }
-      );
+      const loadResult = await loader.load(path.join(FIXTURES_DIR, 'loaders', 'valid-source'), {
+        basePath: testDir,
+        targets: ['factory'],
+      });
 
       const content = createResolvedContent(loadResult, testDir, 'test-project');
 
@@ -143,10 +140,9 @@ describe('Pipeline Integration', () => {
 
     it('should generate for all targets from single load', async () => {
       const loader = createLocalLoader();
-      const loadResult = await loader.load(
-        path.join(FIXTURES_DIR, 'loaders', 'valid-source'),
-        { basePath: testDir }
-      );
+      const loadResult = await loader.load(path.join(FIXTURES_DIR, 'loaders', 'valid-source'), {
+        basePath: testDir,
+      });
 
       const content = createResolvedContent(loadResult, testDir, 'test-project');
 
@@ -179,15 +175,12 @@ describe('Pipeline Integration', () => {
   describe('content filtering by target', () => {
     it('should filter rules by target before generation', async () => {
       const loader = createLocalLoader();
-      const loadResult = await loader.load(
-        path.join(FIXTURES_DIR, 'loaders', 'valid-source'),
-        { basePath: testDir }
-      );
+      const loadResult = await loader.load(path.join(FIXTURES_DIR, 'loaders', 'valid-source'), {
+        basePath: testDir,
+      });
 
       // There should be a cursor-only rule in fixtures
-      const cursorOnlyRule = loadResult.rules.find(
-        (r) => r.frontmatter.name === 'cursor-only'
-      );
+      const cursorOnlyRule = loadResult.rules.find((r) => r.frontmatter.name === 'cursor-only');
       expect(cursorOnlyRule).toBeDefined();
 
       // Filter for cursor - should include cursor-only
@@ -211,10 +204,9 @@ describe('Pipeline Integration', () => {
       const loader = createLocalLoader();
 
       // Load from fixtures
-      const fixtureResult = await loader.load(
-        path.join(FIXTURES_DIR, 'loaders', 'valid-source'),
-        { basePath: testDir }
-      );
+      const fixtureResult = await loader.load(path.join(FIXTURES_DIR, 'loaders', 'valid-source'), {
+        basePath: testDir,
+      });
 
       // Create inline content
       await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
@@ -294,10 +286,9 @@ version: 2.0.0
   describe('dry run mode', () => {
     it('should not write files in dry run mode but report them', async () => {
       const loader = createLocalLoader();
-      const loadResult = await loader.load(
-        path.join(FIXTURES_DIR, 'loaders', 'valid-source'),
-        { basePath: testDir }
-      );
+      const loadResult = await loader.load(path.join(FIXTURES_DIR, 'loaders', 'valid-source'), {
+        basePath: testDir,
+      });
 
       const content = createResolvedContent(loadResult, testDir, 'test-project');
 
@@ -316,10 +307,9 @@ version: 2.0.0
 
     it('should include generated content in dry run result', async () => {
       const loader = createLocalLoader();
-      const loadResult = await loader.load(
-        path.join(FIXTURES_DIR, 'loaders', 'valid-source'),
-        { basePath: testDir }
-      );
+      const loadResult = await loader.load(path.join(FIXTURES_DIR, 'loaders', 'valid-source'), {
+        basePath: testDir,
+      });
 
       const content = createResolvedContent(loadResult, testDir, 'test-project');
 
@@ -345,10 +335,9 @@ version: 2.0.0
   describe('hooks handling', () => {
     it('should handle hooks in claude generator', async () => {
       const loader = createLocalLoader();
-      const loadResult = await loader.load(
-        path.join(FIXTURES_DIR, 'loaders', 'valid-source'),
-        { basePath: testDir }
-      );
+      const loadResult = await loader.load(path.join(FIXTURES_DIR, 'loaders', 'valid-source'), {
+        basePath: testDir,
+      });
 
       expect(loadResult.hooks.length).toBeGreaterThan(0);
 
@@ -420,10 +409,9 @@ targets: [cursor]
   describe('commands handling', () => {
     it('should generate commands for all targets', async () => {
       const loader = createLocalLoader();
-      const loadResult = await loader.load(
-        path.join(FIXTURES_DIR, 'loaders', 'valid-source'),
-        { basePath: testDir }
-      );
+      const loadResult = await loader.load(path.join(FIXTURES_DIR, 'loaders', 'valid-source'), {
+        basePath: testDir,
+      });
 
       expect(loadResult.commands.length).toBeGreaterThan(0);
 
@@ -442,10 +430,9 @@ targets: [cursor]
   describe('persona transformation', () => {
     it('should transform personas to target-specific format', async () => {
       const loader = createLocalLoader();
-      const loadResult = await loader.load(
-        path.join(FIXTURES_DIR, 'loaders', 'valid-source'),
-        { basePath: testDir }
-      );
+      const loadResult = await loader.load(path.join(FIXTURES_DIR, 'loaders', 'valid-source'), {
+        basePath: testDir,
+      });
 
       const content = createResolvedContent(loadResult, testDir);
 
@@ -463,4 +450,3 @@ targets: [cursor]
     });
   });
 });
-

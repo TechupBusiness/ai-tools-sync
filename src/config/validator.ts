@@ -133,7 +133,11 @@ function validateTargets(config: Record<string, unknown>, ctx: ValidationContext
     if (typeof target !== 'string') {
       ctx.addError(`targets[${i}]`, 'Target must be a string', target);
     } else if (!isSupportedTarget(target)) {
-      ctx.addError(`targets[${i}]`, `Unsupported target: ${target}. Supported: cursor, claude, factory`, target);
+      ctx.addError(
+        `targets[${i}]`,
+        `Unsupported target: ${target}. Supported: cursor, claude, factory`,
+        target
+      );
     }
   }
 }
@@ -156,7 +160,6 @@ function validateLoaders(config: Record<string, unknown>, ctx: ValidationContext
   const validTypes = ['ai-tool-sync', 'local', 'npm', 'pip', 'claude-plugin', 'url'];
 
   for (const [i, loader] of loaders.entries()) {
-
     if (typeof loader !== 'object' || loader === null) {
       ctx.addError(`loaders[${i}]`, 'Loader must be an object', loader);
       continue;
@@ -274,7 +277,6 @@ function validatePlugins(plugins: unknown, ctx: ValidationContext): void {
   }
 
   for (const [i, plugin] of plugins.entries()) {
-
     if (typeof plugin !== 'object' || plugin === null) {
       ctx.addError(`use.plugins[${i}]`, 'Plugin must be an object', plugin);
       continue;
@@ -323,7 +325,11 @@ function validateRules(config: Record<string, unknown>, ctx: ValidationContext):
 
     // Validate always_apply
     if (ruleObj.always_apply !== undefined && typeof ruleObj.always_apply !== 'boolean') {
-      ctx.addError(`rules.${name}.always_apply`, 'always_apply must be a boolean', ruleObj.always_apply);
+      ctx.addError(
+        `rules.${name}.always_apply`,
+        'always_apply must be a boolean',
+        ruleObj.always_apply
+      );
     }
 
     // Validate globs
@@ -333,7 +339,11 @@ function validateRules(config: Record<string, unknown>, ctx: ValidationContext):
       } else {
         for (let i = 0; i < ruleObj.globs.length; i++) {
           if (typeof ruleObj.globs[i] !== 'string') {
-            ctx.addError(`rules.${name}.globs[${i}]`, 'Glob pattern must be a string', ruleObj.globs[i]);
+            ctx.addError(
+              `rules.${name}.globs[${i}]`,
+              'Glob pattern must be a string',
+              ruleObj.globs[i]
+            );
           }
         }
       }
@@ -390,7 +400,11 @@ function validateSubfolderContexts(config: Record<string, unknown>, ctx: Validat
 
     // Validate personas (optional)
     if (contextObj.personas !== undefined && !Array.isArray(contextObj.personas)) {
-      ctx.addError(`subfolder_contexts.${path}.personas`, 'Personas must be an array', contextObj.personas);
+      ctx.addError(
+        `subfolder_contexts.${path}.personas`,
+        'Personas must be an array',
+        contextObj.personas
+      );
     }
   }
 }
@@ -415,7 +429,11 @@ function validateHooks(config: Record<string, unknown>, ctx: ValidationContext):
 
   for (const [event, hookList] of Object.entries(hooksObj)) {
     if (!validEvents.includes(event)) {
-      ctx.addError(`hooks.${event}`, `Invalid hook event: ${event}. Valid events: ${validEvents.join(', ')}`, event);
+      ctx.addError(
+        `hooks.${event}`,
+        `Invalid hook event: ${event}. Valid events: ${validEvents.join(', ')}`,
+        event
+      );
     }
 
     if (!Array.isArray(hookList)) {
@@ -442,7 +460,11 @@ function validateHooks(config: Record<string, unknown>, ctx: ValidationContext):
       if (!hookObj.action) {
         ctx.addError(`hooks.${event}[${i}].action`, 'Hook action is required');
       } else if (!['warn', 'block', 'allow'].includes(hookObj.action as string)) {
-        ctx.addError(`hooks.${event}[${i}].action`, 'Hook action must be: warn, block, or allow', hookObj.action);
+        ctx.addError(
+          `hooks.${event}[${i}].action`,
+          'Hook action must be: warn, block, or allow',
+          hookObj.action
+        );
       }
     }
   }
@@ -465,11 +487,21 @@ function validateOutput(config: Record<string, unknown>, ctx: ValidationContext)
 
   const outputObj = output as Record<string, unknown>;
 
-  if (outputObj.clean_before_sync !== undefined && typeof outputObj.clean_before_sync !== 'boolean') {
-    ctx.addError('output.clean_before_sync', 'clean_before_sync must be a boolean', outputObj.clean_before_sync);
+  if (
+    outputObj.clean_before_sync !== undefined &&
+    typeof outputObj.clean_before_sync !== 'boolean'
+  ) {
+    ctx.addError(
+      'output.clean_before_sync',
+      'clean_before_sync must be a boolean',
+      outputObj.clean_before_sync
+    );
   }
 
-  if (outputObj.add_do_not_edit_headers !== undefined && typeof outputObj.add_do_not_edit_headers !== 'boolean') {
+  if (
+    outputObj.add_do_not_edit_headers !== undefined &&
+    typeof outputObj.add_do_not_edit_headers !== 'boolean'
+  ) {
     ctx.addError(
       'output.add_do_not_edit_headers',
       'add_do_not_edit_headers must be a boolean',
@@ -484,4 +516,3 @@ function validateOutput(config: Record<string, unknown>, ctx: ValidationContext)
 export function formatValidationErrors(errors: ConfigValidationError[]): string {
   return errors.map((e) => `  - ${e.path || '(root)'}: ${e.message}`).join('\n');
 }
-

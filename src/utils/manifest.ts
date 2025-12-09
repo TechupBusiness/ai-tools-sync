@@ -158,7 +158,10 @@ export async function writeManifest(
 /**
  * Collect all generated paths from generate results
  */
-export function collectGeneratedPaths(files: string[], projectRoot: string): {
+export function collectGeneratedPaths(
+  files: string[],
+  projectRoot: string
+): {
   files: string[];
   directories: string[];
 } {
@@ -272,7 +275,8 @@ export async function collectFileEntriesWithHashes(
     if (hashResult.ok) {
       entries.push({ path: file, hash: hashResult.value });
     } else {
-      const message = hashResult.error instanceof Error ? hashResult.error.message : String(hashResult.error);
+      const message =
+        hashResult.error instanceof Error ? hashResult.error.message : String(hashResult.error);
       errors.push(`Failed to hash ${file}: ${message}`);
     }
   }
@@ -288,4 +292,3 @@ export async function collectFileEntriesWithHashes(
 }
 
 export * from './manifest-history.js';
-

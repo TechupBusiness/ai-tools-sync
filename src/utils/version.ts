@@ -34,5 +34,7 @@ export function compareVersions(a: string, b: string): number {
  * Sort versions from newest to oldest.
  */
 export function sortVersionsDesc(versions: string[]): string[] {
-  return [...versions].sort((a, b) => compareVersions(normalizeVersion(b) ?? '', normalizeVersion(a) ?? ''));
+  return [...versions].sort((a, b) =>
+    compareVersions(normalizeVersion(b) ?? '', normalizeVersion(a) ?? '')
+  );
 }

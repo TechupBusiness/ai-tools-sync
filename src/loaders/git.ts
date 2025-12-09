@@ -453,7 +453,7 @@ export class GitLoader implements Loader {
 
     const provider = getProvider(host);
     let cloneUrl: string;
-    
+
     if (provider) {
       cloneUrl = useSsh
         ? provider.sshTemplate.replace('{owner}', owner).replace('{repo}', repo)
@@ -548,7 +548,7 @@ export class GitLoader implements Loader {
   private getRepoCachePath(cacheDir: string, parsed: ParsedGitSource): string {
     // Use centralized plugin ID generation
     const pluginId = generatePluginId(parsed.original, parsed.ref);
-    
+
     // Cache goes in the plugins subdirectory
     return path.join(cacheDir, DEFAULT_PLUGIN_CACHE_DIR, pluginId);
   }
@@ -580,7 +580,9 @@ export class GitLoader implements Loader {
     try {
       fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8');
     } catch (error) {
-      logger.debug(`Failed to save cache metadata: ${error instanceof Error ? error.message : String(error)}`);
+      logger.debug(
+        `Failed to save cache metadata: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -627,7 +629,14 @@ export class GitLoader implements Loader {
     } else {
       // Clone fresh
       logger.debug(`Cloning: ${cloneUrl} to ${repoCachePath}`);
-      await this.cloneRepo(cloneUrl, repoCachePath, parsed.ref, depth, timeout, options?.sparseCheckoutPaths);
+      await this.cloneRepo(
+        cloneUrl,
+        repoCachePath,
+        parsed.ref,
+        depth,
+        timeout,
+        options?.sparseCheckoutPaths
+      );
     }
 
     // Get current commit SHA
@@ -746,7 +755,9 @@ export class GitLoader implements Loader {
         },
       });
     } catch (error) {
-      logger.debug(`Failed to fetch, will try re-cloning: ${error instanceof Error ? error.message : String(error)}`);
+      logger.debug(
+        `Failed to fetch, will try re-cloning: ${error instanceof Error ? error.message : String(error)}`
+      );
       throw error;
     }
   }
@@ -870,4 +881,3 @@ export function listCachedRepos(cacheDir: string): GitCacheMetadata[] {
 
   return result;
 }
-

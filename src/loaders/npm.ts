@@ -179,7 +179,8 @@ export class NpmLoader implements Loader {
     if (options?.targets) loaderOptions.targets = options.targets;
     if (options?.include) loaderOptions.include = options.include;
     if (options?.exclude) loaderOptions.exclude = options.exclude;
-    if (options?.continueOnError !== undefined) loaderOptions.continueOnError = options.continueOnError;
+    if (options?.continueOnError !== undefined)
+      loaderOptions.continueOnError = options.continueOnError;
 
     // Add custom directories if defined
     const customDirs = this.getDirectories(packageInfo);
@@ -586,4 +587,3 @@ export function clearNpmCache(): void {
 export function getNpmCacheEntries(): Map<string, string> {
   return new Map(packagePathCache);
 }
-

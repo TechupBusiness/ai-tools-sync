@@ -97,7 +97,10 @@ function getContentStartLine(rawContent: string): number {
   }
 
   // Count lines in frontmatter section
-  const frontmatterSection = rawContent.slice(0, openingMatch[0].length + (closingMatch.index ?? 0) + closingMatch[0].length);
+  const frontmatterSection = rawContent.slice(
+    0,
+    openingMatch[0].length + (closingMatch.index ?? 0) + closingMatch[0].length
+  );
   const lines = frontmatterSection.split(/\r?\n/).length;
 
   return lines;

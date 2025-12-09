@@ -110,4 +110,3 @@ export function isVersionCompatible(
   const toolMajor = toolVersion.split('.')[0];
   return configMajor === toolMajor;
 }
-

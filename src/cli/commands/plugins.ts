@@ -75,7 +75,8 @@ function collectSources(
 ): string[] {
   if (name) {
     const configured = configPlugins.find(
-      (plugin) => plugin.name === name || plugin.source === name || plugin.source.endsWith(`/${name}`)
+      (plugin) =>
+        plugin.name === name || plugin.source === name || plugin.source.endsWith(`/${name}`)
     );
     if (configured) {
       return [configured.source];
@@ -87,7 +88,9 @@ function collectSources(
     return cachedMatch ? [cachedMatch] : [name];
   }
 
-  const enabledConfig = configPlugins.filter((plugin) => plugin.enabled !== false).map((plugin) => plugin.source);
+  const enabledConfig = configPlugins
+    .filter((plugin) => plugin.enabled !== false)
+    .map((plugin) => plugin.source);
   const combined = [...enabledConfig, ...cachedSources];
   return [...new Set(combined)];
 }
@@ -116,7 +119,7 @@ export function createPluginsCommand(): Command {
       const cache = cacheResult.value;
 
       const configResult = await loadConfig({ projectRoot, configDir: options.configDir });
-      const configPlugins = configResult.ok ? configResult.value.use?.plugins ?? [] : [];
+      const configPlugins = configResult.ok ? (configResult.value.use?.plugins ?? []) : [];
       const cachedPlugins = cache.listCached();
 
       const pluginsList = buildPluginList(cachedPlugins, configPlugins);
@@ -153,7 +156,9 @@ export function createPluginsCommand(): Command {
       if (options.verbose) {
         printInfo('Details:');
         for (const plugin of pluginsList) {
-          printListItem(`${plugin.name} (${getStatusText(plugin.enabled, plugin.inConfig, plugin.cachedAt)})`);
+          printListItem(
+            `${plugin.name} (${getStatusText(plugin.enabled, plugin.inConfig, plugin.cachedAt)})`
+          );
           printListItem(`source: ${plugin.source}`, 1);
           if (plugin.version) {
             printListItem(`version: ${plugin.version}`, 1);
@@ -242,7 +247,9 @@ export function createPluginsCommand(): Command {
 
       if (loadResult.errors && loadResult.errors.length > 0) {
         printError(`Failed to add plugin: ${loadResult.errors[0]?.message ?? 'Unknown error'}`);
-        printInfo('If this is a private repo, ensure your git credentials or tokens are configured.');
+        printInfo(
+          'If this is a private repo, ensure your git credentials or tokens are configured.'
+        );
         process.exit(1);
         return;
       }
@@ -297,7 +304,7 @@ export function createPluginsCommand(): Command {
       const cache = cacheResult.value;
 
       const configResult = await loadConfig({ projectRoot, configDir: options.configDir });
-      const configPlugins = configResult.ok ? configResult.value.use?.plugins ?? [] : [];
+      const configPlugins = configResult.ok ? (configResult.value.use?.plugins ?? []) : [];
 
       const cachedPlugins = cache.listCached();
       const cachedEntry = cachedPlugins.find(
@@ -364,9 +371,11 @@ export function createPluginsCommand(): Command {
       const cache = cacheResult.value;
 
       const configResult = await loadConfig({ projectRoot, configDir: options.configDir });
-      const configPlugins = configResult.ok ? configResult.value.use?.plugins ?? [] : [];
+      const configPlugins = configResult.ok ? (configResult.value.use?.plugins ?? []) : [];
       const cachedSources = cache.listCached().map((entry) => entry.source);
-      const sources = options.all ? cachedSources : collectSources(name, configPlugins, cachedSources);
+      const sources = options.all
+        ? cachedSources
+        : collectSources(name, configPlugins, cachedSources);
 
       if (sources.length === 0) {
         printWarning('No plugins found to check for updates.');

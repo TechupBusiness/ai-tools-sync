@@ -25,7 +25,10 @@ describe('Manifest History', () => {
   let historyDir: string;
 
   beforeEach(async () => {
-    testDir = path.join(TESTS_TMP_DIR, `manifest-history-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = path.join(
+      TESTS_TMP_DIR,
+      `manifest-history-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    );
     configDir = path.join(testDir, '.ai-tool-sync');
     historyDir = path.join(configDir, 'history');
     await fs.mkdir(testDir, { recursive: true });
@@ -87,8 +90,24 @@ describe('Manifest History', () => {
     const older = path.join(historyDir, timestampToFilename(new Date('2024-01-01T00:00:00.000Z')));
     const newer = path.join(historyDir, timestampToFilename(new Date('2024-02-01T00:00:00.000Z')));
 
-    await fs.writeFile(older, JSON.stringify({ version: '2.0.0', files: [], directories: [], timestamp: new Date().toISOString() }));
-    await fs.writeFile(newer, JSON.stringify({ version: '2.0.0', files: [], directories: [], timestamp: new Date().toISOString() }));
+    await fs.writeFile(
+      older,
+      JSON.stringify({
+        version: '2.0.0',
+        files: [],
+        directories: [],
+        timestamp: new Date().toISOString(),
+      })
+    );
+    await fs.writeFile(
+      newer,
+      JSON.stringify({
+        version: '2.0.0',
+        files: [],
+        directories: [],
+        timestamp: new Date().toISOString(),
+      })
+    );
     await fs.writeFile(path.join(historyDir, 'invalid.txt'), 'ignore');
 
     const listResult = await listHistory(historyDir);
@@ -111,7 +130,15 @@ describe('Manifest History', () => {
 
     for (const filename of entryPaths) {
       const fullPath = path.join(historyDir, filename);
-      await fs.writeFile(fullPath, JSON.stringify({ version: '2.0.0', files: [], directories: [], timestamp: new Date().toISOString() }));
+      await fs.writeFile(
+        fullPath,
+        JSON.stringify({
+          version: '2.0.0',
+          files: [],
+          directories: [],
+          timestamp: new Date().toISOString(),
+        })
+      );
     }
 
     const pruneResult = await pruneHistory(historyDir, 2);
@@ -161,4 +188,3 @@ describe('Manifest History', () => {
     }
   });
 });
-

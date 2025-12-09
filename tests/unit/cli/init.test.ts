@@ -9,7 +9,6 @@ import * as path from 'node:path';
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-
 import { init } from '../../../src/cli/commands/init.js';
 import { DEFAULT_CONFIG_DIR } from '../../../src/config/loader.js';
 import { dirExists, fileExists, readFile } from '../../../src/utils/fs.js';
@@ -49,7 +48,10 @@ describe('Init Command', () => {
 
   beforeEach(async () => {
     // Create a unique temp directory for each test
-    testDir = path.join(tmpdir(), `ai-sync-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = path.join(
+      tmpdir(),
+      `ai-sync-test-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    );
     await fs.mkdir(testDir, { recursive: true });
   });
 
@@ -128,7 +130,12 @@ describe('Init Command', () => {
     });
 
     it('should succeed with --force when .ai exists', async () => {
-      const result = await init({ projectRoot: testDir, force: true, yes: true, updateGitignore: false });
+      const result = await init({
+        projectRoot: testDir,
+        force: true,
+        yes: true,
+        updateGitignore: false,
+      });
 
       expect(result.success).toBe(true);
       expect(result.filesCreated.length).toBeGreaterThan(0);
@@ -218,4 +225,3 @@ describe('Init Command', () => {
     });
   });
 });
-

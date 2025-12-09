@@ -4,7 +4,14 @@ import * as path from 'node:path';
 import { resolveConfigDir } from '../../config/loader.js';
 import { debounce, type DebouncedFunction } from '../../utils/debounce.js';
 import { dirExists } from '../../utils/fs.js';
-import { printHeader, printInfo, printSuccess, printWarning, printError, printSummary } from '../output.js';
+import {
+  printHeader,
+  printInfo,
+  printSuccess,
+  printWarning,
+  printError,
+  printSummary,
+} from '../output.js';
 
 import { sync, type SyncOptions, type SyncResult } from './sync.js';
 
@@ -45,7 +52,9 @@ export interface WatchResult {
 
 const DEFAULT_DEBOUNCE_MS = 300;
 
-export function watch(options: WatchOptions = {}): Promise<WatchResult> & { stop: () => void; ready: Promise<void> } {
+export function watch(
+  options: WatchOptions = {}
+): Promise<WatchResult> & { stop: () => void; ready: Promise<void> } {
   const projectRoot = path.resolve(options.projectRoot ?? process.cwd());
   const configDirPromise = resolveConfigDir({ projectRoot, configDir: options.configDir });
 
@@ -204,7 +213,8 @@ export function watch(options: WatchOptions = {}): Promise<WatchResult> & { stop
       process.on('SIGINT', onSigint);
       process.on('SIGTERM', onSigterm);
 
-      const displayDir = path.relative(projectRoot, config.configDir) || path.basename(config.configDir);
+      const displayDir =
+        path.relative(projectRoot, config.configDir) || path.basename(config.configDir);
       printInfo(`👁 Watching ${displayDir}/ for changes...`);
       printInfo('  Press Ctrl+C to stop');
       readyResolve();
@@ -217,4 +227,3 @@ export function watch(options: WatchOptions = {}): Promise<WatchResult> & { stop
 
   return Object.assign(watchPromise, { stop, ready });
 }
-

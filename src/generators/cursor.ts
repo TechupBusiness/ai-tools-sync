@@ -13,23 +13,10 @@
 
 import * as path from 'node:path';
 
-import {
-  isCommandServer,
-  type McpConfig,
-} from '../parsers/mcp.js';
-import {
-  serializeFrontmatter,
-  transformForCursor,
-} from '../transformers/frontmatter.js';
+import { isCommandServer, type McpConfig } from '../parsers/mcp.js';
+import { serializeFrontmatter, transformForCursor } from '../transformers/frontmatter.js';
 import { mapTools } from '../transformers/tool-mapper.js';
-import {
-  dirExists,
-  ensureDir,
-  glob,
-  joinPath,
-  removeDir,
-  writeFile,
-} from '../utils/fs.js';
+import { dirExists, ensureDir, glob, joinPath, removeDir, writeFile } from '../utils/fs.js';
 
 import {
   type GeneratedFile,
@@ -110,27 +97,15 @@ export class CursorGenerator implements Generator {
     }
 
     // Generate rules
-    const ruleFiles = await this.generateRules(
-      cursorContent.rules,
-      outputDir,
-      options
-    );
+    const ruleFiles = await this.generateRules(cursorContent.rules, outputDir, options);
     generated.push(...ruleFiles);
 
     // Generate personas as roles
-    const personaFiles = await this.generatePersonas(
-      cursorContent.personas,
-      outputDir,
-      options
-    );
+    const personaFiles = await this.generatePersonas(cursorContent.personas, outputDir, options);
     generated.push(...personaFiles);
 
     // Generate commands
-    const commandFiles = await this.generateCommands(
-      cursorContent.commands,
-      outputDir,
-      options
-    );
+    const commandFiles = await this.generateCommands(cursorContent.commands, outputDir, options);
     generated.push(...commandFiles);
 
     // Generate hooks.json if we have hooks
@@ -469,10 +444,7 @@ export class CursorGenerator implements Generator {
   /**
    * Generate AGENTS.md entry point
    */
-  private generateAgentsMd(
-    content: ResolvedContent,
-    options: GeneratorOptions
-  ): GeneratedFile {
+  private generateAgentsMd(content: ResolvedContent, options: GeneratorOptions): GeneratedFile {
     const parts: string[] = [];
 
     // Add header if requested
@@ -495,9 +467,7 @@ export class CursorGenerator implements Generator {
       parts.push('');
       const sortedPersonas = sortPersonasByName(content.personas);
       for (const persona of sortedPersonas) {
-        const desc = persona.frontmatter.description
-          ? ` - ${persona.frontmatter.description}`
-          : '';
+        const desc = persona.frontmatter.description ? ` - ${persona.frontmatter.description}` : '';
         const rolePath = path.posix.join(
           CURSOR_DIRS.roles,
           `${toSafeFilename(persona.frontmatter.name)}.md`
@@ -513,9 +483,7 @@ export class CursorGenerator implements Generator {
       parts.push('');
       const sortedCommands = sortCommandsByName(content.commands);
       for (const cmd of sortedCommands) {
-        const desc = cmd.frontmatter.description
-          ? ` - ${cmd.frontmatter.description}`
-          : '';
+        const desc = cmd.frontmatter.description ? ` - ${cmd.frontmatter.description}` : '';
         const cmdPath = path.posix.join(
           CURSOR_DIRS.commands,
           `${toSafeFilename(cmd.frontmatter.name)}.md`
@@ -545,10 +513,7 @@ export class CursorGenerator implements Generator {
    *   }
    * }
    */
-  private generateHooksJson(
-    hooks: ParsedHook[],
-    options: GeneratorOptions
-  ): GeneratedFile | null {
+  private generateHooksJson(hooks: ParsedHook[], options: GeneratorOptions): GeneratedFile | null {
     if (hooks.length === 0) {
       return null;
     }
@@ -579,7 +544,10 @@ export class CursorGenerator implements Generator {
 
     // Filter out empty event arrays
     const hooksConfig: Partial<Record<CursorHookEvent, CursorHookEntry[]>> = {};
-    for (const [event, entries] of Object.entries(hooksByEvent) as [CursorHookEvent, CursorHookEntry[]][]) {
+    for (const [event, entries] of Object.entries(hooksByEvent) as [
+      CursorHookEvent,
+      CursorHookEntry[],
+    ][]) {
       if (entries.length > 0) {
         hooksConfig[event] = entries;
       }
@@ -643,10 +611,7 @@ export class CursorGenerator implements Generator {
   /**
    * Generate mcp.json for Cursor MCP configuration
    */
-  private generateMcpJson(
-    mcpConfig: McpConfig,
-    options: GeneratorOptions
-  ): GeneratedFile {
+  private generateMcpJson(mcpConfig: McpConfig, options: GeneratorOptions): GeneratedFile {
     // Cursor expects the format: { "mcpServers": { "name": { "command": "...", "args": [...], "env": {...} } } }
     const mcpServers: Record<string, CursorMcpServer> = {};
 

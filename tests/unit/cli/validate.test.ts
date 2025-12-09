@@ -9,7 +9,6 @@ import * as path from 'node:path';
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-
 import { validate } from '../../../src/cli/commands/validate.js';
 import { DEFAULT_CONFIG_DIR } from '../../../src/config/loader.js';
 
@@ -49,7 +48,10 @@ describe('Validate Command', () => {
 
   beforeEach(async () => {
     // Create a unique temp directory for each test
-    testDir = path.join(tmpdir(), `ai-sync-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = path.join(
+      tmpdir(),
+      `ai-sync-test-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    );
     await fs.mkdir(testDir, { recursive: true });
   });
 
@@ -181,7 +183,7 @@ targets:
       const result = await validate({ projectRoot: testDir });
 
       expect(result.success).toBe(false);
-      expect(result.errors.some(e => e.message.includes('version'))).toBe(true);
+      expect(result.errors.some((e) => e.message.includes('version'))).toBe(true);
     });
 
     it('should detect invalid rule files', async () => {
@@ -208,12 +210,15 @@ description: Missing name field
       expect(result.success).toBe(false);
       expect(result.contentValid).toBe(false);
       // Check that there's at least one error related to the rule file
-      expect(result.errors.some(e =>
-        e.path.includes('bad-rule') ||
-        e.message.includes('name') ||
-        e.message.includes('required') ||
-        e.message.toLowerCase().includes('missing')
-      )).toBe(true);
+      expect(
+        result.errors.some(
+          (e) =>
+            e.path.includes('bad-rule') ||
+            e.message.includes('name') ||
+            e.message.includes('required') ||
+            e.message.toLowerCase().includes('missing')
+        )
+      ).toBe(true);
     });
   });
 
@@ -248,7 +253,7 @@ always_apply: true
       const result = await validate({ projectRoot: testDir });
 
       expect(result.success).toBe(false);
-      expect(result.errors.some(e => e.message.includes('database'))).toBe(true);
+      expect(result.errors.some((e) => e.message.includes('database'))).toBe(true);
     });
 
     it('should pass when all references exist', async () => {
@@ -302,7 +307,7 @@ always_apply: false
 
       const result = await validate({ projectRoot: testDir });
 
-      expect(result.warnings.some(w => w.includes('may never trigger'))).toBe(true);
+      expect(result.warnings.some((w) => w.includes('may never trigger'))).toBe(true);
     });
 
     it('should warn about duplicate rule names', async () => {
@@ -327,7 +332,7 @@ always_apply: true
 
       const result = await validate({ projectRoot: testDir });
 
-      expect(result.warnings.some(w => w.includes('Duplicate rule names'))).toBe(true);
+      expect(result.warnings.some((w) => w.includes('Duplicate rule names'))).toBe(true);
     });
   });
 
@@ -352,4 +357,3 @@ targets:
     });
   });
 });
-

@@ -13,20 +13,10 @@
 
 import * as path from 'node:path';
 
-import {
-  isCommandServer,
-  type McpConfig,
-} from '../parsers/mcp.js';
+import { isCommandServer, type McpConfig } from '../parsers/mcp.js';
 import { mapModel } from '../transformers/model-mapper.js';
 import { mapTools } from '../transformers/tool-mapper.js';
-import {
-  dirExists,
-  ensureDir,
-  glob,
-  joinPath,
-  removeDir,
-  writeFile,
-} from '../utils/fs.js';
+import { dirExists, ensureDir, glob, joinPath, removeDir, writeFile } from '../utils/fs.js';
 
 import {
   type GeneratedFile,
@@ -50,7 +40,6 @@ import type { ParsedCommand } from '../parsers/command.js';
 import type { ParsedHook } from '../parsers/hook.js';
 import type { ParsedPersona } from '../parsers/persona.js';
 import type { ParsedRule } from '../parsers/rule.js';
-
 
 /**
  * Output directories for Claude
@@ -113,17 +102,17 @@ interface ClaudeCommandConfig {
  */
 function mapEventToClaude(event: string): ClaudeHookEvent | null {
   const eventMap: Record<string, ClaudeHookEvent> = {
-    'PreToolUse': 'PreToolUse',
-    'PostToolUse': 'PostToolUse',
-    'UserPromptSubmit': 'UserPromptSubmit',
-    'Notification': 'Notification',
-    'Stop': 'Stop',
-    'SubagentStop': 'SubagentStop',
-    'SessionStart': 'SessionStart',
-    'SessionEnd': 'SessionEnd',
-    'PreCompact': 'PreCompact',
+    PreToolUse: 'PreToolUse',
+    PostToolUse: 'PostToolUse',
+    UserPromptSubmit: 'UserPromptSubmit',
+    Notification: 'Notification',
+    Stop: 'Stop',
+    SubagentStop: 'SubagentStop',
+    SessionStart: 'SessionStart',
+    SessionEnd: 'SessionEnd',
+    PreCompact: 'PreCompact',
   };
-  
+
   return eventMap[event] ?? null;
 }
 
@@ -151,27 +140,15 @@ export class ClaudeGenerator implements Generator {
     }
 
     // Generate skills (rules)
-    const skillFiles = await this.generateSkills(
-      claudeContent.rules,
-      outputDir,
-      options
-    );
+    const skillFiles = await this.generateSkills(claudeContent.rules, outputDir, options);
     generated.push(...skillFiles);
 
     // Generate agents (personas)
-    const agentFiles = await this.generateAgents(
-      claudeContent.personas,
-      outputDir,
-      options
-    );
+    const agentFiles = await this.generateAgents(claudeContent.personas, outputDir, options);
     generated.push(...agentFiles);
 
     // Generate commands
-    const commandFiles = await this.generateCommands(
-      claudeContent.commands,
-      outputDir,
-      options
-    );
+    const commandFiles = await this.generateCommands(claudeContent.commands, outputDir, options);
     generated.push(...commandFiles);
 
     // Generate settings.json with hooks, commands, permissions, and env
@@ -179,8 +156,10 @@ export class ClaudeGenerator implements Generator {
       claudeContent.hooks.length > 0 ||
       claudeContent.commands.length > 0 ||
       (claudeContent.claudeSettings?.permissions?.length ?? 0) > 0 ||
-      (claudeContent.claudeSettings?.env && Object.keys(claudeContent.claudeSettings.env).length > 0) ||
-      (claudeContent.claudeSettings?.hooks && Object.keys(claudeContent.claudeSettings.hooks).length > 0);
+      (claudeContent.claudeSettings?.env &&
+        Object.keys(claudeContent.claudeSettings.env).length > 0) ||
+      (claudeContent.claudeSettings?.hooks &&
+        Object.keys(claudeContent.claudeSettings.hooks).length > 0);
 
     if (hasSettings) {
       const settingsFile = this.generateSettings(
@@ -497,7 +476,8 @@ export class ClaudeGenerator implements Generator {
       for (const arg of args) {
         const required = arg.required ? ' (required)' : '';
         const defaultVal = arg.default !== undefined ? ` [default: ${arg.default}]` : '';
-        const choices = arg.choices && arg.choices.length > 0 ? ` Choices: ${arg.choices.join(', ')}` : '';
+        const choices =
+          arg.choices && arg.choices.length > 0 ? ` Choices: ${arg.choices.join(', ')}` : '';
         parts.push(`- **${arg.name}** (${arg.type})${required}${defaultVal}${choices}`);
         if (arg.description) {
           parts.push(`  ${arg.description}`);
@@ -532,9 +512,11 @@ export class ClaudeGenerator implements Generator {
   /**
    * Build permissions object from array of permission rules
    */
-  private buildPermissions(
-    permissions: ClaudePermission[]
-  ): { allow?: string[]; deny?: string[]; ask?: string[] } {
+  private buildPermissions(permissions: ClaudePermission[]): {
+    allow?: string[];
+    deny?: string[];
+    ask?: string[];
+  } {
     const result: { allow?: string[]; deny?: string[]; ask?: string[] } = {};
 
     const allow: string[] = [];
@@ -634,7 +616,7 @@ export class ClaudeGenerator implements Generator {
    */
   private buildHookOutput(hook: ParsedHook): ClaudeHookOutput {
     const claudeExt = hook.frontmatter.claude;
-    
+
     const output: ClaudeHookOutput = {
       type: claudeExt?.type ?? 'command',
     };
@@ -726,10 +708,7 @@ export class ClaudeGenerator implements Generator {
   /**
    * Generate CLAUDE.md entry point
    */
-  private generateClaudeMd(
-    content: ResolvedContent,
-    options: GeneratorOptions
-  ): GeneratedFile {
+  private generateClaudeMd(content: ResolvedContent, options: GeneratorOptions): GeneratedFile {
     const parts: string[] = [];
 
     // Add header if requested
@@ -795,9 +774,7 @@ export class ClaudeGenerator implements Generator {
           CLAUDE_DIRS.agents,
           `${toSafeFilename(persona.frontmatter.name)}.md`
         );
-        const desc = persona.frontmatter.description
-          ? ` - ${persona.frontmatter.description}`
-          : '';
+        const desc = persona.frontmatter.description ? ` - ${persona.frontmatter.description}` : '';
         parts.push(`- [${persona.frontmatter.name}](${agentPath})${desc}`);
       }
       parts.push('');
@@ -809,9 +786,7 @@ export class ClaudeGenerator implements Generator {
       parts.push('');
       const sortedCommands = sortCommandsByName(content.commands);
       for (const cmd of sortedCommands) {
-        const desc = cmd.frontmatter.description
-          ? ` - ${cmd.frontmatter.description}`
-          : '';
+        const desc = cmd.frontmatter.description ? ` - ${cmd.frontmatter.description}` : '';
         parts.push(`- /${toSafeFilename(cmd.frontmatter.name)}${desc}`);
       }
       parts.push('');
@@ -835,10 +810,7 @@ export class ClaudeGenerator implements Generator {
   /**
    * Generate MCP servers configuration file for Claude
    */
-  private generateMcpServers(
-    mcpConfig: McpConfig,
-    options: GeneratorOptions
-  ): GeneratedFile {
+  private generateMcpServers(mcpConfig: McpConfig, options: GeneratorOptions): GeneratedFile {
     // Claude expects servers in a specific format
     const servers: Record<string, ClaudeMcpServer> = {};
 

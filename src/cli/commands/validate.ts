@@ -12,10 +12,7 @@
 import * as path from 'node:path';
 
 import { loadConfig } from '../../config/loader.js';
-import {
-  type LoadResult,
-  getLoadResultStats,
-} from '../../loaders/base.js';
+import { type LoadResult, getLoadResultStats } from '../../loaders/base.js';
 import { createLocalLoader } from '../../loaders/local.js';
 import { logger } from '../../utils/logger.js';
 import {
@@ -307,7 +304,9 @@ function checkForIssues(
       (h.frontmatter.targets ?? ['claude']).includes('cursor')
     );
     if (cursorHooks.length > 0) {
-      warnings.push(`${cursorHooks.length} hook(s) target cursor but Cursor does not support hooks`);
+      warnings.push(
+        `${cursorHooks.length} hook(s) target cursor but Cursor does not support hooks`
+      );
     }
   }
 
@@ -319,7 +318,9 @@ function checkForIssues(
   }
 
   const personaNames = loadResult.personas.map((p) => p.frontmatter.name);
-  const duplicatePersonas = personaNames.filter((name, index) => personaNames.indexOf(name) !== index);
+  const duplicatePersonas = personaNames.filter(
+    (name, index) => personaNames.indexOf(name) !== index
+  );
   if (duplicatePersonas.length > 0) {
     warnings.push(`Duplicate persona names found: ${[...new Set(duplicatePersonas)].join(', ')}`);
   }
@@ -334,4 +335,3 @@ function checkForIssues(
 
   return { warnings, suggestions };
 }
-

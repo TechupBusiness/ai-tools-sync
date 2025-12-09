@@ -226,9 +226,7 @@ export function filterContentByTarget(
     commands: content.commands.filter((c) =>
       (c.frontmatter.targets ?? ['cursor', 'claude', 'factory']).includes(target)
     ),
-    hooks: content.hooks.filter((h) =>
-      (h.frontmatter.targets ?? ['claude']).includes(target)
-    ),
+    hooks: content.hooks.filter((h) => (h.frontmatter.targets ?? ['claude']).includes(target)),
   };
 
   // Filter MCP config if present
@@ -260,18 +258,14 @@ export function sortRulesByPriority(rules: ParsedRule[]): ParsedRule[] {
  * Sort personas alphabetically by name
  */
 export function sortPersonasByName(personas: ParsedPersona[]): ParsedPersona[] {
-  return [...personas].sort((a, b) =>
-    a.frontmatter.name.localeCompare(b.frontmatter.name)
-  );
+  return [...personas].sort((a, b) => a.frontmatter.name.localeCompare(b.frontmatter.name));
 }
 
 /**
  * Sort commands alphabetically by name
  */
 export function sortCommandsByName(commands: ParsedCommand[]): ParsedCommand[] {
-  return [...commands].sort((a, b) =>
-    a.frontmatter.name.localeCompare(b.frontmatter.name)
-  );
+  return [...commands].sort((a, b) => a.frontmatter.name.localeCompare(b.frontmatter.name));
 }
 
 /**
@@ -291,9 +285,9 @@ export function sortHooksByEvent(hooks: ParsedHook[]): ParsedHook[] {
     SessionEnd: 7,
     PreCompact: 8,
     // Legacy events (will be mapped)
-    PreMessage: 0,   // Maps to UserPromptSubmit
-    PostMessage: 2,  // Maps to PostToolUse
-    PreCommit: 1,    // Maps to PreToolUse
+    PreMessage: 0, // Maps to UserPromptSubmit
+    PostMessage: 2, // Maps to PostToolUse
+    PreCommit: 1, // Maps to PreToolUse
   };
 
   return [...hooks].sort((a, b) => {

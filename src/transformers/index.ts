@@ -10,4 +10,3 @@ export * from './glob-matcher.js';
 export * from './conditional-content.js';
 export * from './include-resolver.js';
 export * from './condition-evaluator.js';
-

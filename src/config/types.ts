@@ -214,7 +214,7 @@ export interface Config {
   output?: OutputConfig;
   /** User-defined variables for conditional rules */
   context?: Record<string, string | number | boolean>;
-  
+
   /** Claude Code platform-specific settings */
   claude?: ClaudeConfig;
 
@@ -284,4 +284,3 @@ export interface ResolvedConfig extends Config {
   aiDir: string;
   configPath: string;
 }
-

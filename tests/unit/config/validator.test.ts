@@ -101,10 +101,7 @@ describe('Configuration Validator', () => {
       it('should accept valid loaders', () => {
         const result = validateConfig({
           version: '1.0.0',
-          loaders: [
-            { type: 'ai-tool-sync' },
-            { type: 'local', source: './rules' },
-          ],
+          loaders: [{ type: 'ai-tool-sync' }, { type: 'local', source: './rules' }],
         });
         expect(isOk(result)).toBe(true);
       });
@@ -271,7 +268,9 @@ describe('Configuration Validator', () => {
         });
         expect(isErr(result)).toBe(true);
         if (isErr(result)) {
-          expect(result.error.some((e) => e.message.includes('Rules array is required'))).toBe(true);
+          expect(result.error.some((e) => e.message.includes('Rules array is required'))).toBe(
+            true
+          );
         }
       });
     });
@@ -281,9 +280,7 @@ describe('Configuration Validator', () => {
         const result = validateConfig({
           version: '1.0.0',
           hooks: {
-            PreToolUse: [
-              { name: 'safety', match: 'Bash(*)', action: 'warn' },
-            ],
+            PreToolUse: [{ name: 'safety', match: 'Bash(*)', action: 'warn' }],
           },
         });
         expect(isOk(result)).toBe(true);
@@ -309,7 +306,9 @@ describe('Configuration Validator', () => {
         expect(isErr(result)).toBe(true);
         if (isErr(result)) {
           expect(result.error.some((e) => e.message.includes('name is required'))).toBe(true);
-          expect(result.error.some((e) => e.message.includes('match pattern is required'))).toBe(true);
+          expect(result.error.some((e) => e.message.includes('match pattern is required'))).toBe(
+            true
+          );
           expect(result.error.some((e) => e.message.includes('action is required'))).toBe(true);
         }
       });
@@ -318,9 +317,7 @@ describe('Configuration Validator', () => {
         const result = validateConfig({
           version: '1.0.0',
           hooks: {
-            PreToolUse: [
-              { name: 'test', match: '*', action: 'invalid' },
-            ],
+            PreToolUse: [{ name: 'test', match: '*', action: 'invalid' }],
           },
         });
         expect(isErr(result)).toBe(true);
@@ -384,4 +381,3 @@ describe('Configuration Validator', () => {
     });
   });
 });
-

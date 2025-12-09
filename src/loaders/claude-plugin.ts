@@ -33,7 +33,6 @@ import type { ParsedRule, RuleCategory } from '../parsers/rule.js';
 import type { TargetType } from '../parsers/types.js';
 import type { PluginCache } from '../utils/plugin-cache.js';
 
-
 /**
  * Claude plugin prefix
  */
@@ -364,7 +363,7 @@ export class ClaudePluginLoader implements Loader {
 
     logger.debug(
       `Loaded Claude plugin: ${result.rules.length} rules, ${result.personas.length} personas, ` +
-      `${result.commands.length} commands, ${result.hooks.length} hooks`
+        `${result.commands.length} commands, ${result.hooks.length} hooks`
     );
 
     return result;
@@ -683,10 +682,7 @@ export class ClaudePluginLoader implements Loader {
    * Find MCP configuration file using convention paths
    */
   private findMcpFile(pluginPath: string): string | undefined {
-    const candidates = [
-      path.join(pluginPath, '.mcp.json'),
-      path.join(pluginPath, 'mcp.json'),
-    ];
+    const candidates = [path.join(pluginPath, '.mcp.json'), path.join(pluginPath, 'mcp.json')];
 
     for (const candidate of candidates) {
       if (this.fileExists(candidate)) {
@@ -761,10 +757,10 @@ export class ClaudePluginLoader implements Loader {
   ): Promise<{ ok: true; value: ParsedRule } | { ok: false; error: LoadError }> {
     try {
       let content = await fs.promises.readFile(filePath, 'utf-8');
-      
+
       // Resolve ${CLAUDE_PLUGIN_ROOT} variable using provided pluginRoot
       content = resolvePluginRootVariable(content, pluginRoot);
-      
+
       const { frontmatter, body } = this.extractFrontmatter<ClaudeSkillFrontmatter>(content);
 
       // Build rule frontmatter with only defined properties
@@ -855,10 +851,10 @@ export class ClaudePluginLoader implements Loader {
   ): Promise<{ ok: true; value: ParsedPersona } | { ok: false; error: LoadError }> {
     try {
       let content = await fs.promises.readFile(filePath, 'utf-8');
-      
+
       // Resolve ${CLAUDE_PLUGIN_ROOT} variable using provided pluginRoot
       content = resolvePluginRootVariable(content, pluginRoot);
-      
+
       const { frontmatter, body } = this.extractFrontmatter<ClaudeAgentFrontmatter>(content);
 
       // Transform Claude agent to generic persona
@@ -1081,10 +1077,7 @@ export class ClaudePluginLoader implements Loader {
   /**
    * Transform Claude plugin MCP server to generic format
    */
-  private transformMcpServer(
-    config: ClaudePluginMcpServer,
-    name: string
-  ): McpServer | null {
+  private transformMcpServer(config: ClaudePluginMcpServer, name: string): McpServer | null {
     // Command-based (stdio) server
     if (config.command) {
       const server: McpCommandServer = {
@@ -1182,10 +1175,10 @@ export class ClaudePluginLoader implements Loader {
   ): Promise<{ ok: true; value: ParsedCommand } | { ok: false; error: LoadError }> {
     try {
       let content = await fs.promises.readFile(filePath, 'utf-8');
-      
+
       // Resolve ${CLAUDE_PLUGIN_ROOT} variable using provided pluginRoot
       content = resolvePluginRootVariable(content, pluginRoot);
-      
+
       const { frontmatter, body } = this.extractFrontmatter<Record<string, unknown>>(content);
 
       // Build frontmatter with only defined properties
@@ -1256,10 +1249,7 @@ export class ClaudePluginLoader implements Loader {
    * Normalize globs from Claude trigger format
    * Returns undefined if no globs are found
    */
-  private normalizeGlobs(
-    trigger?: string | string[],
-    globs?: string[]
-  ): string[] | undefined {
+  private normalizeGlobs(trigger?: string | string[], globs?: string[]): string[] | undefined {
     const result: string[] = [];
 
     // Add explicit globs
@@ -1367,4 +1357,3 @@ export function clearClaudePluginCache(): void {
 export function getClaudePluginCacheEntries(): Map<string, string> {
   return new Map(pluginPathCache);
 }
-

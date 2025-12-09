@@ -657,4 +657,3 @@ describe('authentication', () => {
     expect(() => loader.load('github:user/private-repo', options)).not.toThrow();
   });
 });
-

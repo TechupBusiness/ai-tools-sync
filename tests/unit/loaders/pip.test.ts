@@ -322,4 +322,3 @@ describe('PIP_PREFIX constant', () => {
     expect(PIP_PREFIX).toBe('pip:');
   });
 });
-

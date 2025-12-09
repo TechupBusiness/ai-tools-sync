@@ -52,4 +52,3 @@ export function debounce<T extends (...args: unknown[]) => void>(
 
   return debounced as DebouncedFunction<T>;
 }
-

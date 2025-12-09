@@ -40,8 +40,7 @@ function parseCondition(condition: string): ParsedCondition {
   const hasOr = trimmedCondition.includes('|');
   const hasAnd = trimmedCondition.includes('&');
 
-  const operator: 'or' | 'and' =
-    hasAnd && !hasOr ? 'and' : hasOr && !hasAnd ? 'or' : 'and';
+  const operator: 'or' | 'and' = hasAnd && !hasOr ? 'and' : hasOr && !hasAnd ? 'or' : 'and';
 
   const parts = trimmedCondition.split(/[|&]/);
 
@@ -133,22 +132,19 @@ export function transformConditionalContent(
 
   let replaced = false;
 
-  let result = content.replace(
-    BLOCK_PATTERN,
-    (_match, condition: string, blockContent: string) => {
-      replaced = true;
-      const parsed = parseCondition(condition);
-      const shouldInclude = evaluateCondition(parsed, target);
+  let result = content.replace(BLOCK_PATTERN, (_match, condition: string, blockContent: string) => {
+    replaced = true;
+    const parsed = parseCondition(condition);
+    const shouldInclude = evaluateCondition(parsed, target);
 
-      if (shouldInclude) {
-        // Include content, strip tags
-        return blockContent;
-      }
-
-      // Exclude content entirely
-      return '';
+    if (shouldInclude) {
+      // Include content, strip tags
+      return blockContent;
     }
-  );
+
+    // Exclude content entirely
+    return '';
+  });
 
   // Clean up whitespace if not preserving and only when changes occurred
   if (replaced && !preserveWhitespace) {

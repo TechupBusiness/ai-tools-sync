@@ -415,7 +415,11 @@ function validateCommandFields(data: Record<string, unknown>): ContentValidation
   // Validate platform extensions (must be objects if present)
   for (const platform of ['cursor', 'claude', 'factory'] as const) {
     if (data[platform] !== undefined) {
-      if (typeof data[platform] !== 'object' || data[platform] === null || Array.isArray(data[platform])) {
+      if (
+        typeof data[platform] !== 'object' ||
+        data[platform] === null ||
+        Array.isArray(data[platform])
+      ) {
         errors.push({
           path: platform,
           message: `${platform} extension must be an object`,
@@ -435,7 +439,8 @@ function applyCommandDefaults(data: Record<string, unknown>): Command {
   const command: Command = {
     name: data.name as string,
     args: data.args !== undefined ? (data.args as CommandArg[]) : COMMAND_DEFAULTS.args!,
-    targets: data.targets !== undefined ? (data.targets as TargetType[]) : COMMAND_DEFAULTS.targets!,
+    targets:
+      data.targets !== undefined ? (data.targets as TargetType[]) : COMMAND_DEFAULTS.targets!,
   };
 
   if (data.description !== undefined) {
@@ -478,17 +483,22 @@ function applyCommandDefaults(data: Record<string, unknown>): Command {
  * @param filePath - Optional file path for error messages
  * @returns Result containing parsed command or error
  */
-export function parseCommand(content: string, filePath?: string): Result<ParsedCommand, ParseError> {
+export function parseCommand(
+  content: string,
+  filePath?: string
+): Result<ParsedCommand, ParseError> {
   // Parse frontmatter
   const frontmatterResult = parseFrontmatter<Record<string, unknown>>(content);
 
   if (!frontmatterResult.ok) {
     const fmError = frontmatterResult.error;
-    return err(createParseError(fmError.message, {
-      filePath,
-      line: fmError.line,
-      column: fmError.column,
-    }));
+    return err(
+      createParseError(fmError.message, {
+        filePath,
+        line: fmError.line,
+        column: fmError.column,
+      })
+    );
   }
 
   const { data, content: bodyContent, isEmpty } = frontmatterResult.value;
@@ -502,10 +512,12 @@ export function parseCommand(content: string, filePath?: string): Result<ParsedC
   const validationErrors = validateCommandFields(data);
 
   if (validationErrors.length > 0) {
-    return err(createParseError('Command validation failed', {
-      filePath,
-      validationErrors,
-    }));
+    return err(
+      createParseError('Command validation failed', {
+        filePath,
+        validationErrors,
+      })
+    );
   }
 
   // Apply defaults and create command object
@@ -555,7 +567,10 @@ export function parseCommands(
 /**
  * Filter commands by target
  */
-export function filterCommandsByTarget(commands: ParsedCommand[], target: TargetType): ParsedCommand[] {
+export function filterCommandsByTarget(
+  commands: ParsedCommand[],
+  target: TargetType
+): ParsedCommand[] {
   return commands.filter((command) => {
     const targets = command.frontmatter.targets ?? DEFAULT_TARGETS;
     return targets.includes(target);

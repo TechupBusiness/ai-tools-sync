@@ -18,7 +18,12 @@ import { parseYaml, type YamlParseError } from '../utils/yaml.js';
 import { applyDefaults } from './defaults.js';
 import { formatValidationErrors, validateConfig } from './validator.js';
 
-import type { ConfigDirResolutionOptions, ConfigOptions, ConfigValidationError, ResolvedConfig } from './types.js';
+import type {
+  ConfigDirResolutionOptions,
+  ConfigOptions,
+  ConfigValidationError,
+  ResolvedConfig,
+} from './types.js';
 
 /**
  * Default configuration directory name
@@ -58,14 +63,18 @@ interface PackageJsonAiToolSyncConfig {
 /**
  * Read ai-tool-sync configuration from package.json
  */
-async function readPackageJsonConfig(projectRoot: string): Promise<PackageJsonAiToolSyncConfig | undefined> {
+async function readPackageJsonConfig(
+  projectRoot: string
+): Promise<PackageJsonAiToolSyncConfig | undefined> {
   const packageJsonPath = path.join(projectRoot, 'package.json');
 
   if (!(await fileExists(packageJsonPath))) {
     return undefined;
   }
 
-  const result = await readJson<{ [PACKAGE_JSON_KEY]?: PackageJsonAiToolSyncConfig }>(packageJsonPath);
+  const result = await readJson<{ [PACKAGE_JSON_KEY]?: PackageJsonAiToolSyncConfig }>(
+    packageJsonPath
+  );
   if (!result.ok) {
     return undefined;
   }
@@ -132,7 +141,9 @@ export function resolveConfigDirSync(options: { configDir?: string } = {}): stri
 /**
  * Load configuration from .ai-tool-sync/config.yaml (or custom directory)
  */
-export async function loadConfig(options: ConfigOptions = {}): Promise<Result<ResolvedConfig, ConfigLoadError>> {
+export async function loadConfig(
+  options: ConfigOptions = {}
+): Promise<Result<ResolvedConfig, ConfigLoadError>> {
   const projectRoot = path.resolve(options.projectRoot ?? process.cwd());
 
   // Resolve the config directory using priority order
@@ -189,7 +200,9 @@ async function loadConfigFromPath(
   // Read the file
   const contentResult = await readFile(configPath);
   if (!contentResult.ok) {
-    return err(new ConfigLoadError(`Failed to read configuration file: ${configPath}`, contentResult.error));
+    return err(
+      new ConfigLoadError(`Failed to read configuration file: ${configPath}`, contentResult.error)
+    );
   }
 
   // Parse YAML
@@ -197,7 +210,9 @@ async function loadConfigFromPath(
   if (!parseResult.ok) {
     const yamlError = parseResult.error;
     const location = yamlError.line ? ` at line ${yamlError.line}` : '';
-    return err(new ConfigLoadError(`Failed to parse YAML${location}: ${yamlError.message}`, yamlError));
+    return err(
+      new ConfigLoadError(`Failed to parse YAML${location}: ${yamlError.message}`, yamlError)
+    );
   }
 
   // Handle empty config file
@@ -339,7 +354,10 @@ export function getAiDir(projectRoot?: string, configDir?: string): string {
  * which checks CLI > ENV > default but cannot check package.json.
  * For full resolution including package.json, use getAiPathsAsync().
  */
-export function getAiPaths(projectRoot?: string, configDir?: string): {
+export function getAiPaths(
+  projectRoot?: string,
+  configDir?: string
+): {
   aiDir: string;
   rulesDir: string;
   personasDir: string;
@@ -369,7 +387,10 @@ export function getAiPaths(projectRoot?: string, configDir?: string): {
  *
  * This version fully resolves the config directory including package.json.
  */
-export async function getAiPathsAsync(projectRoot?: string, configDir?: string): Promise<{
+export async function getAiPathsAsync(
+  projectRoot?: string,
+  configDir?: string
+): Promise<{
   aiDir: string;
   rulesDir: string;
   personasDir: string;
@@ -381,7 +402,7 @@ export async function getAiPathsAsync(projectRoot?: string, configDir?: string):
   targetsDir: string;
 }> {
   const root = path.resolve(projectRoot ?? process.cwd());
-  const resolvedDir = configDir ?? await resolveConfigDir({ projectRoot: root });
+  const resolvedDir = configDir ?? (await resolveConfigDir({ projectRoot: root }));
   const aiDir = path.join(root, resolvedDir);
 
   return {

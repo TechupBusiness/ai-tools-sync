@@ -39,7 +39,10 @@ type ContentType = 'rule' | 'persona' | 'command' | 'hook';
 /**
  * Parser function signature
  */
-type ParserFn<T> = (content: string, filePath?: string) => { ok: true; value: T } | { ok: false; error: ParseError };
+type ParserFn<T> = (
+  content: string,
+  filePath?: string
+) => { ok: true; value: T } | { ok: false; error: ParseError };
 
 /**
  * Loader for local file system directories
@@ -111,34 +114,10 @@ export class LocalLoader implements Loader {
 
     // Load each content type in parallel
     const [rulesResult, personasResult, commandsResult, hooksResult] = await Promise.all([
-      this.loadContentType(
-        sourcePath,
-        directories.rules,
-        'rule',
-        parseRule,
-        options
-      ),
-      this.loadContentType(
-        sourcePath,
-        directories.personas,
-        'persona',
-        parsePersona,
-        options
-      ),
-      this.loadContentType(
-        sourcePath,
-        directories.commands,
-        'command',
-        parseCommand,
-        options
-      ),
-      this.loadContentType(
-        sourcePath,
-        directories.hooks,
-        'hook',
-        parseHook,
-        options
-      ),
+      this.loadContentType(sourcePath, directories.rules, 'rule', parseRule, options),
+      this.loadContentType(sourcePath, directories.personas, 'persona', parsePersona, options),
+      this.loadContentType(sourcePath, directories.commands, 'command', parseCommand, options),
+      this.loadContentType(sourcePath, directories.hooks, 'hook', parseHook, options),
     ]);
 
     // Collect results
@@ -263,20 +242,14 @@ export class LocalLoader implements Loader {
   /**
    * Filter files by include/exclude patterns
    */
-  private filterFiles(
-    files: string[],
-    baseDir: string,
-    options?: LoaderOptions
-  ): string[] {
+  private filterFiles(files: string[], baseDir: string, options?: LoaderOptions): string[] {
     let filtered = files;
 
     // Apply include patterns
     if (options?.include && options.include.length > 0) {
       filtered = filtered.filter((file) => {
         const relativePath = path.relative(baseDir, file);
-        return options.include!.some((pattern) =>
-          this.matchGlobPattern(relativePath, pattern)
-        );
+        return options.include!.some((pattern) => this.matchGlobPattern(relativePath, pattern));
       });
     }
 
@@ -284,9 +257,7 @@ export class LocalLoader implements Loader {
     if (options?.exclude && options.exclude.length > 0) {
       filtered = filtered.filter((file) => {
         const relativePath = path.relative(baseDir, file);
-        return !options.exclude!.some((pattern) =>
-          this.matchGlobPattern(relativePath, pattern)
-        );
+        return !options.exclude!.some((pattern) => this.matchGlobPattern(relativePath, pattern));
       });
     }
 
@@ -304,11 +275,11 @@ export class LocalLoader implements Loader {
 
     // Convert glob pattern to regex
     const regexPattern = normalizedPattern
-      .replace(/\./g, '\\.')           // Escape dots
-      .replace(/\*\*/g, '{{DOUBLE}}')  // Temp placeholder for **
-      .replace(/\*/g, '[^/]*')         // * matches anything except /
-      .replace(/{{DOUBLE}}/g, '.*')    // ** matches anything
-      .replace(/\?/g, '.');            // ? matches single char
+      .replace(/\./g, '\\.') // Escape dots
+      .replace(/\*\*/g, '{{DOUBLE}}') // Temp placeholder for **
+      .replace(/\*/g, '[^/]*') // * matches anything except /
+      .replace(/{{DOUBLE}}/g, '.*') // ** matches anything
+      .replace(/\?/g, '.'); // ? matches single char
 
     const regex = new RegExp(`^${regexPattern}$`);
     return regex.test(normalizedPath);
@@ -332,4 +303,3 @@ export class LocalLoader implements Loader {
 export function createLocalLoader(): LocalLoader {
   return new LocalLoader();
 }
-

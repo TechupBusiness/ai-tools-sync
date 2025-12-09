@@ -5,12 +5,7 @@ import { logger } from '../utils/logger.js';
 import { DEFAULT_PLUGIN_CACHE_DIR, generatePluginId } from '../utils/plugin-cache.js';
 import { err, ok, type Result } from '../utils/result.js';
 
-import {
-  emptyLoadResultWithSource,
-  type LoadError,
-  type LoadResult,
-  type Loader,
-} from './base.js';
+import { emptyLoadResultWithSource, type LoadError, type LoadResult, type Loader } from './base.js';
 import { ClaudePluginLoader } from './claude-plugin.js';
 import { GitLoader, type GitLoaderOptions, parseGitSource, DEFAULT_GIT_CACHE_DIR } from './git.js';
 import { LocalLoader } from './local.js';
@@ -139,7 +134,9 @@ export class PluginLoader implements Loader {
   }
 
   private isLocalSource(source: string): boolean {
-    return this.localLoader.canLoad(source) && !this.gitLoader.canLoad(this.normalizeForGit(source));
+    return (
+      this.localLoader.canLoad(source) && !this.gitLoader.canLoad(this.normalizeForGit(source))
+    );
   }
 
   private resolveLocalPath(source: string, options?: PluginLoaderOptions): string {
@@ -226,9 +223,12 @@ export class PluginLoader implements Loader {
     return { host: null, remainder: input };
   }
 
-  private extractRepoParts(
-    remainder: string
-  ): { owner: string; repo: string; subpath?: string | undefined; version?: string | undefined } {
+  private extractRepoParts(remainder: string): {
+    owner: string;
+    repo: string;
+    subpath?: string | undefined;
+    version?: string | undefined;
+  } {
     const [pathPart = '', version] = remainder.split('@');
     const segments = pathPart.split('/');
 
@@ -240,9 +240,10 @@ export class PluginLoader implements Loader {
   }
 
   private buildGitSource(parsed: ParsedPluginSource, version?: string): string {
-    const base = parsed.original.includes('#') || parsed.original.includes('@')
-      ? parsed.original.replace(/[@#].*$/, '')
-      : parsed.original;
+    const base =
+      parsed.original.includes('#') || parsed.original.includes('@')
+        ? parsed.original.replace(/[@#].*$/, '')
+        : parsed.original;
     const normalized = this.normalizeForGit(base);
     return version ? `${normalized}#${version}` : normalized;
   }
@@ -261,7 +262,13 @@ export class PluginLoader implements Loader {
     }
 
     const cacheRoot = this.resolveCacheRoot(options);
-    const { pluginCache: _pc, config: _cfg, forceRefresh, basePath, ...restOptions } = options ?? {};
+    const {
+      pluginCache: _pc,
+      config: _cfg,
+      forceRefresh,
+      basePath,
+      ...restOptions
+    } = options ?? {};
     const gitOptions: GitLoaderOptions = {
       ...restOptions,
       cacheDir: cacheRoot,

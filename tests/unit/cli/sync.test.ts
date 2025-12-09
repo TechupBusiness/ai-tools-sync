@@ -58,7 +58,10 @@ describe('Sync Command', () => {
 
   beforeEach(async () => {
     // Create a unique temp directory within the workspace for each test
-    testDir = path.join(TESTS_TMP_DIR, `ai-sync-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = path.join(
+      TESTS_TMP_DIR,
+      `ai-sync-test-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    );
     await fs.mkdir(testDir, { recursive: true });
   });
 
@@ -129,7 +132,7 @@ output:
       const result = await sync({ projectRoot: testDir });
 
       // Should succeed but generate no files (empty content)
-      expect(result.warnings.some(w => w.includes('No content'))).toBe(true);
+      expect(result.warnings.some((w) => w.includes('No content'))).toBe(true);
     });
 
     it('should sync rules to cursor format', async () => {
@@ -176,7 +179,9 @@ targets: [cursor, claude, factory]
 
       // Check Claude output
       expect(await dirExists(path.join(testDir, '.claude', 'skills', 'core'))).toBe(true);
-      expect(await fileExists(path.join(testDir, '.claude', 'skills', 'core', 'SKILL.md'))).toBe(true);
+      expect(await fileExists(path.join(testDir, '.claude', 'skills', 'core', 'SKILL.md'))).toBe(
+        true
+      );
     });
 
     it('should sync rules to factory format', async () => {
@@ -198,7 +203,9 @@ targets: [cursor, claude, factory]
 
       // Check Factory output
       expect(await dirExists(path.join(testDir, '.factory', 'skills', 'core'))).toBe(true);
-      expect(await fileExists(path.join(testDir, '.factory', 'skills', 'core', 'SKILL.md'))).toBe(true);
+      expect(await fileExists(path.join(testDir, '.factory', 'skills', 'core', 'SKILL.md'))).toBe(
+        true
+      );
     });
 
     it('should generate entry point files', async () => {
@@ -235,14 +242,19 @@ tools:
 
 A system-level thinker.
 `;
-      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'personas', 'architect.md'), persona);
+      await fs.writeFile(
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'personas', 'architect.md'),
+        persona
+      );
 
       const result = await sync({ projectRoot: testDir });
 
       expect(result.success).toBe(true);
 
       // Check outputs
-      expect(await fileExists(path.join(testDir, '.cursor', 'commands', 'roles', 'architect.md'))).toBe(true);
+      expect(
+        await fileExists(path.join(testDir, '.cursor', 'commands', 'roles', 'architect.md'))
+      ).toBe(true);
       expect(await fileExists(path.join(testDir, '.claude', 'agents', 'architect.md'))).toBe(true);
       expect(await fileExists(path.join(testDir, '.factory', 'droids', 'architect.md'))).toBe(true);
     });
@@ -335,17 +347,24 @@ targets: [cursor]
 ---
 # Cursor Only
 `;
-      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'cursor-only.md'), cursorRule);
+      await fs.writeFile(
+        path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'cursor-only.md'),
+        cursorRule
+      );
 
       const result = await sync({ projectRoot: testDir });
 
       expect(result.success).toBe(true);
 
       // Should be in cursor
-      expect(await fileExists(path.join(testDir, '.cursor', 'rules', 'cursor-only.mdc'))).toBe(true);
+      expect(await fileExists(path.join(testDir, '.cursor', 'rules', 'cursor-only.mdc'))).toBe(
+        true
+      );
 
       // Should NOT be in claude (rule targets cursor only)
-      expect(await fileExists(path.join(testDir, '.claude', 'skills', 'cursor-only', 'SKILL.md'))).toBe(false);
+      expect(
+        await fileExists(path.join(testDir, '.claude', 'skills', 'cursor-only', 'SKILL.md'))
+      ).toBe(false);
     });
   });
 
@@ -507,4 +526,3 @@ always_apply: true
     });
   });
 });
-

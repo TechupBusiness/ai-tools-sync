@@ -61,7 +61,10 @@ export async function clean(options: CleanOptions = {}): Promise<CleanResult> {
 
   const manifestResult = await readManifest(projectRoot);
   if (!manifestResult.ok) {
-    const message = manifestResult.error instanceof Error ? manifestResult.error.message : String(manifestResult.error);
+    const message =
+      manifestResult.error instanceof Error
+        ? manifestResult.error.message
+        : String(manifestResult.error);
     printWarning(`Failed to read manifest: ${message}`);
     printSummary({
       success: false,
@@ -206,7 +209,9 @@ async function cleanV2(params: {
     const modifiedResult = await isFileModified(projectRoot, entry);
     if (!modifiedResult.ok) {
       const message = `Failed to check ${entry.path}: ${
-        modifiedResult.error instanceof Error ? modifiedResult.error.message : String(modifiedResult.error)
+        modifiedResult.error instanceof Error
+          ? modifiedResult.error.message
+          : String(modifiedResult.error)
       }`;
       errors.push(message);
       printWarning(message);
@@ -234,11 +239,12 @@ async function cleanV2(params: {
       deleted.push(entry.path);
     } else {
       const message = `Failed to delete ${entry.path}: ${
-        deleteResult.error instanceof Error ? deleteResult.error.message : String(deleteResult.error)
+        deleteResult.error instanceof Error
+          ? deleteResult.error.message
+          : String(deleteResult.error)
       }`;
       errors.push(message);
       printWarning(message);
     }
   }
 }
-

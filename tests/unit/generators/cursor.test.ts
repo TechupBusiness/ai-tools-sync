@@ -30,7 +30,10 @@ function createMockContent(overrides: Partial<ResolvedContent> = {}): ResolvedCo
 }
 
 // Helper to create mock rule
-function createMockRule(name: string, overrides: Partial<ParsedRule['frontmatter']> = {}): ParsedRule {
+function createMockRule(
+  name: string,
+  overrides: Partial<ParsedRule['frontmatter']> = {}
+): ParsedRule {
   return {
     frontmatter: {
       name,
@@ -46,7 +49,10 @@ function createMockRule(name: string, overrides: Partial<ParsedRule['frontmatter
 }
 
 // Helper to create mock persona
-function createMockPersona(name: string, overrides: Partial<ParsedPersona['frontmatter']> = {}): ParsedPersona {
+function createMockPersona(
+  name: string,
+  overrides: Partial<ParsedPersona['frontmatter']> = {}
+): ParsedPersona {
   return {
     frontmatter: {
       name,
@@ -60,7 +66,10 @@ function createMockPersona(name: string, overrides: Partial<ParsedPersona['front
 }
 
 // Helper to create mock command
-function createMockCommand(name: string, overrides: Partial<ParsedCommand['frontmatter']> = {}): ParsedCommand {
+function createMockCommand(
+  name: string,
+  overrides: Partial<ParsedCommand['frontmatter']> = {}
+): ParsedCommand {
   return {
     frontmatter: {
       name,
@@ -73,7 +82,11 @@ function createMockCommand(name: string, overrides: Partial<ParsedCommand['front
 }
 
 // Helper to create mock hook
-function createMockHook(name: string, event: 'PreToolUse' | 'PostToolUse' = 'PreToolUse', targets: ('cursor' | 'claude' | 'factory')[] = ['cursor', 'claude', 'factory']): ParsedHook {
+function createMockHook(
+  name: string,
+  event: 'PreToolUse' | 'PostToolUse' = 'PreToolUse',
+  targets: ('cursor' | 'claude' | 'factory')[] = ['cursor', 'claude', 'factory']
+): ParsedHook {
   return {
     frontmatter: {
       name,
@@ -134,7 +147,10 @@ describe('CursorGenerator', () => {
       expect(result.files).toContain('.cursor/rules/testing.mdc');
 
       // Verify file content
-      const dbContent = await fs.readFile(path.join(tempDir, '.cursor/rules/database.mdc'), 'utf-8');
+      const dbContent = await fs.readFile(
+        path.join(tempDir, '.cursor/rules/database.mdc'),
+        'utf-8'
+      );
       expect(dbContent).toContain('---');
       expect(dbContent).toContain('description: Database rules');
       expect(dbContent).toContain('# database');
@@ -162,7 +178,10 @@ describe('CursorGenerator', () => {
 
       await generator.generate(content);
 
-      const fileContent = await fs.readFile(path.join(tempDir, '.cursor/rules/styles.mdc'), 'utf-8');
+      const fileContent = await fs.readFile(
+        path.join(tempDir, '.cursor/rules/styles.mdc'),
+        'utf-8'
+      );
       expect(fileContent).toContain('globs: **/*.css, **/*.scss');
     });
 
@@ -318,7 +337,12 @@ describe('CursorGenerator', () => {
         commands: [
           createMockCommand('build', {
             args: [
-              { name: 'env', type: 'string', default: 'development', choices: ['development', 'production'] },
+              {
+                name: 'env',
+                type: 'string',
+                default: 'development',
+                choices: ['development', 'production'],
+              },
             ],
           }),
         ],
@@ -348,11 +372,8 @@ describe('CursorGenerator', () => {
       const result = await generator.generate(content);
 
       expect(result.files).toContain('.cursor/hooks.json');
-      
-      const hooksContent = await fs.readFile(
-        path.join(tempDir, '.cursor/hooks.json'),
-        'utf-8'
-      );
+
+      const hooksContent = await fs.readFile(path.join(tempDir, '.cursor/hooks.json'), 'utf-8');
       const hooksJson = JSON.parse(hooksContent);
       expect(hooksJson.version).toBe(1);
       expect(hooksJson.hooks).toBeDefined();
@@ -438,9 +459,7 @@ describe('CursorGenerator', () => {
       expect(result.generated).toHaveLength(1);
 
       // Verify file was not actually created
-      await expect(
-        fs.access(path.join(tempDir, '.cursor/rules/test-rule.mdc'))
-      ).rejects.toThrow();
+      await expect(fs.access(path.join(tempDir, '.cursor/rules/test-rule.mdc'))).rejects.toThrow();
     });
 
     it('should clean existing files when clean option is true', async () => {
@@ -533,7 +552,10 @@ describe('MCP generation', () => {
     const mcpJson = JSON.parse(mcpContent);
     expect(mcpJson.mcpServers.filesystem).toBeDefined();
     expect(mcpJson.mcpServers.filesystem.command).toBe('npx');
-    expect(mcpJson.mcpServers.filesystem.args).toEqual(['-y', '@modelcontextprotocol/server-filesystem']);
+    expect(mcpJson.mcpServers.filesystem.args).toEqual([
+      '-y',
+      '@modelcontextprotocol/server-filesystem',
+    ]);
   });
 
   it('should not generate mcp.json when no MCP config', async () => {
@@ -688,4 +710,3 @@ describe('MCP generation', () => {
     expect(mcpJson.mcpServers.test.cwd).toBe('/path/to/cwd');
   });
 });
-

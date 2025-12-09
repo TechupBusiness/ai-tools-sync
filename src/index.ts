@@ -76,11 +76,7 @@ export type {
   ClaudeSkillFrontmatter,
   ClaudeAgentFrontmatter,
 } from './loaders/claude-plugin.js';
-export {
-  PluginLoader,
-  createPluginLoader,
-  PLUGIN_PREFIXES,
-} from './loaders/plugin.js';
+export { PluginLoader, createPluginLoader, PLUGIN_PREFIXES } from './loaders/plugin.js';
 export type { PluginLoaderOptions, ParsedPluginSource } from './loaders/plugin.js';
 export {
   UrlLoader,
@@ -147,4 +143,3 @@ export { compareVersions } from './utils/version.js';
 
 // Version
 export const VERSION = '0.1.0';
-

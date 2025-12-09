@@ -200,7 +200,9 @@ function tryParseManifest(content: string): Result<ManifestV2> {
     }
     return err(new Error('Invalid manifest format'));
   } catch (e) {
-    return err(new Error(`Failed to parse manifest: ${e instanceof Error ? e.message : String(e)}`));
+    return err(
+      new Error(`Failed to parse manifest: ${e instanceof Error ? e.message : String(e)}`)
+    );
   }
 }
 
@@ -225,4 +227,3 @@ function isManifestV2Shape(value: unknown): value is ManifestV2 {
     manifest.directories.every((dir) => typeof dir === 'string')
   );
 }
-

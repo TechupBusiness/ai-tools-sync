@@ -147,10 +147,7 @@ export interface CreateParseErrorOptions {
 /**
  * Create a parse error (filters out undefined values for strict optional properties)
  */
-export function createParseError(
-  message: string,
-  options?: CreateParseErrorOptions
-): ParseError {
+export function createParseError(message: string, options?: CreateParseErrorOptions): ParseError {
   const error: ParseError = { message };
 
   if (options?.filePath !== undefined) {
@@ -269,4 +266,3 @@ export function validateVersion(version: unknown): ContentValidationError[] {
 
   return errors;
 }
-

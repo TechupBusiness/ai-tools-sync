@@ -116,7 +116,9 @@ Content`;
       expect(isErr(result)).toBe(true);
       if (isErr(result)) {
         expect(result.error.validationErrors?.some((e) => e.path === 'tools[1]')).toBe(true);
-        expect(result.error.validationErrors?.some((e) => e.message.includes('invalid-tool'))).toBe(true);
+        expect(result.error.validationErrors?.some((e) => e.message.includes('invalid-tool'))).toBe(
+          true
+        );
       }
     });
 
@@ -381,7 +383,9 @@ Content`;
         expect(resolved?.frontmatter.model).toBe('default');
         expect(resolved?.frontmatter.tools).toEqual(['read']);
         expect(resolved?.frontmatter.description).toBe('Leaf override');
-        expect(resolved?.content).toBe('Base content\n\n---\n\nMiddle content\n\n---\n\nLeaf content');
+        expect(resolved?.content).toBe(
+          'Base content\n\n---\n\nMiddle content\n\n---\n\nLeaf content'
+        );
       }
     });
 
@@ -579,9 +583,7 @@ Content`;
     });
 
     it('should use defaults when persona has no tools', () => {
-      const personas = [
-        { frontmatter: { name: 'no-tools' }, content: '' },
-      ];
+      const personas = [{ frontmatter: { name: 'no-tools' }, content: '' }];
 
       const tools = getUniqueTools(personas as any);
 
@@ -595,4 +597,3 @@ Content`;
     });
   });
 });
-

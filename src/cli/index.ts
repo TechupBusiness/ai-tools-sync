@@ -27,7 +27,9 @@ const program = new Command();
 
 program
   .name('ai-sync')
-  .description('Unified AI tool configuration - single source of truth for Cursor, Claude Code, Factory, and more')
+  .description(
+    'Unified AI tool configuration - single source of truth for Cursor, Claude Code, Factory, and more'
+  )
   .version(VERSION);
 
 program
@@ -42,57 +44,59 @@ program
   .option('--no-update-gitignore', 'Do not update .gitignore')
   .option('-p, --project <path>', 'Project root directory')
   .option('-c, --config-dir <path>', 'Configuration directory name (default: .ai-tool-sync)')
-  .action(async (options: {
-    verbose?: boolean;
-    dryRun?: boolean;
-    watch?: boolean;
-    debounce?: string;
-    clean?: boolean;
-    updateGitignore?: boolean;
-    project?: string;
-    configDir?: string;
-  }) => {
-    if (options.verbose) {
-      logger.setVerbose(true);
-    }
+  .action(
+    async (options: {
+      verbose?: boolean;
+      dryRun?: boolean;
+      watch?: boolean;
+      debounce?: string;
+      clean?: boolean;
+      updateGitignore?: boolean;
+      project?: string;
+      configDir?: string;
+    }) => {
+      if (options.verbose) {
+        logger.setVerbose(true);
+      }
 
-    try {
-      if (options.watch) {
-        const debounceMs = Number.parseInt(options.debounce ?? '300', 10);
-        const result = await watch({
-          verbose: options.verbose,
-          dryRun: options.dryRun,
-          clean: options.clean,
-          updateGitignore: options.updateGitignore,
-          projectRoot: options.project,
-          configDir: options.configDir,
-          debounceMs: Number.isNaN(debounceMs) ? undefined : debounceMs,
-        });
-        if (!result.success) {
-          process.exit(1);
+      try {
+        if (options.watch) {
+          const debounceMs = Number.parseInt(options.debounce ?? '300', 10);
+          const result = await watch({
+            verbose: options.verbose,
+            dryRun: options.dryRun,
+            clean: options.clean,
+            updateGitignore: options.updateGitignore,
+            projectRoot: options.project,
+            configDir: options.configDir,
+            debounceMs: Number.isNaN(debounceMs) ? undefined : debounceMs,
+          });
+          if (!result.success) {
+            process.exit(1);
+          }
+        } else {
+          const result = await sync({
+            verbose: options.verbose,
+            dryRun: options.dryRun,
+            clean: options.clean,
+            updateGitignore: options.updateGitignore,
+            projectRoot: options.project,
+            configDir: options.configDir,
+          });
+          if (!result.success) {
+            process.exit(1);
+          }
         }
-      } else {
-        const result = await sync({
-          verbose: options.verbose,
-          dryRun: options.dryRun,
-          clean: options.clean,
-          updateGitignore: options.updateGitignore,
-          projectRoot: options.project,
-          configDir: options.configDir,
-        });
-        if (!result.success) {
-          process.exit(1);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error(`Sync failed: ${message}`);
+        if (options.verbose && error instanceof Error && error.stack) {
+          console.error(error.stack);
         }
+        process.exit(1);
       }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      logger.error(`Sync failed: ${message}`);
-      if (options.verbose && error instanceof Error && error.stack) {
-        console.error(error.stack);
-      }
-      process.exit(1);
     }
-  });
+  );
 
 program
   .command('init')
@@ -103,31 +107,33 @@ program
   .option('--no-update-gitignore', 'Do not update .gitignore')
   .option('-p, --project <path>', 'Project root directory')
   .option('-c, --config-dir <path>', 'Configuration directory name (default: .ai-tool-sync)')
-  .action(async (options: {
-    force?: boolean;
-    yes?: boolean;
-    updateGitignore?: boolean;
-    project?: string;
-    configDir?: string;
-  }) => {
-    try {
-      const result = await init({
-        force: options.force,
-        yes: options.yes,
-        updateGitignore: options.updateGitignore,
-        projectRoot: options.project,
-        configDir: options.configDir,
-      });
+  .action(
+    async (options: {
+      force?: boolean;
+      yes?: boolean;
+      updateGitignore?: boolean;
+      project?: string;
+      configDir?: string;
+    }) => {
+      try {
+        const result = await init({
+          force: options.force,
+          yes: options.yes,
+          updateGitignore: options.updateGitignore,
+          projectRoot: options.project,
+          configDir: options.configDir,
+        });
 
-      if (!result.success) {
+        if (!result.success) {
+          process.exit(1);
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error(`Init failed: ${message}`);
         process.exit(1);
       }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      logger.error(`Init failed: ${message}`);
-      process.exit(1);
     }
-  });
+  );
 
 program
   .command('validate')
@@ -135,11 +141,7 @@ program
   .option('-v, --verbose', 'Show detailed validation results')
   .option('-p, --project <path>', 'Project root directory')
   .option('-c, --config-dir <path>', 'Configuration directory name (default: .ai-tool-sync)')
-  .action(async (options: {
-    verbose?: boolean;
-    project?: string;
-    configDir?: string;
-  }) => {
+  .action(async (options: { verbose?: boolean; project?: string; configDir?: string }) => {
     if (options.verbose) {
       logger.setVerbose(true);
     }
@@ -169,35 +171,37 @@ program
   .option('-d, --dry-run', 'Show what would be deleted without deleting')
   .option('-p, --project <path>', 'Project root directory')
   .option('-c, --config-dir <path>', 'Configuration directory name')
-  .action(async (options: {
-    verbose?: boolean;
-    force?: boolean;
-    dryRun?: boolean;
-    project?: string;
-    configDir?: string;
-  }) => {
-    if (options.verbose) {
-      logger.setVerbose(true);
-    }
+  .action(
+    async (options: {
+      verbose?: boolean;
+      force?: boolean;
+      dryRun?: boolean;
+      project?: string;
+      configDir?: string;
+    }) => {
+      if (options.verbose) {
+        logger.setVerbose(true);
+      }
 
-    try {
-      const result = await clean({
-        verbose: options.verbose,
-        force: options.force,
-        dryRun: options.dryRun,
-        projectRoot: options.project,
-        configDir: options.configDir,
-      });
+      try {
+        const result = await clean({
+          verbose: options.verbose,
+          force: options.force,
+          dryRun: options.dryRun,
+          projectRoot: options.project,
+          configDir: options.configDir,
+        });
 
-      if (!result.success) {
+        if (!result.success) {
+          process.exit(1);
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error(`Clean failed: ${message}`);
         process.exit(1);
       }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      logger.error(`Clean failed: ${message}`);
-      process.exit(1);
     }
-  });
+  );
 
 program
   .command('status')
@@ -205,11 +209,7 @@ program
   .option('-v, --verbose', 'Show all files, not just summary')
   .option('-p, --project <path>', 'Project root directory')
   .option('-c, --config-dir <path>', 'Configuration directory name')
-  .action(async (options: {
-    verbose?: boolean;
-    project?: string;
-    configDir?: string;
-  }) => {
+  .action(async (options: { verbose?: boolean; project?: string; configDir?: string }) => {
     if (options.verbose) {
       logger.setVerbose(true);
     }
@@ -241,42 +241,44 @@ program
   .option('--discovery-only', 'Only run discovery phase (no migration)')
   .option('-p, --project <path>', 'Project root directory')
   .option('-c, --config-dir <path>', 'Configuration directory name (default: .ai-tool-sync)')
-  .action(async (options: {
-    verbose?: boolean;
-    dryRun?: boolean;
-    backup?: boolean;
-    yes?: boolean;
-    discoveryOnly?: boolean;
-    project?: string;
-    configDir?: string;
-  }) => {
-    if (options.verbose) {
-      logger.setVerbose(true);
-    }
+  .action(
+    async (options: {
+      verbose?: boolean;
+      dryRun?: boolean;
+      backup?: boolean;
+      yes?: boolean;
+      discoveryOnly?: boolean;
+      project?: string;
+      configDir?: string;
+    }) => {
+      if (options.verbose) {
+        logger.setVerbose(true);
+      }
 
-    try {
-      const result = await migrate({
-        verbose: options.verbose,
-        dryRun: options.dryRun,
-        backup: options.backup,
-        yes: options.yes,
-        discoveryOnly: options.discoveryOnly,
-        projectRoot: options.project,
-        configDir: options.configDir,
-      });
+      try {
+        const result = await migrate({
+          verbose: options.verbose,
+          dryRun: options.dryRun,
+          backup: options.backup,
+          yes: options.yes,
+          discoveryOnly: options.discoveryOnly,
+          projectRoot: options.project,
+          configDir: options.configDir,
+        });
 
-      if (!result.success) {
+        if (!result.success) {
+          process.exit(1);
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error(`Migration failed: ${message}`);
+        if (options.verbose && error instanceof Error && error.stack) {
+          console.error(error.stack);
+        }
         process.exit(1);
       }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      logger.error(`Migration failed: ${message}`);
-      if (options.verbose && error instanceof Error && error.stack) {
-        console.error(error.stack);
-      }
-      process.exit(1);
     }
-  });
+  );
 
 program.addCommand(createPluginsCommand());
 
@@ -289,41 +291,43 @@ program
   .option('-f, --file <path>', 'Process specific file only')
   .option('-p, --project <path>', 'Project root directory')
   .option('-c, --config-dir <path>', 'Configuration directory name (default: .ai-tool-sync)')
-  .action(async (options: {
-    verbose?: boolean;
-    dryRun?: boolean;
-    yes?: boolean;
-    file?: string;
-    project?: string;
-    configDir?: string;
-  }) => {
-    if (options.verbose) {
-      logger.setVerbose(true);
-    }
+  .action(
+    async (options: {
+      verbose?: boolean;
+      dryRun?: boolean;
+      yes?: boolean;
+      file?: string;
+      project?: string;
+      configDir?: string;
+    }) => {
+      if (options.verbose) {
+        logger.setVerbose(true);
+      }
 
-    try {
-      const mergeOptions: Parameters<typeof merge>[0] = {};
-      if (options.verbose !== undefined) mergeOptions.verbose = options.verbose;
-      if (options.dryRun !== undefined) mergeOptions.dryRun = options.dryRun;
-      if (options.yes !== undefined) mergeOptions.yes = options.yes;
-      if (options.file !== undefined) mergeOptions.file = options.file;
-      if (options.project !== undefined) mergeOptions.projectRoot = options.project;
-      if (options.configDir !== undefined) mergeOptions.configDir = options.configDir;
+      try {
+        const mergeOptions: Parameters<typeof merge>[0] = {};
+        if (options.verbose !== undefined) mergeOptions.verbose = options.verbose;
+        if (options.dryRun !== undefined) mergeOptions.dryRun = options.dryRun;
+        if (options.yes !== undefined) mergeOptions.yes = options.yes;
+        if (options.file !== undefined) mergeOptions.file = options.file;
+        if (options.project !== undefined) mergeOptions.projectRoot = options.project;
+        if (options.configDir !== undefined) mergeOptions.configDir = options.configDir;
 
-      const result = await merge(mergeOptions);
+        const result = await merge(mergeOptions);
 
-      if (!result.success) {
+        if (!result.success) {
+          process.exit(1);
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error(`Merge failed: ${message}`);
+        if (options.verbose && error instanceof Error && error.stack) {
+          console.error(error.stack);
+        }
         process.exit(1);
       }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      logger.error(`Merge failed: ${message}`);
-      if (options.verbose && error instanceof Error && error.stack) {
-        console.error(error.stack);
-      }
-      process.exit(1);
     }
-  });
+  );
 
 /**
  * Run the CLI
@@ -342,7 +346,12 @@ export { sync, init, validate, migrate, merge, clean, status };
 export type { SyncOptions, SyncResult } from './commands/sync.js';
 export type { InitOptions, InitResult } from './commands/init.js';
 export type { ValidateOptions, ValidateResult } from './commands/validate.js';
-export type { MigrateOptions, MigrateResult, DiscoveryResult, DiscoveredFile } from './commands/migrate.js';
+export type {
+  MigrateOptions,
+  MigrateResult,
+  DiscoveryResult,
+  DiscoveredFile,
+} from './commands/migrate.js';
 export type { MergeOptions, MergeResult, InputFile, DiffStatus } from './commands/merge.js';
 export type { CleanOptions, CleanResult } from './commands/clean.js';
 export type { StatusOptions, StatusResult, FileStatus } from './commands/status.js';

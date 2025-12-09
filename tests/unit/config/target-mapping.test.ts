@@ -24,11 +24,13 @@ import {
 describe('loadTargetMapping', () => {
   describe('loading default targets', () => {
     it('should load cursor target mapping', async () => {
-      const result = await loadTargetMapping('cursor', { toolRoot: path.resolve(__dirname, '../../..') });
-      
+      const result = await loadTargetMapping('cursor', {
+        toolRoot: path.resolve(__dirname, '../../..'),
+      });
+
       expect(result.ok).toBe(true);
       if (!result.ok) return;
-      
+
       expect(result.value.name).toBe('cursor');
       expect(result.value.output.rules_dir).toBe('.cursor/rules');
       expect(result.value.output.rules_format).toBe('mdc');
@@ -37,11 +39,13 @@ describe('loadTargetMapping', () => {
     });
 
     it('should load claude target mapping', async () => {
-      const result = await loadTargetMapping('claude', { toolRoot: path.resolve(__dirname, '../../..') });
-      
+      const result = await loadTargetMapping('claude', {
+        toolRoot: path.resolve(__dirname, '../../..'),
+      });
+
       expect(result.ok).toBe(true);
       if (!result.ok) return;
-      
+
       expect(result.value.name).toBe('claude');
       expect(result.value.output.rules_dir).toBe('.claude/skills');
       expect(result.value.output.rules_format).toBe('skill');
@@ -50,11 +54,13 @@ describe('loadTargetMapping', () => {
     });
 
     it('should load factory target mapping', async () => {
-      const result = await loadTargetMapping('factory', { toolRoot: path.resolve(__dirname, '../../..') });
-      
+      const result = await loadTargetMapping('factory', {
+        toolRoot: path.resolve(__dirname, '../../..'),
+      });
+
       expect(result.ok).toBe(true);
       if (!result.ok) return;
-      
+
       expect(result.value.name).toBe('factory');
       expect(result.value.output.rules_dir).toBe('.factory/skills');
       expect(result.value.output.rules_format).toBe('skill');
@@ -65,11 +71,13 @@ describe('loadTargetMapping', () => {
 
   describe('tool mappings', () => {
     it('should have correct cursor tool mappings', async () => {
-      const result = await loadTargetMapping('cursor', { toolRoot: path.resolve(__dirname, '../../..') });
-      
+      const result = await loadTargetMapping('cursor', {
+        toolRoot: path.resolve(__dirname, '../../..'),
+      });
+
       expect(result.ok).toBe(true);
       if (!result.ok) return;
-      
+
       const tools = result.value.tool_mapping;
       expect(tools.read).toBe('Read');
       expect(tools.write).toBe('Create');
@@ -79,11 +87,13 @@ describe('loadTargetMapping', () => {
     });
 
     it('should have correct claude tool mappings', async () => {
-      const result = await loadTargetMapping('claude', { toolRoot: path.resolve(__dirname, '../../..') });
-      
+      const result = await loadTargetMapping('claude', {
+        toolRoot: path.resolve(__dirname, '../../..'),
+      });
+
       expect(result.ok).toBe(true);
       if (!result.ok) return;
-      
+
       const tools = result.value.tool_mapping;
       expect(tools.read).toBe('Read');
       expect(tools.write).toBe('Write');
@@ -92,11 +102,13 @@ describe('loadTargetMapping', () => {
     });
 
     it('should have correct factory tool mappings (lowercase)', async () => {
-      const result = await loadTargetMapping('factory', { toolRoot: path.resolve(__dirname, '../../..') });
-      
+      const result = await loadTargetMapping('factory', {
+        toolRoot: path.resolve(__dirname, '../../..'),
+      });
+
       expect(result.ok).toBe(true);
       if (!result.ok) return;
-      
+
       const tools = result.value.tool_mapping;
       expect(tools.read).toBe('read');
       expect(tools.write).toBe('write');
@@ -106,22 +118,26 @@ describe('loadTargetMapping', () => {
 
   describe('model mappings', () => {
     it('should have inherit for cursor models', async () => {
-      const result = await loadTargetMapping('cursor', { toolRoot: path.resolve(__dirname, '../../..') });
-      
+      const result = await loadTargetMapping('cursor', {
+        toolRoot: path.resolve(__dirname, '../../..'),
+      });
+
       expect(result.ok).toBe(true);
       if (!result.ok) return;
-      
+
       expect(result.value.model_mapping.default).toBe('inherit');
       expect(result.value.model_mapping.fast).toBe('inherit');
       expect(result.value.model_mapping.powerful).toBe('inherit');
     });
 
     it('should have specific claude models', async () => {
-      const result = await loadTargetMapping('claude', { toolRoot: path.resolve(__dirname, '../../..') });
-      
+      const result = await loadTargetMapping('claude', {
+        toolRoot: path.resolve(__dirname, '../../..'),
+      });
+
       expect(result.ok).toBe(true);
       if (!result.ok) return;
-      
+
       expect(result.value.model_mapping.default).toContain('claude');
       expect(result.value.model_mapping.fast).toContain('haiku');
     });
@@ -129,40 +145,48 @@ describe('loadTargetMapping', () => {
 
   describe('unsupported features', () => {
     it('should mark hooks as unsupported for cursor', async () => {
-      const result = await loadTargetMapping('cursor', { toolRoot: path.resolve(__dirname, '../../..') });
-      
+      const result = await loadTargetMapping('cursor', {
+        toolRoot: path.resolve(__dirname, '../../..'),
+      });
+
       expect(result.ok).toBe(true);
       if (!result.ok) return;
-      
+
       expect(result.value.unsupported).toContain('hooks');
     });
 
     it('should mark hooks as unsupported for factory', async () => {
-      const result = await loadTargetMapping('factory', { toolRoot: path.resolve(__dirname, '../../..') });
-      
+      const result = await loadTargetMapping('factory', {
+        toolRoot: path.resolve(__dirname, '../../..'),
+      });
+
       expect(result.ok).toBe(true);
       if (!result.ok) return;
-      
+
       expect(result.value.unsupported).toContain('hooks');
     });
 
     it('should have no unsupported features for claude', async () => {
-      const result = await loadTargetMapping('claude', { toolRoot: path.resolve(__dirname, '../../..') });
-      
+      const result = await loadTargetMapping('claude', {
+        toolRoot: path.resolve(__dirname, '../../..'),
+      });
+
       expect(result.ok).toBe(true);
       if (!result.ok) return;
-      
+
       expect(result.value.unsupported).toHaveLength(0);
     });
   });
 
   describe('error handling', () => {
     it('should return error for non-existent target', async () => {
-      const result = await loadTargetMapping('nonexistent' as any, { toolRoot: path.resolve(__dirname, '../../..') });
-      
+      const result = await loadTargetMapping('nonexistent' as any, {
+        toolRoot: path.resolve(__dirname, '../../..'),
+      });
+
       expect(result.ok).toBe(false);
       if (result.ok) return;
-      
+
       expect(result.error.message).toContain('nonexistent');
     });
   });
@@ -173,10 +197,10 @@ describe('loadAllTargetMappings', () => {
     const result = await loadAllTargetMappings(['cursor', 'claude', 'factory'], {
       toolRoot: path.resolve(__dirname, '../../..'),
     });
-    
+
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    
+
     expect(result.value.size).toBe(3);
     expect(result.value.has('cursor')).toBe(true);
     expect(result.value.has('claude')).toBe(true);
@@ -187,10 +211,10 @@ describe('loadAllTargetMappings', () => {
     const result = await loadAllTargetMappings(['cursor', 'nonexistent' as any], {
       toolRoot: path.resolve(__dirname, '../../..'),
     });
-    
+
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    
+
     expect(result.value.size).toBe(1);
     expect(result.value.has('cursor')).toBe(true);
   });
@@ -201,9 +225,13 @@ describe('utility functions', () => {
   let claudeMapping: TargetMapping;
 
   beforeEach(async () => {
-    const cursorResult = await loadTargetMapping('cursor', { toolRoot: path.resolve(__dirname, '../../..') });
-    const claudeResult = await loadTargetMapping('claude', { toolRoot: path.resolve(__dirname, '../../..') });
-    
+    const cursorResult = await loadTargetMapping('cursor', {
+      toolRoot: path.resolve(__dirname, '../../..'),
+    });
+    const claudeResult = await loadTargetMapping('claude', {
+      toolRoot: path.resolve(__dirname, '../../..'),
+    });
+
     if (cursorResult.ok) cursorMapping = cursorResult.value;
     if (claudeResult.ok) claudeMapping = claudeResult.value;
   });
@@ -250,7 +278,7 @@ describe('utility functions', () => {
     it('should return a copy of tool mappings', () => {
       const tools = getToolMapping(cursorMapping);
       expect(tools.read).toBe('Read');
-      
+
       // Should be a copy
       tools.read = 'Modified';
       expect(cursorMapping.tool_mapping.read).toBe('Read');
@@ -302,40 +330,48 @@ describe('utility functions', () => {
 
 describe('terminology mappings', () => {
   it('should map rule to skill for claude', async () => {
-    const result = await loadTargetMapping('claude', { toolRoot: path.resolve(__dirname, '../../..') });
-    
+    const result = await loadTargetMapping('claude', {
+      toolRoot: path.resolve(__dirname, '../../..'),
+    });
+
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    
+
     expect(result.value.terminology.rule).toBe('skill');
   });
 
   it('should map persona to droid for factory', async () => {
-    const result = await loadTargetMapping('factory', { toolRoot: path.resolve(__dirname, '../../..') });
-    
+    const result = await loadTargetMapping('factory', {
+      toolRoot: path.resolve(__dirname, '../../..'),
+    });
+
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    
+
     expect(result.value.terminology.persona).toBe('droid');
   });
 
   it('should map persona to role for cursor', async () => {
-    const result = await loadTargetMapping('cursor', { toolRoot: path.resolve(__dirname, '../../..') });
-    
+    const result = await loadTargetMapping('cursor', {
+      toolRoot: path.resolve(__dirname, '../../..'),
+    });
+
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    
+
     expect(result.value.terminology.persona).toBe('role');
   });
 });
 
 describe('frontmatter configurations', () => {
   it('should have cursor rule frontmatter config', async () => {
-    const result = await loadTargetMapping('cursor', { toolRoot: path.resolve(__dirname, '../../..') });
-    
+    const result = await loadTargetMapping('cursor', {
+      toolRoot: path.resolve(__dirname, '../../..'),
+    });
+
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    
+
     const config = result.value.frontmatter.rules;
     expect(config).toBeDefined();
     expect(config?.include_fields).toEqual(['description', 'globs', 'alwaysApply']);
@@ -343,11 +379,13 @@ describe('frontmatter configurations', () => {
   });
 
   it('should have claude persona frontmatter config', async () => {
-    const result = await loadTargetMapping('claude', { toolRoot: path.resolve(__dirname, '../../..') });
-    
+    const result = await loadTargetMapping('claude', {
+      toolRoot: path.resolve(__dirname, '../../..'),
+    });
+
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    
+
     const config = result.value.frontmatter.personas;
     expect(config).toBeDefined();
     expect(config?.include_fields).toContain('tools');
@@ -357,11 +395,13 @@ describe('frontmatter configurations', () => {
 
 describe('hook events', () => {
   it('should list supported hook events for claude', async () => {
-    const result = await loadTargetMapping('claude', { toolRoot: path.resolve(__dirname, '../../..') });
-    
+    const result = await loadTargetMapping('claude', {
+      toolRoot: path.resolve(__dirname, '../../..'),
+    });
+
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    
+
     expect(result.value.hook_events).toBeDefined();
     expect(result.value.hook_events).toContain('UserPromptSubmit');
     expect(result.value.hook_events).toContain('PreToolUse');
@@ -374,4 +414,3 @@ describe('hook events', () => {
     expect(result.value.hook_events).toContain('PreCompact');
   });
 });
-

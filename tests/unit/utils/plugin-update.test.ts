@@ -48,7 +48,6 @@ vi.mock('../../../src/loaders/git.js', async () => {
   };
 });
 
-
 const execMock = vi.mocked((await import('node:child_process')).exec);
 
 describe('plugin-update utilities', () => {

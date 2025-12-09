@@ -184,10 +184,7 @@ export function mergeLoadResults(...results: LoadResult[]): LoadResult {
 /**
  * Filter load result by target
  */
-export function filterLoadResultByTarget(
-  result: LoadResult,
-  target: TargetType
-): LoadResult {
+export function filterLoadResultByTarget(result: LoadResult, target: TargetType): LoadResult {
   const filtered: LoadResult = {
     rules: result.rules.filter((r) =>
       (r.frontmatter.targets ?? ['cursor', 'claude', 'factory']).includes(target)
@@ -198,9 +195,7 @@ export function filterLoadResultByTarget(
     commands: result.commands.filter((c) =>
       (c.frontmatter.targets ?? ['cursor', 'claude', 'factory']).includes(target)
     ),
-    hooks: result.hooks.filter((h) =>
-      (h.frontmatter.targets ?? ['claude']).includes(target)
-    ),
+    hooks: result.hooks.filter((h) => (h.frontmatter.targets ?? ['claude']).includes(target)),
   };
 
   // Only add optional properties if they have values
@@ -244,10 +239,6 @@ export function getLoadResultStats(result: LoadResult): {
     hooks: result.hooks.length,
     errors: result.errors?.length ?? 0,
     total:
-      result.rules.length +
-      result.personas.length +
-      result.commands.length +
-      result.hooks.length,
+      result.rules.length + result.personas.length + result.commands.length + result.hooks.length,
   };
 }
-

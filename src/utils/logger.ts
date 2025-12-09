@@ -200,4 +200,3 @@ export const logger = new Logger();
  * Re-export LogLevel for external use
  */
 export { LogLevel as Level };
-

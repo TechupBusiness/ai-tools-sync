@@ -24,7 +24,15 @@ import {
 /**
  * Available tool types for personas
  */
-export type PersonaTool = 'read' | 'write' | 'edit' | 'execute' | 'search' | 'glob' | 'fetch' | 'ls';
+export type PersonaTool =
+  | 'read'
+  | 'write'
+  | 'edit'
+  | 'execute'
+  | 'search'
+  | 'glob'
+  | 'fetch'
+  | 'ls';
 
 /**
  * Persona frontmatter structure
@@ -54,7 +62,16 @@ export type ParsedPersona = ParsedContent<Persona>;
 /**
  * Valid tool values
  */
-const VALID_TOOLS: PersonaTool[] = ['read', 'write', 'edit', 'execute', 'search', 'glob', 'fetch', 'ls'];
+const VALID_TOOLS: PersonaTool[] = [
+  'read',
+  'write',
+  'edit',
+  'execute',
+  'search',
+  'glob',
+  'fetch',
+  'ls',
+];
 
 /**
  * Default values for optional persona fields
@@ -173,7 +190,11 @@ function validatePersonaFields(data: Record<string, unknown>): ContentValidation
   // Validate platform extensions (must be objects if present)
   for (const platform of ['cursor', 'claude', 'factory'] as const) {
     if (data[platform] !== undefined) {
-      if (typeof data[platform] !== 'object' || data[platform] === null || Array.isArray(data[platform])) {
+      if (
+        typeof data[platform] !== 'object' ||
+        data[platform] === null ||
+        Array.isArray(data[platform])
+      ) {
         errors.push({
           path: platform,
           message: `${platform} extension must be an object`,
@@ -194,7 +215,8 @@ function applyPersonaDefaults(data: Record<string, unknown>): Persona {
     name: data.name as string,
     tools: data.tools !== undefined ? (data.tools as PersonaTool[]) : PERSONA_DEFAULTS.tools!,
     model: data.model !== undefined ? (data.model as string) : PERSONA_DEFAULTS.model!,
-    targets: data.targets !== undefined ? (data.targets as TargetType[]) : PERSONA_DEFAULTS.targets!,
+    targets:
+      data.targets !== undefined ? (data.targets as TargetType[]) : PERSONA_DEFAULTS.targets!,
   };
 
   if (data.description !== undefined) {
@@ -232,17 +254,22 @@ function applyPersonaDefaults(data: Record<string, unknown>): Persona {
  * @param filePath - Optional file path for error messages
  * @returns Result containing parsed persona or error
  */
-export function parsePersona(content: string, filePath?: string): Result<ParsedPersona, ParseError> {
+export function parsePersona(
+  content: string,
+  filePath?: string
+): Result<ParsedPersona, ParseError> {
   // Parse frontmatter
   const frontmatterResult = parseFrontmatter<Record<string, unknown>>(content);
 
   if (!frontmatterResult.ok) {
     const fmError = frontmatterResult.error;
-    return err(createParseError(fmError.message, {
-      filePath,
-      line: fmError.line,
-      column: fmError.column,
-    }));
+    return err(
+      createParseError(fmError.message, {
+        filePath,
+        line: fmError.line,
+        column: fmError.column,
+      })
+    );
   }
 
   const { data, content: bodyContent, isEmpty } = frontmatterResult.value;
@@ -256,10 +283,12 @@ export function parsePersona(content: string, filePath?: string): Result<ParsedP
   const validationErrors = validatePersonaFields(data);
 
   if (validationErrors.length > 0) {
-    return err(createParseError('Persona validation failed', {
-      filePath,
-      validationErrors,
-    }));
+    return err(
+      createParseError('Persona validation failed', {
+        filePath,
+        validationErrors,
+      })
+    );
   }
 
   // Apply defaults and create persona object
@@ -309,7 +338,10 @@ export function parsePersonas(
 /**
  * Filter personas by target
  */
-export function filterPersonasByTarget(personas: ParsedPersona[], target: TargetType): ParsedPersona[] {
+export function filterPersonasByTarget(
+  personas: ParsedPersona[],
+  target: TargetType
+): ParsedPersona[] {
   return personas.filter((persona) => {
     const targets = persona.frontmatter.targets ?? DEFAULT_TARGETS;
     return targets.includes(target);

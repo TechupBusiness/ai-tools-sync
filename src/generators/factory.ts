@@ -14,21 +14,11 @@
 import * as path from 'node:path';
 
 import { PERSONA_DEFAULTS } from '../parsers/index.js';
-import {
-  isCommandServer,
-  type McpConfig,
-} from '../parsers/mcp.js';
+import { isCommandServer, type McpConfig } from '../parsers/mcp.js';
 import { serializeFrontmatter } from '../transformers/frontmatter.js';
 import { mapModel } from '../transformers/model-mapper.js';
 import { mapTools } from '../transformers/tool-mapper.js';
-import {
-  dirExists,
-  ensureDir,
-  glob,
-  joinPath,
-  removeDir,
-  writeFile,
-} from '../utils/fs.js';
+import { dirExists, ensureDir, glob, joinPath, removeDir, writeFile } from '../utils/fs.js';
 
 import {
   type GeneratedFile,
@@ -60,7 +50,6 @@ interface DetectedVariable {
   name: string;
   description?: string;
 }
-
 
 /**
  * Output directories for Factory
@@ -166,27 +155,15 @@ export class FactoryGenerator implements Generator {
     }
 
     // Generate skills (rules)
-    const skillFiles = await this.generateSkills(
-      factoryContent.rules,
-      outputDir,
-      options
-    );
+    const skillFiles = await this.generateSkills(factoryContent.rules, outputDir, options);
     generated.push(...skillFiles);
 
     // Generate droids (personas)
-    const droidFiles = await this.generateDroids(
-      factoryContent.personas,
-      outputDir,
-      options
-    );
+    const droidFiles = await this.generateDroids(factoryContent.personas, outputDir, options);
     generated.push(...droidFiles);
 
     // Generate commands
-    const commandFiles = await this.generateCommands(
-      factoryContent.commands,
-      outputDir,
-      options
-    );
+    const commandFiles = await this.generateCommands(factoryContent.commands, outputDir, options);
     generated.push(...commandFiles);
 
     // Generate settings.json when hooks or env/settings exist
@@ -727,7 +704,7 @@ export class FactoryGenerator implements Generator {
 
     // Detect built-in variables in content and execute field
     const content = command.content + (command.frontmatter.execute ?? '');
-    
+
     if (content.includes(FACTORY_COMMAND_VARIABLES.ARGUMENTS) && !seenNames.has('ARGUMENTS')) {
       variables.push({
         name: FACTORY_COMMAND_VARIABLES.ARGUMENTS,
@@ -736,7 +713,10 @@ export class FactoryGenerator implements Generator {
       seenNames.add('ARGUMENTS');
     }
 
-    if (content.includes(FACTORY_COMMAND_VARIABLES.PROJECT_DIR) && !seenNames.has('FACTORY_PROJECT_DIR')) {
+    if (
+      content.includes(FACTORY_COMMAND_VARIABLES.PROJECT_DIR) &&
+      !seenNames.has('FACTORY_PROJECT_DIR')
+    ) {
       variables.push({
         name: FACTORY_COMMAND_VARIABLES.PROJECT_DIR,
         description: 'Project root directory',
@@ -750,10 +730,7 @@ export class FactoryGenerator implements Generator {
   /**
    * Generate AGENTS.md entry point
    */
-  private generateAgentsMd(
-    content: ResolvedContent,
-    options: GeneratorOptions
-  ): GeneratedFile {
+  private generateAgentsMd(content: ResolvedContent, options: GeneratorOptions): GeneratedFile {
     const parts: string[] = [];
 
     // Add header if requested
@@ -820,9 +797,7 @@ export class FactoryGenerator implements Generator {
           FACTORY_DIRS.droids,
           `${toSafeFilename(persona.frontmatter.name)}.md`
         );
-        const desc = persona.frontmatter.description
-          ? ` - ${persona.frontmatter.description}`
-          : '';
+        const desc = persona.frontmatter.description ? ` - ${persona.frontmatter.description}` : '';
         parts.push(`- [${persona.frontmatter.name}](${droidPath})${desc}`);
       }
       parts.push('');
@@ -838,9 +813,7 @@ export class FactoryGenerator implements Generator {
           FACTORY_DIRS.commands,
           `${toSafeFilename(cmd.frontmatter.name)}.md`
         );
-        const desc = cmd.frontmatter.description
-          ? ` - ${cmd.frontmatter.description}`
-          : '';
+        const desc = cmd.frontmatter.description ? ` - ${cmd.frontmatter.description}` : '';
         parts.push(`- [${cmd.frontmatter.name}](${cmdPath})${desc}`);
       }
       parts.push('');
@@ -857,10 +830,7 @@ export class FactoryGenerator implements Generator {
    * Generate MCP configuration file for Factory
    * Outputs type: 'stdio' for command servers and type: 'http' for URL servers
    */
-  private generateMcpConfig(
-    mcpConfig: McpConfig,
-    options: GeneratorOptions
-  ): GeneratedFile {
+  private generateMcpConfig(mcpConfig: McpConfig, options: GeneratorOptions): GeneratedFile {
     // Use a similar format to Cursor/Claude for consistency
     const servers: Record<string, FactoryMcpServer> = {};
 

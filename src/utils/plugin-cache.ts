@@ -139,7 +139,7 @@ export function generatePluginId(source: string, version?: string): string {
     // Keep the 'v' prefix in the version for the ID
     const safeVersion = version.replace(/[^a-zA-Z0-9.-]/g, '_');
     const versionWithoutV = version.replace(/^v/, '');
-    
+
     // Check if version (with or without 'v') is already in normalized
     if (!normalized.includes(safeVersion) && !normalized.includes(versionWithoutV)) {
       normalized = `${normalized}_${safeVersion}`;
@@ -412,4 +412,3 @@ export async function createPluginCache(baseDir: string): Promise<Result<PluginC
 
   return ok(cache);
 }
-

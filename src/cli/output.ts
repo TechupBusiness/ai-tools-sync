@@ -336,4 +336,3 @@ export class Spinner {
 export function createSpinner(message: string): Spinner {
   return new Spinner(message);
 }
-

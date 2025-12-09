@@ -104,7 +104,9 @@ Content`;
       expect(isErr(result)).toBe(true);
       if (isErr(result)) {
         expect(result.error.validationErrors?.some((e) => e.path === 'event')).toBe(true);
-        expect(result.error.validationErrors?.some((e) => e.message.includes('InvalidEvent'))).toBe(true);
+        expect(result.error.validationErrors?.some((e) => e.message.includes('InvalidEvent'))).toBe(
+          true
+        );
       }
     });
 
@@ -253,7 +255,11 @@ Content`;
         content: '',
       },
       {
-        frontmatter: { name: 'all-hook', event: 'PreToolUse', targets: ['cursor', 'claude', 'factory'] as const },
+        frontmatter: {
+          name: 'all-hook',
+          event: 'PreToolUse',
+          targets: ['cursor', 'claude', 'factory'] as const,
+        },
         content: '',
       },
     ];
@@ -402,4 +408,3 @@ Validation hook.`;
     });
   });
 });
-

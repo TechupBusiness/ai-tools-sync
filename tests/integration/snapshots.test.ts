@@ -204,7 +204,9 @@ Runs linting and type checking before commits.
     );
 
     const loader = createLocalLoader();
-    const loadResult = await loader.load(path.join(testDir, DEFAULT_CONFIG_DIR), { basePath: testDir });
+    const loadResult = await loader.load(path.join(testDir, DEFAULT_CONFIG_DIR), {
+      basePath: testDir,
+    });
     return createResolvedContent(loadResult, testDir, 'snapshot-test-project');
   }
 
@@ -466,4 +468,3 @@ Runs linting and type checking before commits.
     });
   });
 });
-

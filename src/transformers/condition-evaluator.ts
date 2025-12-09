@@ -304,7 +304,9 @@ export function parseConditionTerm(term: string): Result<ParsedCondition, Condit
 /**
  * Parse a condition expression into individual terms and logical operators
  */
-export function parseConditionExpression(expression: string): Result<CompoundCondition, ConditionError> {
+export function parseConditionExpression(
+  expression: string
+): Result<CompoundCondition, ConditionError> {
   const trimmed = expression.trim();
 
   if (trimmed === '') {
@@ -588,7 +590,9 @@ async function loadGoDependencies(projectRoot: string): Promise<Record<string, s
   return deps;
 }
 
-async function loadCargoDependencies(projectRoot: string): Promise<Record<string, string | boolean>> {
+async function loadCargoDependencies(
+  projectRoot: string
+): Promise<Record<string, string | boolean>> {
   const deps: Record<string, string | boolean> = {};
   const cargoPath = path.join(projectRoot, 'Cargo.toml');
 
@@ -625,7 +629,9 @@ async function loadCargoDependencies(projectRoot: string): Promise<Record<string
   return deps;
 }
 
-async function loadComposerDependencies(projectRoot: string): Promise<Record<string, string | boolean>> {
+async function loadComposerDependencies(
+  projectRoot: string
+): Promise<Record<string, string | boolean>> {
   const composerPath = path.join(projectRoot, 'composer.json');
   const result = await readJson<{
     require?: Record<string, string>;
@@ -705,7 +711,9 @@ async function loadPubDependencies(projectRoot: string): Promise<Record<string, 
   return deps;
 }
 
-async function loadMavenDependencies(projectRoot: string): Promise<Record<string, string | boolean>> {
+async function loadMavenDependencies(
+  projectRoot: string
+): Promise<Record<string, string | boolean>> {
   const deps: Record<string, string | boolean> = {};
   const pomPath = path.join(projectRoot, 'pom.xml');
 
@@ -729,10 +737,14 @@ async function loadMavenDependencies(projectRoot: string): Promise<Record<string
   return deps;
 }
 
-async function loadGradleDependencies(projectRoot: string): Promise<Record<string, string | boolean>> {
+async function loadGradleDependencies(
+  projectRoot: string
+): Promise<Record<string, string | boolean>> {
   const deps: Record<string, string | boolean> = {};
 
-  const gradleFiles = ['build.gradle', 'build.gradle.kts'].map((file) => path.join(projectRoot, file));
+  const gradleFiles = ['build.gradle', 'build.gradle.kts'].map((file) =>
+    path.join(projectRoot, file)
+  );
 
   for (const gradlePath of gradleFiles) {
     if (!(await fileExists(gradlePath))) continue;
@@ -753,7 +765,9 @@ async function loadGradleDependencies(projectRoot: string): Promise<Record<strin
   return deps;
 }
 
-async function loadNugetDependencies(projectRoot: string): Promise<Record<string, string | boolean>> {
+async function loadNugetDependencies(
+  projectRoot: string
+): Promise<Record<string, string | boolean>> {
   const deps: Record<string, string | boolean> = {};
   const matches = await glob('*.csproj', { cwd: projectRoot, absolute: true, dot: true });
   const candidates = [...matches];
@@ -831,7 +845,9 @@ export async function evaluateSingleCondition(
 
     case 'pkg': {
       if (!context.packageJson) {
-        const pkgResult = await readJson<Record<string, unknown>>(path.join(context.projectRoot, 'package.json'));
+        const pkgResult = await readJson<Record<string, unknown>>(
+          path.join(context.projectRoot, 'package.json')
+        );
         if (pkgResult.ok) {
           context.packageJson = pkgResult.value;
         } else {
@@ -1001,4 +1017,3 @@ export async function shouldIncludeRule(
 
   return ok(evaluation.value.matches);
 }
-

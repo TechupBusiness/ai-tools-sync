@@ -245,7 +245,11 @@ function validateUrlServer(
   }
 
   if (server.headers !== undefined) {
-    if (typeof server.headers !== 'object' || server.headers === null || Array.isArray(server.headers)) {
+    if (
+      typeof server.headers !== 'object' ||
+      server.headers === null ||
+      Array.isArray(server.headers)
+    ) {
       errors.push({
         path: `${prefix}.headers`,
         message: 'Headers must be an object',
@@ -483,11 +487,13 @@ export function parseMcpConfig(
 
   if (!parseResult.ok) {
     const yamlError: YamlParseError = parseResult.error;
-    return err(createParseError(yamlError.message, {
-      filePath,
-      line: yamlError.line,
-      column: yamlError.column,
-    }));
+    return err(
+      createParseError(yamlError.message, {
+        filePath,
+        line: yamlError.line,
+        column: yamlError.column,
+      })
+    );
   }
 
   const rawData = parseResult.value;
@@ -508,10 +514,12 @@ export function parseMcpConfig(
   const validationErrors = validateMcpConfig(data);
 
   if (validationErrors.length > 0) {
-    return err(createParseError('MCP configuration validation failed', {
-      filePath,
-      validationErrors,
-    }));
+    return err(
+      createParseError('MCP configuration validation failed', {
+        filePath,
+        validationErrors,
+      })
+    );
   }
 
   // Build the config object with defaults
@@ -545,10 +553,7 @@ export function parseMcpConfig(
 /**
  * Filter MCP servers by target
  */
-export function filterServersByTarget(
-  config: McpConfig,
-  target: TargetType
-): McpConfig {
+export function filterServersByTarget(config: McpConfig, target: TargetType): McpConfig {
   const filteredServers: Record<string, McpServer> = {};
 
   for (const [name, server] of Object.entries(config.servers)) {
@@ -604,4 +609,3 @@ export function countServersByType(config: McpConfig): { command: number; url: n
 
   return { command, url };
 }
-

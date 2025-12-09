@@ -17,7 +17,9 @@ const mockLoadConfig = vi.hoisted(() => vi.fn());
 const mockResolveConfigDir = vi.hoisted(() => vi.fn());
 const mockParseGitSource = vi.hoisted(() => vi.fn());
 const mockLoad = vi.hoisted(() => vi.fn());
-const mockGeneratePluginId = vi.hoisted(() => vi.fn((source: string, version?: string) => `${source}_${version ?? ''}`));
+const mockGeneratePluginId = vi.hoisted(() =>
+  vi.fn((source: string, version?: string) => `${source}_${version ?? ''}`)
+);
 
 const outputMocks = vi.hoisted(() => ({
   printHeader: vi.fn(),
@@ -129,7 +131,9 @@ describe('Plugins CLI Commands', () => {
 
       expect(outputMocks.printTable).toHaveBeenCalledWith(
         ['Name', 'Source', 'Version', 'Status'],
-        expect.arrayContaining([expect.arrayContaining(['owner/repo', expect.any(String), 'v1.0.0', 'cached'])])
+        expect.arrayContaining([
+          expect.arrayContaining(['owner/repo', expect.any(String), 'v1.0.0', 'cached']),
+        ])
       );
     });
 
@@ -145,14 +149,18 @@ describe('Plugins CLI Commands', () => {
       ]);
       mockLoadConfig.mockResolvedValue({
         ok: true,
-        value: { use: { plugins: [{ name: 'custom', source: 'github:owner/repo', enabled: true }] } },
+        value: {
+          use: { plugins: [{ name: 'custom', source: 'github:owner/repo', enabled: true }] },
+        },
       });
 
       await run(['list']);
 
       expect(outputMocks.printTable).toHaveBeenCalledWith(
         ['Name', 'Source', 'Version', 'Status'],
-        expect.arrayContaining([expect.arrayContaining(['custom', expect.any(String), 'v1.0.0', 'enabled'])])
+        expect.arrayContaining([
+          expect.arrayContaining(['custom', expect.any(String), 'v1.0.0', 'enabled']),
+        ])
       );
     });
 
@@ -166,7 +174,9 @@ describe('Plugins CLI Commands', () => {
 
       expect(outputMocks.printTable).toHaveBeenCalledWith(
         ['Name', 'Source', 'Version', 'Status'],
-        expect.arrayContaining([expect.arrayContaining(['p1', expect.any(String), 'latest', 'disabled'])])
+        expect.arrayContaining([
+          expect.arrayContaining(['p1', expect.any(String), 'latest', 'disabled']),
+        ])
       );
     });
 
@@ -244,9 +254,7 @@ describe('Plugins CLI Commands', () => {
     it('uses custom name when provided', async () => {
       await run(['add', 'github:owner/repo', '--name', 'custom-name']);
 
-      expect(outputMocks.printSuccess).toHaveBeenCalledWith(
-        expect.stringContaining('custom-name')
-      );
+      expect(outputMocks.printSuccess).toHaveBeenCalledWith(expect.stringContaining('custom-name'));
     });
 
     it('fails for invalid source format', async () => {
@@ -286,7 +294,9 @@ describe('Plugins CLI Commands', () => {
       await run(['add', 'github:owner/repo']);
       expect(mockCache.isCached).toHaveBeenCalled();
       expect(mockCreatePluginCache).toHaveBeenCalled();
-      expect(outputMocks.printSuccess).not.toHaveBeenCalledWith(expect.stringContaining('added successfully'));
+      expect(outputMocks.printSuccess).not.toHaveBeenCalledWith(
+        expect.stringContaining('added successfully')
+      );
     });
   });
 
@@ -381,4 +391,3 @@ describe('Plugins CLI Commands', () => {
     });
   });
 });
-

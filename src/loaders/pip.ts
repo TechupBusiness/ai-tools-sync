@@ -55,12 +55,14 @@ export interface PipPackageMetadata {
   /** Path to ai content directory (defaults to 'defaults' or 'ai_content') */
   aiContentPath?: string | undefined;
   /** Alternative: direct paths for each content type */
-  aiToolSync?: {
-    rules?: string;
-    personas?: string;
-    commands?: string;
-    hooks?: string;
-  } | undefined;
+  aiToolSync?:
+    | {
+        rules?: string;
+        personas?: string;
+        commands?: string;
+        hooks?: string;
+      }
+    | undefined;
 }
 
 /**
@@ -170,7 +172,8 @@ export class PipLoader implements Loader {
     if (options?.targets) loaderOptions.targets = options.targets;
     if (options?.include) loaderOptions.include = options.include;
     if (options?.exclude) loaderOptions.exclude = options.exclude;
-    if (options?.continueOnError !== undefined) loaderOptions.continueOnError = options.continueOnError;
+    if (options?.continueOnError !== undefined)
+      loaderOptions.continueOnError = options.continueOnError;
 
     // Add custom directories if defined
     const customDirs = this.getDirectories(packageInfo);
@@ -278,7 +281,11 @@ export class PipLoader implements Loader {
       // Also check for dist-info metadata to find the package
       const distInfoPath = await this.findDistInfo(searchPath, normalizedName);
       if (distInfoPath) {
-        const packagePath = await this.getPackagePathFromDistInfo(searchPath, distInfoPath, normalizedName);
+        const packagePath = await this.getPackagePathFromDistInfo(
+          searchPath,
+          distInfoPath,
+          normalizedName
+        );
         if (packagePath) {
           if (options?.useCache !== false) {
             packagePathCache.set(cacheKey, packagePath);
@@ -294,14 +301,20 @@ export class PipLoader implements Loader {
   /**
    * Find the dist-info directory for a package
    */
-  private async findDistInfo(sitePackagesPath: string, packageName: string): Promise<string | null> {
+  private async findDistInfo(
+    sitePackagesPath: string,
+    packageName: string
+  ): Promise<string | null> {
     try {
       const entries = await fs.promises.readdir(sitePackagesPath);
       const normalizedName = packageName.toLowerCase().replace(/[-_.]+/g, '_');
 
       for (const entry of entries) {
         if (entry.endsWith('.dist-info')) {
-          const distInfoName = entry.slice(0, -10).toLowerCase().replace(/[-_.]+/g, '_');
+          const distInfoName = entry
+            .slice(0, -10)
+            .toLowerCase()
+            .replace(/[-_.]+/g, '_');
           // Remove version from dist-info name
           const nameWithoutVersion = distInfoName.replace(/-[\d.]+$/, '');
           if (nameWithoutVersion === normalizedName) {
@@ -326,7 +339,7 @@ export class PipLoader implements Loader {
     try {
       const recordPath = path.join(distInfoPath, 'RECORD');
       const content = await fs.promises.readFile(recordPath, 'utf-8');
-      
+
       // Parse RECORD file to find package directory
       const lines = content.split('\n');
       for (const line of lines) {
@@ -361,7 +374,10 @@ export class PipLoader implements Loader {
   /**
    * Load package metadata and create package info
    */
-  private async loadPackageInfo(packagePath: string, packageName: string): Promise<PipPackageInfo | null> {
+  private async loadPackageInfo(
+    packagePath: string,
+    packageName: string
+  ): Promise<PipPackageInfo | null> {
     try {
       const metadata = await this.loadPackageMetadata(packagePath, packageName);
 
@@ -379,7 +395,10 @@ export class PipLoader implements Loader {
   /**
    * Load package metadata from various sources
    */
-  private async loadPackageMetadata(packagePath: string, packageName: string): Promise<PipPackageMetadata> {
+  private async loadPackageMetadata(
+    packagePath: string,
+    packageName: string
+  ): Promise<PipPackageMetadata> {
     // Try pyproject.toml first
     const pyprojectPath = path.join(packagePath, 'pyproject.toml');
     try {
@@ -624,9 +643,8 @@ export class PipLoader implements Loader {
    * Find Python executable
    */
   private findPython(): string | null {
-    const pythonNames = process.platform === 'win32'
-      ? ['python.exe', 'python3.exe']
-      : ['python3', 'python'];
+    const pythonNames =
+      process.platform === 'win32' ? ['python.exe', 'python3.exe'] : ['python3', 'python'];
 
     for (const pythonName of pythonNames) {
       try {
@@ -669,8 +687,12 @@ export class PipLoader implements Loader {
     if (process.platform === 'win32') {
       const pythonRoot = process.env.LOCALAPPDATA;
       if (pythonRoot) {
-        paths.push(path.join(pythonRoot, 'Programs', 'Python', 'Python311', 'Lib', 'site-packages'));
-        paths.push(path.join(pythonRoot, 'Programs', 'Python', 'Python310', 'Lib', 'site-packages'));
+        paths.push(
+          path.join(pythonRoot, 'Programs', 'Python', 'Python311', 'Lib', 'site-packages')
+        );
+        paths.push(
+          path.join(pythonRoot, 'Programs', 'Python', 'Python310', 'Lib', 'site-packages')
+        );
         paths.push(path.join(pythonRoot, 'Programs', 'Python', 'Python39', 'Lib', 'site-packages'));
       }
     } else if (process.platform === 'darwin') {
@@ -907,4 +929,3 @@ export function clearPipCache(): void {
 export function getPipCacheEntries(): Map<string, string> {
   return new Map(packagePathCache);
 }
-

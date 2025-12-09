@@ -106,9 +106,7 @@ export function mergeYamlObjects<T extends object>(...objects: (T | null | undef
 /**
  * Deep merge YAML objects
  */
-export function deepMergeYamlObjects<T extends object>(
-  ...objects: (T | null | undefined)[]
-): T {
+export function deepMergeYamlObjects<T extends object>(...objects: (T | null | undefined)[]): T {
   const result = {} as T;
 
   for (const obj of objects) {
@@ -144,4 +142,3 @@ export function deepMergeYamlObjects<T extends object>(
 
   return result;
 }
-

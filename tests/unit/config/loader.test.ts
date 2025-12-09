@@ -70,10 +70,7 @@ targets:
     it('should apply defaults to partial config', async () => {
       const aiDir = path.join(tempDir, DEFAULT_CONFIG_DIR);
       await fs.mkdir(aiDir, { recursive: true });
-      await fs.writeFile(
-        path.join(aiDir, 'config.yaml'),
-        `version: "1.0.0"`
-      );
+      await fs.writeFile(path.join(aiDir, 'config.yaml'), `version: "1.0.0"`);
 
       const result = await loadConfig({ projectRoot: tempDir });
 
@@ -87,10 +84,7 @@ targets:
     it('should support .yml extension', async () => {
       const aiDir = path.join(tempDir, DEFAULT_CONFIG_DIR);
       await fs.mkdir(aiDir, { recursive: true });
-      await fs.writeFile(
-        path.join(aiDir, 'config.yml'),
-        `version: "1.0.0"`
-      );
+      await fs.writeFile(path.join(aiDir, 'config.yml'), `version: "1.0.0"`);
 
       const result = await loadConfig({ projectRoot: tempDir });
 
@@ -170,10 +164,7 @@ targets:
     it('should use custom aiDir path', async () => {
       const customAiDir = path.join(tempDir, 'custom-ai');
       await fs.mkdir(customAiDir, { recursive: true });
-      await fs.writeFile(
-        path.join(customAiDir, 'config.yaml'),
-        `version: "1.0.0"`
-      );
+      await fs.writeFile(path.join(customAiDir, 'config.yaml'), `version: "1.0.0"`);
 
       const result = await loadConfig({
         projectRoot: tempDir,
@@ -189,10 +180,7 @@ targets:
     it('should use custom configPath', async () => {
       const aiDir = path.join(tempDir, DEFAULT_CONFIG_DIR);
       await fs.mkdir(aiDir, { recursive: true });
-      await fs.writeFile(
-        path.join(aiDir, 'custom-config.yaml'),
-        `version: "1.0.0"`
-      );
+      await fs.writeFile(path.join(aiDir, 'custom-config.yaml'), `version: "1.0.0"`);
 
       const result = await loadConfig({
         projectRoot: tempDir,
@@ -293,4 +281,3 @@ project_name: my-project`
     });
   });
 });
-

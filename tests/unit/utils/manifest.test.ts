@@ -31,7 +31,10 @@ describe('Manifest Utilities', () => {
   let testDir: string;
 
   beforeEach(async () => {
-    testDir = path.join(TESTS_TMP_DIR, `manifest-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = path.join(
+      TESTS_TMP_DIR,
+      `manifest-test-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    );
     await fs.mkdir(testDir, { recursive: true });
   });
 
@@ -115,10 +118,7 @@ describe('Manifest Utilities', () => {
         directories: ['.cursor/rules/'],
       };
 
-      await fs.writeFile(
-        path.join(testDir, MANIFEST_FILENAME),
-        JSON.stringify(manifest, null, 2)
-      );
+      await fs.writeFile(path.join(testDir, MANIFEST_FILENAME), JSON.stringify(manifest, null, 2));
 
       const result = await readManifest(testDir);
 
@@ -200,10 +200,7 @@ describe('Manifest Utilities', () => {
     });
 
     it('should handle absolute paths', () => {
-      const files = [
-        path.join(testDir, '.cursor/rules/core.mdc'),
-        path.join(testDir, 'CLAUDE.md'),
-      ];
+      const files = [path.join(testDir, '.cursor/rules/core.mdc'), path.join(testDir, 'CLAUDE.md')];
 
       const result = collectGeneratedPaths(files, testDir);
 
@@ -212,15 +209,11 @@ describe('Manifest Utilities', () => {
     });
 
     it('should deduplicate directories', () => {
-      const files = [
-        '.cursor/rules/a.mdc',
-        '.cursor/rules/b.mdc',
-        '.cursor/rules/c.mdc',
-      ];
+      const files = ['.cursor/rules/a.mdc', '.cursor/rules/b.mdc', '.cursor/rules/c.mdc'];
 
       const result = collectGeneratedPaths(files, testDir);
 
-      const cursorDirs = result.directories.filter(d => d.startsWith('.cursor'));
+      const cursorDirs = result.directories.filter((d) => d.startsWith('.cursor'));
       expect(cursorDirs.length).toBe(1);
     });
   });
@@ -236,12 +229,7 @@ describe('Manifest Utilities', () => {
           { path: '.cursor/rules/core.mdc', hash: VALID_HASH },
           { path: '.claude/skills/core/SKILL.md', hash: VALID_HASH },
         ],
-        directories: [
-          '.cursor/rules/',
-          '.cursor/commands/',
-          '.claude/',
-          '.factory/',
-        ],
+        directories: ['.cursor/rules/', '.cursor/commands/', '.claude/', '.factory/'],
       };
 
       const paths = getGitignorePaths(manifest);
@@ -337,9 +325,7 @@ describe('Manifest Utilities', () => {
 
   describe('ManifestV2 integration', () => {
     it('should write and read a v2 manifest', async () => {
-      const entries: ManifestFileEntry[] = [
-        { path: 'file.txt', hash: VALID_HASH },
-      ];
+      const entries: ManifestFileEntry[] = [{ path: 'file.txt', hash: VALID_HASH }];
 
       const manifest: ManifestV2 = createManifestV2(entries, [], '2.0.0');
       const writeResult = await writeManifest(testDir, manifest);
@@ -355,4 +341,3 @@ describe('Manifest Utilities', () => {
     });
   });
 });
-

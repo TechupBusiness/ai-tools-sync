@@ -13,7 +13,7 @@ import { ClaudeGenerator, createClaudeGenerator } from '../../../src/generators/
 
 import type { ResolvedContent } from '../../../src/generators/base.js';
 import type { ParsedCommand } from '../../../src/parsers/command.js';
-import type { ParsedHook , HookEvent } from '../../../src/parsers/hook.js';
+import type { ParsedHook, HookEvent } from '../../../src/parsers/hook.js';
 import type { ParsedPersona } from '../../../src/parsers/persona.js';
 import type { ParsedRule } from '../../../src/parsers/rule.js';
 
@@ -30,7 +30,10 @@ function createMockContent(overrides: Partial<ResolvedContent> = {}): ResolvedCo
 }
 
 // Helper to create mock rule
-function createMockRule(name: string, overrides: Partial<ParsedRule['frontmatter']> = {}): ParsedRule {
+function createMockRule(
+  name: string,
+  overrides: Partial<ParsedRule['frontmatter']> = {}
+): ParsedRule {
   return {
     frontmatter: {
       name,
@@ -46,7 +49,10 @@ function createMockRule(name: string, overrides: Partial<ParsedRule['frontmatter
 }
 
 // Helper to create mock persona
-function createMockPersona(name: string, overrides: Partial<ParsedPersona['frontmatter']> = {}): ParsedPersona {
+function createMockPersona(
+  name: string,
+  overrides: Partial<ParsedPersona['frontmatter']> = {}
+): ParsedPersona {
   return {
     frontmatter: {
       name,
@@ -60,7 +66,10 @@ function createMockPersona(name: string, overrides: Partial<ParsedPersona['front
 }
 
 // Helper to create mock command
-function createMockCommand(name: string, overrides: Partial<ParsedCommand['frontmatter']> = {}): ParsedCommand {
+function createMockCommand(
+  name: string,
+  overrides: Partial<ParsedCommand['frontmatter']> = {}
+): ParsedCommand {
   return {
     frontmatter: {
       name,
@@ -74,23 +83,23 @@ function createMockCommand(name: string, overrides: Partial<ParsedCommand['front
 
 // Helper to create mock hook
 function createMockHook(
-  name: string, 
-  event: HookEvent = 'PreToolUse', 
+  name: string,
+  event: HookEvent = 'PreToolUse',
   overrides: Partial<ParsedHook['frontmatter']> & { claude?: any } = {}
 ): ParsedHook {
   const { claude, ...frontmatterOverrides } = overrides;
-  
+
   const frontmatter: ParsedHook['frontmatter'] = {
     name,
     event,
     targets: ['claude'],
     ...frontmatterOverrides,
   };
-  
+
   if (claude) {
     frontmatter.claude = claude;
   }
-  
+
   return {
     frontmatter,
     content: `# ${name}\n\nThis is the ${name} hook.`,
@@ -232,10 +241,7 @@ describe('ClaudeGenerator', () => {
 
       await generator.generate(content);
 
-      const fileContent = await fs.readFile(
-        path.join(tempDir, '.claude/agents/dev.md'),
-        'utf-8'
-      );
+      const fileContent = await fs.readFile(path.join(tempDir, '.claude/agents/dev.md'), 'utf-8');
       expect(fileContent).toContain('Read');
       expect(fileContent).toContain('Write'); // 'write' stays as 'Write' in Claude
       expect(fileContent).toContain('Bash'); // 'execute' maps to 'Bash' in Claude
@@ -553,7 +559,7 @@ describe('ClaudeGenerator', () => {
         'utf-8'
       );
       const settings = JSON.parse(settingsContent);
-      
+
       expect(settings.commands).toBeDefined();
       expect(settings.commands.deploy).toBeDefined();
       expect(settings.commands.deploy.description).toBe('Deploy command');
@@ -791,10 +797,7 @@ describe('generate() - permissions', () => {
 
     expect(result.files).toContain('.claude/settings.json');
 
-    const settingsContent = await fs.readFile(
-      path.join(tempDir, '.claude/settings.json'),
-      'utf-8'
-    );
+    const settingsContent = await fs.readFile(path.join(tempDir, '.claude/settings.json'), 'utf-8');
     const settings = JSON.parse(settingsContent);
 
     expect(settings.permissions).toBeDefined();
@@ -812,10 +815,7 @@ describe('generate() - permissions', () => {
 
     await generator.generate(content);
 
-    const settingsContent = await fs.readFile(
-      path.join(tempDir, '.claude/settings.json'),
-      'utf-8'
-    );
+    const settingsContent = await fs.readFile(path.join(tempDir, '.claude/settings.json'), 'utf-8');
     const settings = JSON.parse(settingsContent);
 
     expect(settings.permissions.allow).toBeDefined();
@@ -838,10 +838,7 @@ describe('generate() - permissions', () => {
 
     await generator.generate(content);
 
-    const settingsContent = await fs.readFile(
-      path.join(tempDir, '.claude/settings.json'),
-      'utf-8'
-    );
+    const settingsContent = await fs.readFile(path.join(tempDir, '.claude/settings.json'), 'utf-8');
     const settings = JSON.parse(settingsContent);
 
     expect(settings.permissions.allow).toHaveLength(2);
@@ -882,10 +879,7 @@ describe('generate() - env variables', () => {
 
     expect(result.files).toContain('.claude/settings.json');
 
-    const settingsContent = await fs.readFile(
-      path.join(tempDir, '.claude/settings.json'),
-      'utf-8'
-    );
+    const settingsContent = await fs.readFile(path.join(tempDir, '.claude/settings.json'), 'utf-8');
     const settings = JSON.parse(settingsContent);
 
     expect(settings.env).toBeDefined();
@@ -938,10 +932,7 @@ describe('generate() - combined settings', () => {
 
     await generator.generate(content);
 
-    const settingsContent = await fs.readFile(
-      path.join(tempDir, '.claude/settings.json'),
-      'utf-8'
-    );
+    const settingsContent = await fs.readFile(path.join(tempDir, '.claude/settings.json'), 'utf-8');
     const settings = JSON.parse(settingsContent);
 
     expect(settings.permissions).toBeDefined();
@@ -962,10 +953,7 @@ describe('generate() - combined settings', () => {
 
     expect(result.files).toContain('.claude/settings.json');
 
-    const settingsContent = await fs.readFile(
-      path.join(tempDir, '.claude/settings.json'),
-      'utf-8'
-    );
+    const settingsContent = await fs.readFile(path.join(tempDir, '.claude/settings.json'), 'utf-8');
     const settings = JSON.parse(settingsContent);
 
     expect(settings.permissions).toBeDefined();
@@ -1077,4 +1065,3 @@ describe('MCP generation', () => {
     expect(mcpJson.mcpServers.api.headers['X-API-Key']).toBe('secret');
   });
 });
-

@@ -227,9 +227,7 @@ function deepMerge<T extends object>(base: T, override: Partial<T>): T {
 /**
  * Load a target mapping file
  */
-async function loadTargetFile(
-  filePath: string
-): Promise<Result<Partial<TargetMapping>, Error>> {
+async function loadTargetFile(filePath: string): Promise<Result<Partial<TargetMapping>, Error>> {
   const exists = await fileExists(filePath);
   if (!exists) {
     return err(new Error(`Target file not found: ${filePath}`));
@@ -302,7 +300,11 @@ export async function loadTargetMapping(
   const defaultResult = await loadTargetFile(defaultPath);
 
   if (!defaultResult.ok) {
-    return err(new Error(`Failed to load default target mapping for ${target}: ${defaultResult.error.message}`));
+    return err(
+      new Error(
+        `Failed to load default target mapping for ${target}: ${defaultResult.error.message}`
+      )
+    );
   }
 
   let mapping = applyDefaults(defaultResult.value);
@@ -358,7 +360,10 @@ export async function loadAllTargetMappings(
 /**
  * Get the output directory for a content type
  */
-export function getOutputDir(mapping: TargetMapping, contentType: 'rules' | 'personas' | 'commands'): string {
+export function getOutputDir(
+  mapping: TargetMapping,
+  contentType: 'rules' | 'personas' | 'commands'
+): string {
   switch (contentType) {
     case 'rules':
       return mapping.output.rules_dir;
@@ -424,4 +429,3 @@ export function supportsImportSyntax(mapping: TargetMapping): boolean {
 export function getImportFormat(mapping: TargetMapping): string {
   return mapping.import_syntax?.format ?? '@import {path}';
 }
-

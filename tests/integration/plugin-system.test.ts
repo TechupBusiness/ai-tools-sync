@@ -81,4 +81,3 @@ describe('Plugin System Integration', () => {
     expect(result.errors?.[0]?.message).toContain('does not exist');
   });
 });
-

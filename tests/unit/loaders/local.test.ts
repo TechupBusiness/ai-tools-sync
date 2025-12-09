@@ -301,8 +301,8 @@ describe('LocalLoader', () => {
 
     it('should support glob patterns in include/exclude', async () => {
       const result = await loader.load(VALID_SOURCE, {
-        include: ['*.md'],  // All markdown files
-        exclude: ['*-only*'],  // Exclude files with "-only" in name
+        include: ['*.md'], // All markdown files
+        exclude: ['*-only*'], // Exclude files with "-only" in name
       });
 
       // cursor-only.md should be excluded
@@ -364,7 +364,9 @@ describe('Base loader utilities', () => {
       const merged = mergeLoadResults(result1, result2);
 
       expect(merged.errors).toBeDefined();
-      expect(merged.errors!.length).toBe((result1.errors?.length ?? 0) + (result2.errors?.length ?? 0));
+      expect(merged.errors!.length).toBe(
+        (result1.errors?.length ?? 0) + (result2.errors?.length ?? 0)
+      );
     });
   });
 
@@ -420,4 +422,3 @@ describe('Base loader utilities', () => {
     });
   });
 });
-

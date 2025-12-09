@@ -33,7 +33,10 @@ function createMockContent(overrides: Partial<ResolvedContent> = {}): ResolvedCo
 }
 
 // Helper to create mock rule
-function createMockRule(name: string, overrides: Partial<ParsedRule['frontmatter']> = {}): ParsedRule {
+function createMockRule(
+  name: string,
+  overrides: Partial<ParsedRule['frontmatter']> = {}
+): ParsedRule {
   return {
     frontmatter: {
       name,
@@ -49,7 +52,10 @@ function createMockRule(name: string, overrides: Partial<ParsedRule['frontmatter
 }
 
 // Helper to create mock persona
-function createMockPersona(name: string, overrides: Partial<ParsedPersona['frontmatter']> = {}): ParsedPersona {
+function createMockPersona(
+  name: string,
+  overrides: Partial<ParsedPersona['frontmatter']> = {}
+): ParsedPersona {
   return {
     frontmatter: {
       name,
@@ -63,7 +69,10 @@ function createMockPersona(name: string, overrides: Partial<ParsedPersona['front
 }
 
 // Helper to create mock command
-function createMockCommand(name: string, overrides: Partial<ParsedCommand['frontmatter']> = {}): ParsedCommand {
+function createMockCommand(
+  name: string,
+  overrides: Partial<ParsedCommand['frontmatter']> = {}
+): ParsedCommand {
   return {
     frontmatter: {
       name,
@@ -167,10 +176,7 @@ describe('SubfolderContextGenerator', () => {
 
       await generator.generate(content);
 
-      const claudeContent = await fs.readFile(
-        path.join(tempDir, 'apps/web/CLAUDE.md'),
-        'utf-8'
-      );
+      const claudeContent = await fs.readFile(path.join(tempDir, 'apps/web/CLAUDE.md'), 'utf-8');
       expect(claudeContent).toContain('web-rule');
       expect(claudeContent).not.toContain('api-rule');
       expect(claudeContent).not.toContain('shared-rule');
@@ -196,10 +202,7 @@ describe('SubfolderContextGenerator', () => {
 
       await generator.generate(content);
 
-      const claudeContent = await fs.readFile(
-        path.join(tempDir, 'apps/mobile/CLAUDE.md'),
-        'utf-8'
-      );
+      const claudeContent = await fs.readFile(path.join(tempDir, 'apps/mobile/CLAUDE.md'), 'utf-8');
       expect(claudeContent).toContain('mobile-dev');
       expect(claudeContent).not.toContain('backend-dev');
     });
@@ -333,9 +336,7 @@ describe('SubfolderContextGenerator', () => {
 
   describe('generate() - options', () => {
     it('should add headers when addHeaders option is true', async () => {
-      const subfolders: SubfolderContextConfig[] = [
-        { path: 'test-folder', rules: ['rule'] },
-      ];
+      const subfolders: SubfolderContextConfig[] = [{ path: 'test-folder', rules: ['rule'] }];
 
       generator.setSubfolders(subfolders);
 
@@ -346,18 +347,13 @@ describe('SubfolderContextGenerator', () => {
 
       await generator.generate(content, { addHeaders: true });
 
-      const claudeContent = await fs.readFile(
-        path.join(tempDir, 'test-folder/CLAUDE.md'),
-        'utf-8'
-      );
+      const claudeContent = await fs.readFile(path.join(tempDir, 'test-folder/CLAUDE.md'), 'utf-8');
       expect(claudeContent).toContain('DO NOT EDIT');
       expect(claudeContent).toContain('ai-tool-sync');
     });
 
     it('should not write files in dry run mode', async () => {
-      const subfolders: SubfolderContextConfig[] = [
-        { path: 'dry-run-folder', rules: ['rule'] },
-      ];
+      const subfolders: SubfolderContextConfig[] = [{ path: 'dry-run-folder', rules: ['rule'] }];
 
       generator.setSubfolders(subfolders);
 
@@ -372,9 +368,7 @@ describe('SubfolderContextGenerator', () => {
       expect(result.generated).toBeDefined();
 
       // Verify files were not actually created
-      await expect(
-        fs.access(path.join(tempDir, 'dry-run-folder/CLAUDE.md'))
-      ).rejects.toThrow();
+      await expect(fs.access(path.join(tempDir, 'dry-run-folder/CLAUDE.md'))).rejects.toThrow();
     });
 
     it('should accept subfolders via options', async () => {
@@ -430,11 +424,8 @@ describe('createSubfolderContextGenerator', () => {
   });
 
   it('should accept initial subfolders configuration', () => {
-    const subfolders: SubfolderContextConfig[] = [
-      { path: 'test', rules: ['rule'] },
-    ];
+    const subfolders: SubfolderContextConfig[] = [{ path: 'test', rules: ['rule'] }];
     const generator = createSubfolderContextGenerator(subfolders);
     expect(generator).toBeInstanceOf(SubfolderContextGenerator);
   });
 });
-

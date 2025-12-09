@@ -107,21 +107,14 @@ export function extractManagedSection(content: string): string | null {
     return null;
   }
 
-  return content.slice(
-    startIndex + GITIGNORE_START_MARKER.length,
-    endIndex
-  ).trim();
+  return content.slice(startIndex + GITIGNORE_START_MARKER.length, endIndex).trim();
 }
 
 /**
  * Create the managed section content
  */
 export function createManagedSection(paths: string[]): string {
-  const lines = [
-    GITIGNORE_START_MARKER,
-    ...paths.map(p => p),
-    GITIGNORE_END_MARKER,
-  ];
+  const lines = [GITIGNORE_START_MARKER, ...paths.map((p) => p), GITIGNORE_END_MARKER];
   return lines.join('\n');
 }
 
@@ -172,12 +165,7 @@ export function updateGitignoreContent(existingContent: string, paths: string[])
  * Only includes root-level files; tool folders manage their own gitignores
  */
 export function getDefaultGitignorePaths(): string[] {
-  return [
-    'CLAUDE.md',
-    'AGENTS.md',
-    'mcp.json',
-    MANIFEST_FILENAME,
-  ];
+  return ['CLAUDE.md', 'AGENTS.md', 'mcp.json', MANIFEST_FILENAME];
 }
 
 /**
@@ -192,9 +180,7 @@ export async function updateGitignore(
   const exists = await fileExists(gitignorePath);
 
   // Determine paths to add
-  const paths = manifest
-    ? getGitignorePaths(manifest)
-    : getDefaultGitignorePaths();
+  const paths = manifest ? getGitignorePaths(manifest) : getDefaultGitignorePaths();
 
   // If gitignore doesn't exist
   if (!exists) {
@@ -348,7 +334,7 @@ export async function updateToolFolderGitignores(
 ): Promise<Result<ToolFolderGitignoreResult[]>> {
   const toolFolders = [...DEFAULT_TOOL_FOLDERS];
   const allPaths = manifest
-    ? [...manifest.files.map(entry => entry.path), ...manifest.directories]
+    ? [...manifest.files.map((entry) => entry.path), ...manifest.directories]
     : [...DEFAULT_GENERATED_DIRECTORIES];
 
   const grouped = groupFilesByToolFolder(allPaths, toolFolders);
@@ -435,4 +421,3 @@ export async function removeManagedSection(projectRoot: string): Promise<Result<
 
   return ok(true);
 }
-

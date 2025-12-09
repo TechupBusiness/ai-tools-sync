@@ -175,7 +175,9 @@ Content`;
       expect(isErr(result)).toBe(true);
       if (isErr(result)) {
         expect(result.error.validationErrors?.some((e) => e.path === 'args[0].default')).toBe(true);
-        expect(result.error.validationErrors?.some((e) => e.message.includes('choices'))).toBe(true);
+        expect(result.error.validationErrors?.some((e) => e.message.includes('choices'))).toBe(
+          true
+        );
       }
     });
 
@@ -455,7 +457,9 @@ Deploy with $ARGUMENTS`;
       if (isOk(result)) {
         expect(result.value.frontmatter.variables).toHaveLength(2);
         expect(result.value.frontmatter.variables?.[0].name).toBe('ARGUMENTS');
-        expect(result.value.frontmatter.variables?.[0].description).toBe('User input after command name');
+        expect(result.value.frontmatter.variables?.[0].description).toBe(
+          'User input after command name'
+        );
         expect(result.value.frontmatter.variables?.[1].name).toBe('CUSTOM_VAR');
         expect(result.value.frontmatter.variables?.[1].default).toBe('defaultValue');
       }
@@ -488,7 +492,9 @@ Content`;
 
       expect(isErr(result)).toBe(true);
       if (isErr(result)) {
-        expect(result.error.validationErrors?.some((e) => e.path === 'variables[0].name')).toBe(true);
+        expect(result.error.validationErrors?.some((e) => e.path === 'variables[0].name')).toBe(
+          true
+        );
       }
     });
 
@@ -505,7 +511,9 @@ Content`;
 
       expect(isErr(result)).toBe(true);
       if (isErr(result)) {
-        expect(result.error.validationErrors?.some((e) => e.path === 'variables[0].name')).toBe(true);
+        expect(result.error.validationErrors?.some((e) => e.path === 'variables[0].name')).toBe(
+          true
+        );
       }
     });
 
@@ -522,7 +530,9 @@ Content`;
 
       expect(isErr(result)).toBe(true);
       if (isErr(result)) {
-        expect(result.error.validationErrors?.some((e) => e.path === 'variables[0].name')).toBe(true);
+        expect(result.error.validationErrors?.some((e) => e.path === 'variables[0].name')).toBe(
+          true
+        );
       }
     });
 
@@ -539,7 +549,9 @@ Content`;
 
       expect(isErr(result)).toBe(true);
       if (isErr(result)) {
-        expect(result.error.validationErrors?.some((e) => e.path === 'variables[0].description')).toBe(true);
+        expect(
+          result.error.validationErrors?.some((e) => e.path === 'variables[0].description')
+        ).toBe(true);
       }
     });
 
@@ -556,7 +568,9 @@ Content`;
 
       expect(isErr(result)).toBe(true);
       if (isErr(result)) {
-        expect(result.error.validationErrors?.some((e) => e.path === 'variables[0].default')).toBe(true);
+        expect(result.error.validationErrors?.some((e) => e.path === 'variables[0].default')).toBe(
+          true
+        );
       }
     });
 
@@ -621,4 +635,3 @@ Content`;
     });
   });
 });
-

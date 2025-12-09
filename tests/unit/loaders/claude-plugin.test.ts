@@ -9,7 +9,6 @@ import * as path from 'node:path';
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
-
 import {
   ClaudePluginLoader,
   createClaudePluginLoader,
@@ -65,7 +64,9 @@ describe('ClaudePluginLoader', () => {
       // Check typescript skill
       const tsRule = result.rules.find((r) => r.frontmatter.name === 'typescript');
       expect(tsRule).toBeDefined();
-      expect(tsRule!.frontmatter.description).toBe('TypeScript coding standards and best practices');
+      expect(tsRule!.frontmatter.description).toBe(
+        'TypeScript coding standards and best practices'
+      );
       expect(tsRule!.frontmatter.globs).toEqual(['**/*.ts', '**/*.tsx']);
       expect(tsRule!.frontmatter.always_apply).toBe(false);
       expect(tsRule!.frontmatter.category).toBe('other'); // Claude skills map to 'other' category
@@ -594,7 +595,10 @@ describe('ClaudePluginLoader', () => {
 
       try {
         fs.mkdirSync(skillsDir, { recursive: true });
-        fs.writeFileSync(path.join(tempDir, 'plugin.json'), JSON.stringify({ skills: 'skills' }, null, 2));
+        fs.writeFileSync(
+          path.join(tempDir, 'plugin.json'),
+          JSON.stringify({ skills: 'skills' }, null, 2)
+        );
         fs.writeFileSync(path.join(skillsDir, 'SKILL.md'), '---\nname: nameless\n---\ncontent');
 
         const result = await loader.load(`claude-plugin:${tempDir}`);
@@ -688,4 +692,3 @@ describe('CLAUDE_PLUGIN_PREFIX constant', () => {
     expect(CLAUDE_PLUGIN_PREFIX).toBe('claude-plugin:');
   });
 });
-

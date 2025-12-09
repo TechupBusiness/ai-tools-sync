@@ -201,7 +201,7 @@ export class UrlLoader implements Loader {
     // Validate URL format
     try {
       const url = new URL(urlString);
-      
+
       // Only allow http and https protocols
       if (url.protocol !== 'http:' && url.protocol !== 'https:') {
         return null;
@@ -219,7 +219,12 @@ export class UrlLoader implements Loader {
   private isSingleFile(url: string): boolean {
     const pathname = new URL(url).pathname;
     // Check if path ends with a known file extension
-    return pathname.endsWith('.md') || pathname.endsWith('.markdown') || pathname.endsWith('.yaml') || pathname.endsWith('.json');
+    return (
+      pathname.endsWith('.md') ||
+      pathname.endsWith('.markdown') ||
+      pathname.endsWith('.yaml') ||
+      pathname.endsWith('.json')
+    );
   }
 
   /**
@@ -231,7 +236,12 @@ export class UrlLoader implements Loader {
     if (pathname.includes('/rules/') || pathname.includes('/rule')) {
       return 'rule';
     }
-    if (pathname.includes('/personas/') || pathname.includes('/persona') || pathname.includes('/agents/') || pathname.includes('/agent')) {
+    if (
+      pathname.includes('/personas/') ||
+      pathname.includes('/persona') ||
+      pathname.includes('/agents/') ||
+      pathname.includes('/agent')
+    ) {
       return 'persona';
     }
     if (pathname.includes('/commands/') || pathname.includes('/command')) {
@@ -256,7 +266,7 @@ export class UrlLoader implements Loader {
     options?: UrlLoaderOptions
   ): Promise<void> {
     const content = await this.fetchContent(url, errors, options);
-    
+
     if (!content) {
       return;
     }
@@ -332,7 +342,8 @@ export class UrlLoader implements Loader {
       errors.push({
         type: 'directory',
         path: baseUrl,
-        message: 'No content found at URL. Expected single file (.md) or directory with index.json.',
+        message:
+          'No content found at URL. Expected single file (.md) or directory with index.json.',
       });
     }
   }
@@ -493,7 +504,7 @@ export class UrlLoader implements Loader {
       const timeoutId = setTimeout(() => controller.abort(), timeout);
 
       const headers: Record<string, string> = {
-        'Accept': 'text/markdown, text/plain, application/json, */*',
+        Accept: 'text/markdown, text/plain, application/json, */*',
         'User-Agent': 'ai-tool-sync/1.0',
         ...options?.headers,
       };
@@ -636,7 +647,9 @@ export class UrlLoader implements Loader {
         fs.mkdirSync(path.dirname(cacheFile), { recursive: true });
         fs.writeFileSync(cacheFile, content, 'utf-8');
       } catch (error) {
-        logger.debug(`Failed to write cache file: ${error instanceof Error ? error.message : String(error)}`);
+        logger.debug(
+          `Failed to write cache file: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
     }
   }
@@ -657,15 +670,15 @@ export class UrlLoader implements Loader {
    */
   private appendPath(baseUrl: string, pathToAppend: string): string {
     const url = new URL(baseUrl);
-    
+
     // Ensure base path ends with /
     if (!url.pathname.endsWith('/')) {
       url.pathname += '/';
     }
-    
+
     // Append the path
     url.pathname += pathToAppend;
-    
+
     return url.href;
   }
 }
@@ -702,4 +715,3 @@ export function isValidUrl(source: string): boolean {
     return false;
   }
 }
-

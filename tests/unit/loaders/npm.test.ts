@@ -310,4 +310,3 @@ describe('NPM_PREFIX constant', () => {
     expect(NPM_PREFIX).toBe('npm:');
   });
 });
-

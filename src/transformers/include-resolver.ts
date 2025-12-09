@@ -37,7 +37,11 @@ export interface ResolveIncludesResult {
 /**
  * Error types for include resolution
  */
-export type IncludeErrorCode = 'CIRCULAR_INCLUDE' | 'FILE_NOT_FOUND' | 'MAX_DEPTH_EXCEEDED' | 'READ_ERROR';
+export type IncludeErrorCode =
+  | 'CIRCULAR_INCLUDE'
+  | 'FILE_NOT_FOUND'
+  | 'MAX_DEPTH_EXCEEDED'
+  | 'READ_ERROR';
 
 /**
  * Include resolution error
@@ -145,7 +149,8 @@ async function resolveIncludesRecursive(
 
     const readResult = await readFile(resolvedPath);
     if (!readResult.ok) {
-      const message = readResult.error instanceof Error ? readResult.error.message : String(readResult.error);
+      const message =
+        readResult.error instanceof Error ? readResult.error.message : String(readResult.error);
       const isMissing = message.includes('ENOENT');
 
       return err({
@@ -185,7 +190,6 @@ async function resolveIncludesRecursive(
 
     resolvedContent = `${resolvedContent.slice(0, start)}${nestedResult.value.content}${resolvedContent.slice(end)}`;
     offset += nestedResult.value.content.length - (include.end - include.start);
-
   }
 
   return ok({

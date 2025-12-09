@@ -208,10 +208,7 @@ Use Vitest for unit tests.
       await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
 
       // Minimal config with just version
-      await fs.writeFile(
-        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
-        `version: "1.0.0"`
-      );
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), `version: "1.0.0"`);
 
       await fs.writeFile(
         path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'core.md'),
@@ -244,7 +241,9 @@ Basic rules.
   describe('Full Config Scenario', () => {
     beforeEach(async () => {
       // Create comprehensive .ai structure
-      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'domain'), { recursive: true });
+      await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules', 'domain'), {
+        recursive: true,
+      });
       await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'personas'), { recursive: true });
       await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'commands'), { recursive: true });
       await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'hooks'), { recursive: true });
@@ -534,9 +533,7 @@ React frontend guidelines.
       await sync({ projectRoot: testDir });
 
       // Backend should have core and backend rules
-      const backendClaude = await readFile(
-        path.join(testDir, 'packages', 'backend', 'CLAUDE.md')
-      );
+      const backendClaude = await readFile(path.join(testDir, 'packages', 'backend', 'CLAUDE.md'));
       expect(backendClaude.ok).toBe(true);
       expect(backendClaude.value).toContain('Backend package');
 
@@ -626,10 +623,7 @@ invalid: yaml: structure
 
     it('should continue on rule parse errors and report them', async () => {
       await fs.mkdir(path.join(testDir, DEFAULT_CONFIG_DIR, 'rules'), { recursive: true });
-      await fs.writeFile(
-        path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'),
-        `version: "1.0.0"`
-      );
+      await fs.writeFile(path.join(testDir, DEFAULT_CONFIG_DIR, 'config.yaml'), `version: "1.0.0"`);
 
       // Valid rule
       await fs.writeFile(
@@ -665,4 +659,3 @@ not_a_name: invalid
     });
   });
 });
-

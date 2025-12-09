@@ -367,12 +367,7 @@ describe('Glob Matcher', () => {
 
     it('should match SQL and database files', () => {
       const patterns = ['**/*.sql', 'db/**/*', 'migrations/**'];
-      const files = [
-        'schema.sql',
-        'db/seeds/users.ts',
-        'migrations/001_init.sql',
-        'src/index.ts',
-      ];
+      const files = ['schema.sql', 'db/seeds/users.ts', 'migrations/001_init.sql', 'src/index.ts'];
 
       const result = filterByGlob(files, patterns);
       expect(result).toContain('schema.sql');
@@ -397,4 +392,3 @@ describe('Glob Matcher', () => {
     });
   });
 });
-

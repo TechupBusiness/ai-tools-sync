@@ -24,7 +24,14 @@ import {
 /**
  * Rule category types
  */
-export type RuleCategory = 'core' | 'infrastructure' | 'testing' | 'security' | 'documentation' | 'tooling' | 'other';
+export type RuleCategory =
+  | 'core'
+  | 'infrastructure'
+  | 'testing'
+  | 'security'
+  | 'documentation'
+  | 'tooling'
+  | 'other';
 
 /**
  * Rule priority levels
@@ -74,7 +81,15 @@ export const RULE_DEFAULTS: Partial<Rule> = {
 /**
  * Valid category values
  */
-const VALID_CATEGORIES: RuleCategory[] = ['core', 'infrastructure', 'testing', 'security', 'documentation', 'tooling', 'other'];
+const VALID_CATEGORIES: RuleCategory[] = [
+  'core',
+  'infrastructure',
+  'testing',
+  'security',
+  'documentation',
+  'tooling',
+  'other',
+];
 
 /**
  * Valid priority values
@@ -218,7 +233,11 @@ function validateRuleFields(data: Record<string, unknown>): ContentValidationErr
   // Validate platform extensions (must be objects if present)
   for (const platform of ['cursor', 'claude', 'factory'] as const) {
     if (data[platform] !== undefined) {
-      if (typeof data[platform] !== 'object' || data[platform] === null || Array.isArray(data[platform])) {
+      if (
+        typeof data[platform] !== 'object' ||
+        data[platform] === null ||
+        Array.isArray(data[platform])
+      ) {
         errors.push({
           path: platform,
           message: `${platform} extension must be an object`,
@@ -237,11 +256,15 @@ function validateRuleFields(data: Record<string, unknown>): ContentValidationErr
 function applyRuleDefaults(data: Record<string, unknown>): Rule {
   const rule: Rule = {
     name: data.name as string,
-    always_apply: data.always_apply !== undefined ? (data.always_apply as boolean) : RULE_DEFAULTS.always_apply!,
+    always_apply:
+      data.always_apply !== undefined
+        ? (data.always_apply as boolean)
+        : RULE_DEFAULTS.always_apply!,
     globs: data.globs !== undefined ? (data.globs as string[]) : RULE_DEFAULTS.globs!,
     targets: data.targets !== undefined ? (data.targets as TargetType[]) : RULE_DEFAULTS.targets!,
     requires: data.requires !== undefined ? (data.requires as string[]) : RULE_DEFAULTS.requires!,
-    priority: data.priority !== undefined ? (data.priority as RulePriority) : RULE_DEFAULTS.priority!,
+    priority:
+      data.priority !== undefined ? (data.priority as RulePriority) : RULE_DEFAULTS.priority!,
   };
 
   if (data.description !== undefined) {
@@ -287,11 +310,13 @@ export function parseRule(content: string, filePath?: string): Result<ParsedRule
 
   if (!frontmatterResult.ok) {
     const fmError = frontmatterResult.error;
-    return err(createParseError(fmError.message, {
-      filePath,
-      line: fmError.line,
-      column: fmError.column,
-    }));
+    return err(
+      createParseError(fmError.message, {
+        filePath,
+        line: fmError.line,
+        column: fmError.column,
+      })
+    );
   }
 
   const { data, content: bodyContent, isEmpty } = frontmatterResult.value;
@@ -305,10 +330,12 @@ export function parseRule(content: string, filePath?: string): Result<ParsedRule
   const validationErrors = validateRuleFields(data);
 
   if (validationErrors.length > 0) {
-    return err(createParseError('Rule validation failed', {
-      filePath,
-      validationErrors,
-    }));
+    return err(
+      createParseError('Rule validation failed', {
+        filePath,
+        validationErrors,
+      })
+    );
   }
 
   // Apply defaults and create rule object

@@ -18,10 +18,7 @@ export type {
   ResolvedContent,
 } from './base.js';
 
-export type {
-  SubfolderContextConfig,
-  SubfolderContextOptions,
-} from './subfolder-context.js';
+export type { SubfolderContextConfig, SubfolderContextOptions } from './subfolder-context.js';
 
 // Export generator factory functions
 import { createClaudeGenerator, ClaudeGenerator } from './claude.js';
@@ -66,15 +63,10 @@ export function createGenerator(target: TargetType): Generator {
  * Get all available generators
  */
 export function getAllGenerators(): Generator[] {
-  return [
-    createCursorGenerator(),
-    createClaudeGenerator(),
-    createFactoryGenerator(),
-  ];
+  return [createCursorGenerator(), createClaudeGenerator(), createFactoryGenerator()];
 }
 
 /**
  * Available generator targets
  */
 export const GENERATOR_TARGETS: TargetType[] = ['cursor', 'claude', 'factory'];
-

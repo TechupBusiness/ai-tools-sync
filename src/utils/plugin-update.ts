@@ -65,7 +65,11 @@ export interface UpdateOptions extends UpdateCheckOptions {
   force?: boolean;
 }
 
-function findCacheEntry(cache: PluginCache, source: string, version?: string): PluginCacheEntry | null {
+function findCacheEntry(
+  cache: PluginCache,
+  source: string,
+  version?: string
+): PluginCacheEntry | null {
   const direct = cache.getCacheEntry(source, version);
   if (direct) {
     return direct;
@@ -80,7 +84,11 @@ function findCacheEntry(cache: PluginCache, source: string, version?: string): P
   return null;
 }
 
-function buildPluginId(entry: PluginCacheEntry | null, source: string, version: string | null): string {
+function buildPluginId(
+  entry: PluginCacheEntry | null,
+  source: string,
+  version: string | null
+): string {
   if (entry) {
     return entry.id;
   }
@@ -94,7 +102,10 @@ function isLocalSource(source: string): boolean {
 /**
  * Use git ls-remote to fetch tags without cloning the repo.
  */
-export async function fetchRemoteTags(repoUrl: string, timeout?: number): Promise<Result<string[]>> {
+export async function fetchRemoteTags(
+  repoUrl: string,
+  timeout?: number
+): Promise<Result<string[]>> {
   const command = `git ls-remote --tags --refs ${repoUrl}`;
 
   try {
@@ -117,7 +128,9 @@ export async function fetchRemoteTags(repoUrl: string, timeout?: number): Promis
 
     return ok(tags);
   } catch (error) {
-    return err(new Error(`Failed to fetch tags: ${error instanceof Error ? error.message : String(error)}`));
+    return err(
+      new Error(`Failed to fetch tags: ${error instanceof Error ? error.message : String(error)}`)
+    );
   }
 }
 
@@ -202,7 +215,9 @@ export async function checkAllPluginsForUpdates(
   sources?: string[],
   options: UpdateCheckOptions = {}
 ): Promise<Result<PluginUpdateCheck[]>> {
-  const sourceList = sources?.length ? [...new Set(sources)] : cache.listCached().map((entry) => entry.source);
+  const sourceList = sources?.length
+    ? [...new Set(sources)]
+    : cache.listCached().map((entry) => entry.source);
   const results: PluginUpdateCheck[] = [];
 
   for (const source of sourceList) {
@@ -275,7 +290,11 @@ export async function updatePlugin(
       hadOverrides = true;
     }
   } catch (error) {
-    return err(new Error(`Failed to backup local overrides: ${error instanceof Error ? error.message : String(error)}`));
+    return err(
+      new Error(
+        `Failed to backup local overrides: ${error instanceof Error ? error.message : String(error)}`
+      )
+    );
   }
 
   const invalidateResult = await cache.invalidate(source, entry?.version);
@@ -287,7 +306,9 @@ export async function updatePlugin(
   }
 
   const gitLoader = new GitLoader();
-  const sourceWithVersion = source.includes('#') ? source.replace(/#.*/, `#${newVersion}`) : `${source}#${newVersion}`;
+  const sourceWithVersion = source.includes('#')
+    ? source.replace(/#.*/, `#${newVersion}`)
+    : `${source}#${newVersion}`;
   const cacheRoot = options.baseDir ?? path.dirname(cache.getCacheDir());
   const loadResult = await gitLoader.load(sourceWithVersion, {
     cacheDir: cacheRoot,

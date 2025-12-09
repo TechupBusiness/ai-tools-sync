@@ -51,7 +51,7 @@ describe('Merge Command', () => {
     testDir = path.join(process.cwd(), 'tests', 'fixtures', 'merge-test-' + Date.now());
     aiDir = path.join(testDir, '.ai-tool-sync');
     inputDir = path.join(aiDir, 'input');
-    
+
     await fs.mkdir(inputDir, { recursive: true });
     await fs.mkdir(path.join(aiDir, 'rules'), { recursive: true });
     await fs.mkdir(path.join(aiDir, 'personas'), { recursive: true });
@@ -111,7 +111,7 @@ This is a test rule.
       // Create nested structure
       const nestedDir = path.join(inputDir, 'rules', 'typescript');
       await fs.mkdir(nestedDir, { recursive: true });
-      
+
       await fs.writeFile(
         path.join(nestedDir, 'nested-rule.md'),
         `---
@@ -240,7 +240,7 @@ targets:
     it('should fall back to path-based detection', async () => {
       // Create nested directory
       await fs.mkdir(path.join(inputDir, 'rules'), { recursive: true });
-      
+
       await fs.writeFile(
         path.join(inputDir, 'rules', 'no-frontmatter.md'),
         `# Rule Without Frontmatter
@@ -460,13 +460,15 @@ globs:
       expect(result.merged).toHaveLength(0);
 
       // Verify input file still exists
-      const inputExists = await fs.stat(path.join(inputDir, 'new-rule.md'))
+      const inputExists = await fs
+        .stat(path.join(inputDir, 'new-rule.md'))
         .then(() => true)
         .catch(() => false);
       expect(inputExists).toBe(true);
 
       // Verify target file was not created
-      const targetExists = await fs.stat(path.join(aiDir, 'rules', 'new-rule.md'))
+      const targetExists = await fs
+        .stat(path.join(aiDir, 'rules', 'new-rule.md'))
         .then(() => true)
         .catch(() => false);
       expect(targetExists).toBe(false);
@@ -499,13 +501,15 @@ globs:
       expect(result.errors).toHaveLength(0);
 
       // Verify file was moved
-      const targetExists = await fs.stat(path.join(aiDir, 'rules', 'new-rule.md'))
+      const targetExists = await fs
+        .stat(path.join(aiDir, 'rules', 'new-rule.md'))
         .then(() => true)
         .catch(() => false);
       expect(targetExists).toBe(true);
 
       // Verify file was removed from input
-      const inputExists = await fs.stat(path.join(inputDir, 'new-rule.md'))
+      const inputExists = await fs
+        .stat(path.join(inputDir, 'new-rule.md'))
         .then(() => true)
         .catch(() => false);
       expect(inputExists).toBe(false);
@@ -596,9 +600,10 @@ globs:
 
       // Identical files should be analyzed but not merged
       expect(result.analyzed[0]?.status).toBe('identical');
-      
+
       // Verify input file was not removed (since we don't merge identical files)
-      const inputExists = await fs.stat(path.join(inputDir, 'some-identical.md'))
+      const inputExists = await fs
+        .stat(path.join(inputDir, 'some-identical.md'))
         .then(() => true)
         .catch(() => false);
       expect(inputExists).toBe(true);
@@ -632,7 +637,8 @@ targets:
       expect(result.merged).toHaveLength(1);
 
       // Verify directory was created
-      const dirExists = await fs.stat(path.join(aiDir, 'personas'))
+      const dirExists = await fs
+        .stat(path.join(aiDir, 'personas'))
         .then(() => true)
         .catch(() => false);
       expect(dirExists).toBe(true);
@@ -642,10 +648,7 @@ targets:
   describe('Error Handling', () => {
     it('should mark unparseable files as invalid', async () => {
       // Write a completely empty file which will fail to parse
-      await fs.writeFile(
-        path.join(inputDir, 'empty.md'),
-        ''
-      );
+      await fs.writeFile(path.join(inputDir, 'empty.md'), '');
 
       const result = await merge({
         projectRoot: testDir,
@@ -688,8 +691,10 @@ This has no frontmatter at all.
       });
 
       expect(result.analyzed).toHaveLength(2);
-      expect(result.analyzed.some(f => f.status === 'new' && f.contentType === 'rule')).toBe(true);
-      expect(result.analyzed.some(f => f.contentType === 'unknown')).toBe(true);
+      expect(result.analyzed.some((f) => f.status === 'new' && f.contentType === 'rule')).toBe(
+        true
+      );
+      expect(result.analyzed.some((f) => f.contentType === 'unknown')).toBe(true);
     });
   });
 });

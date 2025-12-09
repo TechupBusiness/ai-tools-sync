@@ -145,7 +145,9 @@ describe('UrlLoader', () => {
     it('should return true for direct HTTP/HTTPS URLs', () => {
       expect(loader.canLoad('https://example.com/rules.md')).toBe(true);
       expect(loader.canLoad('http://example.com/rules/')).toBe(true);
-      expect(loader.canLoad('https://raw.githubusercontent.com/user/repo/main/rules.md')).toBe(true);
+      expect(loader.canLoad('https://raw.githubusercontent.com/user/repo/main/rules.md')).toBe(
+        true
+      );
     });
 
     it('should return false for local paths', () => {
@@ -600,4 +602,3 @@ describe('DEFAULT_CACHE_TTL_MS constant', () => {
     expect(DEFAULT_CACHE_TTL_MS).toBe(60 * 60 * 1000);
   });
 });
-

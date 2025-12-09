@@ -208,7 +208,7 @@ describe('PluginCache', () => {
 
       // Force add to manifest (simulating corrupted state)
       await cache.cachePlugin('github:owner/repo', 'v1.0.0', pluginPath);
-      
+
       // Remove the directory
       await fs.rm(pluginPath, { recursive: true, force: true });
 
@@ -497,4 +497,3 @@ describe('constants', () => {
     expect(PLUGIN_META_FILE).toBe('.plugin-cache-meta.json');
   });
 });
-
