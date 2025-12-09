@@ -22,6 +22,8 @@
 - [T228] 🟢 **Type/value imports**: ESLint `import/order` flags separate type/value imports from the same module (`import type { T } ... import { fn } ...`) → Prefer a single combined import with `type` inline (`import { fn, type T } from '...';`) to satisfy ordering rules.
 - [T226] 🟡 **Regex capture safety**: Destructuring regex matches (`const [, a, b] = match`) leaves `a|b` typed as possibly `undefined`, breaking strict null checks. Guard before use (e.g., `const a = match[1]; if (!a) return err(...)`) and avoid relying on optional tuple slots.
 - [T226] 🟡 **Template literals with unknown**: `restrict-template-expressions` rejects template parts typed as `unknown`/`never` (e.g., default switch cases). Cast or string-normalize first (`const ns: unknown = namespace; const nsStr = String(ns);`) before interpolation to keep lint/typecheck clean.
+- [T238] 🟡 **Result typing**: Using `ReturnType<typeof ok>` for helper signatures makes `err(...)` incompatible (missing `value`). Declare helpers to return `Result<T, E>` explicitly and keep `ok/err` only for constructing instances.
+- [T238] 🟢 **Runtime narrowing**: When ingesting platform files, guard unions (e.g., hook events, platform enums) with predicates before assignment; fall back to defaults to keep strict unions and typecheck happy.
 
 ## Tooling & Config
 

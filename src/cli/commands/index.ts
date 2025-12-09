@@ -20,3 +20,6 @@ export type { MigrateOptions, MigrateResult, DiscoveryResult, DiscoveredFile } f
 
 export { merge } from './merge.js';
 export type { MergeOptions, MergeResult, InputFile, DiffStatus } from './merge.js';
+
+export { convert } from './convert.js';
+export type { ConvertCommandOptions, ConvertCommandResult } from './convert.js';

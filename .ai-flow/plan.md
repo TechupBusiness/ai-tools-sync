@@ -298,10 +298,15 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
 
 #### Track F: Generic Format Skills (P2)
 
-- [ ] **T238** - Skill to convert platform files to generic format
+- [x] **T238** - Skill to convert platform files to generic format
   - Convert existing `.cursor/`, `.factory/`, `.claude/` files into generic format equivalents
+<<<<<<< Current (Your changes)
   - Run existing parser validation (frontmatter + field checks) as a basic syntax gate; upgrade to lint flow once **T231** lands
   - **Deps: T231**
+=======
+  - Parser validation + lint integration (T231) wired; CLI `convert` command writes normalized files
+  - **Deps: T231** for full lint; parser validation available now
+>>>>>>> Incoming (Background Agent changes)
 
 - [ ] **T239** - Skill to generate new generic format files
   - Create new generic format files from scratch with platform-aware defaults

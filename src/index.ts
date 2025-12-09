@@ -42,6 +42,13 @@ export { parseRule } from './parsers/rule.js';
 export { parsePersona } from './parsers/persona.js';
 export { parseCommand } from './parsers/command.js';
 export { parseHook } from './parsers/hook.js';
+export { convertPlatformFile } from './converters/platform-to-generic.js';
+export type {
+  ConvertOptions,
+  ConvertResult,
+  GenericConversion,
+  PlatformFileInput,
+} from './converters/types.js';
 
 // Re-export loaders
 export { LocalLoader, createLocalLoader } from './loaders/local.js';

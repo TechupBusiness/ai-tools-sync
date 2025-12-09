@@ -14,6 +14,7 @@ import { VERSION } from '../index.js';
 import { logger } from '../utils/logger.js';
 
 import { clean } from './commands/clean.js';
+import { convert } from './commands/convert.js';
 import { init } from './commands/init.js';
 import { lint } from './commands/lint.js';
 import { merge } from './commands/merge.js';
@@ -24,6 +25,7 @@ import { sync } from './commands/sync.js';
 import { validate } from './commands/validate.js';
 import { watch } from './commands/watch.js';
 
+import type { ConvertCommandOptions } from './commands/convert.js';
 import type { LintCommandOptions } from './commands/lint.js';
 
 const program = new Command();
@@ -336,6 +338,63 @@ program
     }
   );
 
+program
+  .command('convert')
+  .description('Convert platform files into .ai-tool-sync format')
+  .option('-v, --verbose', 'Enable verbose output')
+  .option('-d, --dry-run', 'Show what would be converted without writing files')
+  .option('-s, --strict', 'Treat warnings as errors')
+  .option('--include-unknown', 'Attempt best-effort conversion of unknown or mixed files')
+  .option('--run-lint', 'Run lint on converted rules')
+  .option('--no-infer-name-from-path', 'Do not infer name from filename when missing')
+  .option('-p, --project <path>', 'Project root directory')
+  .option('-c, --config-dir <path>', 'Configuration directory name (default: .ai-tool-sync)')
+  .option('-f, --file <path>', 'Convert a specific file only')
+  .action(
+    async (options: {
+      verbose?: boolean;
+      dryRun?: boolean;
+      strict?: boolean;
+      includeUnknown?: boolean;
+      runLint?: boolean;
+      inferNameFromPath?: boolean;
+      project?: string;
+      configDir?: string;
+      file?: string;
+    }) => {
+      if (options.verbose) {
+        logger.setVerbose(true);
+      }
+
+      try {
+        const convertOptions: ConvertCommandOptions = {};
+        if (options.dryRun !== undefined) convertOptions.dryRun = options.dryRun;
+        if (options.strict !== undefined) convertOptions.strict = options.strict;
+        if (options.includeUnknown !== undefined)
+          convertOptions.includeUnknown = options.includeUnknown;
+        if (options.runLint !== undefined) convertOptions.runLint = options.runLint;
+        if (options.inferNameFromPath !== undefined)
+          convertOptions.inferNameFromPath = options.inferNameFromPath;
+        if (options.project !== undefined) convertOptions.projectRoot = options.project;
+        if (options.configDir !== undefined) convertOptions.configDir = options.configDir;
+        if (options.file !== undefined) convertOptions.file = options.file;
+
+        const result = await convert(convertOptions);
+
+        if (!result.success) {
+          process.exit(1);
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error(`Convert failed: ${message}`);
+        if (options.verbose && error instanceof Error && error.stack) {
+          console.error(error.stack);
+        }
+        process.exit(1);
+      }
+    }
+  );
+
 program.addCommand(createPluginsCommand());
 
 program
@@ -398,7 +457,7 @@ export function run(): void {
 export default run;
 
 // Re-export commands for programmatic usage
-export { sync, init, validate, migrate, merge, clean, status, lint };
+export { sync, init, validate, migrate, merge, clean, status, lint, convert };
 export type { SyncOptions, SyncResult } from './commands/sync.js';
 export type { InitOptions, InitResult } from './commands/init.js';
 export type { ValidateOptions, ValidateResult } from './commands/validate.js';
@@ -412,6 +471,7 @@ export type {
 export type { MergeOptions, MergeResult, InputFile, DiffStatus } from './commands/merge.js';
 export type { CleanOptions, CleanResult } from './commands/clean.js';
 export type { StatusOptions, StatusResult, FileStatus } from './commands/status.js';
+export type { ConvertCommandOptions, ConvertCommandResult } from './commands/convert.js';
 export { createPluginsCommand } from './commands/plugins.js';
 
 // Run if executed directly

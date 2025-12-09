@@ -49,6 +49,7 @@ Maintaining separate configurations leads to:
 - ✅ **Monorepo support** — Generate subfolder contexts for different packages
 - ✅ **Plugin system** — Load rules from npm packages, git repos, or local paths
 - ✅ **Language-agnostic** — Works with any project (Node.js, Python, Go, Rust, etc.)
+- ✅ **Platform import** — Convert existing `.cursor/`, `.claude/`, `.factory/` files into generic `.ai-tool-sync/`
 
 ## Quick Start
 
@@ -241,6 +242,38 @@ ai-sync migrate --yes
 ```
 
 The migrate command helps you transition from existing tool-specific configurations to the unified ai-tool-sync format. It analyzes file contents, detects content types (rules, personas, commands), and can generate AI-assisted migration prompts for complex files that need manual review.
+
+### `ai-sync convert`
+
+Convert platform-specific files (Cursor, Claude, Factory) directly into generic `.ai-tool-sync/` files with parser validation and optional linting.
+
+```bash
+ai-sync convert [options]
+
+Options:
+  -v, --verbose               Enable verbose output
+  -d, --dry-run               Preview converted files without writing
+  -s, --strict                Treat warnings as errors (non-zero exit)
+  --include-unknown           Attempt best-effort conversion of unknown files
+  --run-lint                  Run lint on converted rules (requires lint integration)
+  --no-infer-name-from-path   Do not infer name from filename when missing
+  -p, --project <path>        Use a different project root
+  -c, --config-dir <path>     Configuration directory name (default: .ai-tool-sync)
+  -f, --file <path>           Convert a specific file only
+```
+
+**Examples:**
+
+```bash
+# Convert all discovered platform files into .ai-tool-sync/*
+ai-sync convert
+
+# Strict mode with linting
+ai-sync convert --strict --run-lint
+
+# Convert a single file and preview output
+ai-sync convert --file .cursor/rules/ci.mdc --dry-run
+```
 
 ### `ai-sync merge`
 
