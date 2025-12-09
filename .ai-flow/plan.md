@@ -130,7 +130,7 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
   - Run full test suite: `npm test`
   - Build production artifacts: `npm run build`
   - Publish with `npm publish --access public`
-  - Verify installation: `npm install -g @anthropic/ai-tool-sync`
+  - Verify installation: `npm install -g YOUR_USERNAME/ai-tool-sync`
   - Test CLI commands on fresh install
   - **Deps: T244**
 
@@ -200,6 +200,22 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
   - Version bumping and release workflow
   - Pre-release checklist
   - **Deps: T244**
+
+#### Track F: Codebase Quality (P0)
+
+- [ ] **T254** - Resolve Prettier drift and enforce formatting
+  - Run `npm run format` to fix existing style drift
+  - Ensure `npm run format:check` passes locally and in CI
+  - Document formatting command in contributor docs/README if missing
+  - **Deps: None**
+
+#### Track G: Windows Compatibility (P0)
+
+- [ ] **T255** - Fix Windows `npm test` `NODE_OPTIONS` usage
+  - Replace POSIX inline env in test script with cross-platform approach (e.g., `cross-env NODE_OPTIONS=--max-old-space-size=4096 vitest run` or move flag into the script/runner)
+  - Update Windows CI runners to use the new command
+  - Verify `npm test` passes on Windows without manual env setup
+  - **Deps: None**
 
 ---
 
