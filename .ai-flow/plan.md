@@ -118,12 +118,13 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
   - Review `engines` field (Node.js version support)
   - **Deps: T240**
 
-- [ ] **T244** - Create GitHub Release workflow
+- [x] **T244** - Create GitHub Release workflow
   - Add `.github/workflows/release.yml`
   - Trigger on version tags (v*)
   - Automated npm publish with `NPM_TOKEN`
   - Generate GitHub release notes
-  - Attach build artifacts if applicable
+  - Attach build artifacts (`npm pack` tarball)
+  - `publish.yml` disabled to avoid double publish; manual input for dry-run
   - **Deps: T243**
 
 - [ ] **T245** - First npm publish

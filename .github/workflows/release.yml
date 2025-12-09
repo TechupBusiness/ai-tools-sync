@@ -1,8 +1,8 @@
 # =============================================================================
-# AI Tool Sync - Release Workflow
+# AI Tool Sync - Release & Publish Workflow
 # =============================================================================
-# Creates GitHub releases when version tags are pushed
-# Generates changelog from commits
+# Builds/tests, validates tag/package version, publishes to npm with provenance,
+# and creates GitHub releases with attached artifacts.
 
 name: Release
 
@@ -10,27 +10,107 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag (vX.Y.Z) to build/release'
+        required: true
+        type: string
+      publish:
+        description: 'Publish to npm and create the GitHub release'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
+  packages: write
+  id-token: write
+
+concurrency:
+  group: release-${{ github.event.inputs.tag || github.ref }}
+  cancel-in-progress: false
 
 jobs:
   release:
-    name: Create Release
+    name: Release & Publish
     runs-on: ubuntu-latest
-    
+
     steps:
+      # -----------------------------------------------------------------------
+      # Checkout & Setup
+      # -----------------------------------------------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.inputs.tag || github.ref }}
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
-      
+          registry-url: 'https://registry.npmjs.org'
+
+      # -----------------------------------------------------------------------
+      # Validate Tag + Package Version
+      # -----------------------------------------------------------------------
+      - name: Validate tag and package version
+        id: meta
+        run: |
+          set -euo pipefail
+
+          RAW_TAG="${GITHUB_REF}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            INPUT_TAG="${{ inputs.tag }}"
+            if [ -z "$INPUT_TAG" ]; then
+              echo "Input 'tag' is required for manual runs" >&2
+              exit 1
+            fi
+            case "$INPUT_TAG" in
+              v*) RAW_TAG="refs/tags/$INPUT_TAG" ;;
+              *) RAW_TAG="refs/tags/v$INPUT_TAG" ;;
+            esac
+          fi
+
+          TAG="${RAW_TAG#refs/tags/v}"
+          if [[ -z "$TAG" || "$TAG" != *.*.* ]]; then
+            echo "Tag must be semver vX.Y.Z" >&2
+            exit 1
+          fi
+
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if [ "$PKG_VERSION" != "$TAG" ]; then
+            echo "package.json version ($PKG_VERSION) does not match tag ($TAG)" >&2
+            exit 1
+          fi
+
+          if [[ "$TAG" == *"-"* ]]; then
+            NPM_TAG="next"
+            PRERELEASE=true
+          else
+            NPM_TAG="latest"
+            PRERELEASE=false
+          fi
+
+          echo "version=$TAG" >> "$GITHUB_OUTPUT"
+          echo "npm_tag=$NPM_TAG" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+          echo "ref=$RAW_TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Check required secrets
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "${NPM_TOKEN:-}" ]; then
+            echo "Missing NPM_TOKEN secret; cannot publish." >&2
+            exit 1
+          fi
+
+      # -----------------------------------------------------------------------
+      # Install, Build, Test
+      # -----------------------------------------------------------------------
       - name: Install dependencies
         run: npm ci
       
@@ -39,51 +119,109 @@ jobs:
       
       - name: Run tests
         run: npm test
-      
-      - name: Get version from tag
-        id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-      
-      - name: Get previous tag
-        id: prev_tag
+
+      # -----------------------------------------------------------------------
+      # Packaging & Publish Guardrails
+      # -----------------------------------------------------------------------
+      - name: npm pack (capture tarball)
+        id: pack
         run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-          echo "PREV_TAG=${PREV_TAG}" >> $GITHUB_OUTPUT
-      
-      - name: Generate changelog
-        id: changelog
+          set -euo pipefail
+          npm pack --json > pack.json
+          TARBALL=$(node -e "const fs = require('fs'); const data = JSON.parse(fs.readFileSync('pack.json', 'utf8')); console.log(data[0].filename);")
+          echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
+          echo "tarball_path=$PWD/$TARBALL" >> "$GITHUB_OUTPUT"
+
+      - name: Check if version already published
+        id: published
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
         run: |
-          if [ -n "${{ steps.prev_tag.outputs.PREV_TAG }}" ]; then
-            CHANGES=$(git log --pretty=format:"- %s (%h)" ${{ steps.prev_tag.outputs.PREV_TAG }}..HEAD)
+          if npm view @techupbusiness/ai-tool-sync@"$VERSION" version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "Version already on npm; skipping publish."
           else
-            CHANGES=$(git log --pretty=format:"- %s (%h)")
+            echo "published=false" >> "$GITHUB_OUTPUT"
           fi
-          echo "CHANGES<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGES" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-      
+
+      - name: Decide whether to publish
+        id: publish
+        run: |
+          set -euo pipefail
+          PUBLISH=false
+
+          if [ "${{ steps.published.outputs.published }}" = "true" ]; then
+            echo "already_published=true" >> "$GITHUB_OUTPUT"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ "${{ github.event_name }}" = "push" ]; then
+            PUBLISH=true
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.publish }}" = "true" ]; then
+            PUBLISH=true
+          fi
+
+          echo "publish=$PUBLISH" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to npm
+        if: steps.publish.outputs.publish == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --provenance --access public --tag ${{ steps.meta.outputs.npm_tag }}
+
+      # -----------------------------------------------------------------------
+      # Release Notes & GitHub Release
+      # -----------------------------------------------------------------------
+      - name: Compute changelog
+        if: github.event_name == 'push' || github.event.inputs.publish == 'true'
+        id: changelog
+        env:
+          TARGET_REF: ${{ steps.meta.outputs.ref }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --quiet
+          PREV_TAG=$(git describe --tags --abbrev=0 "${TARGET_REF}^" 2>/dev/null || true)
+
+          if [ -n "$PREV_TAG" ]; then
+            RANGE="$PREV_TAG..$TARGET_REF"
+            LOG=$(git log --pretty=format:"- %s (%h)" "$RANGE")
+          else
+            LOG=$(git log --pretty=format:"- %s (%h)" "$TARGET_REF")
+          fi
+
+          if [ -z "$LOG" ]; then
+            LOG="No changes recorded."
+          fi
+
+          echo "previous_tag=$PREV_TAG" >> "$GITHUB_OUTPUT"
+          echo "changelog<<'EOF'" >> "$GITHUB_OUTPUT"
+          echo "$LOG" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub Release
+        if: github.event_name == 'push' || github.event.inputs.publish == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          name: v${{ steps.version.outputs.VERSION }}
+          name: v${{ steps.meta.outputs.version }}
+          tag_name: v${{ steps.meta.outputs.version }}
           body: |
             ## What's Changed
-            
-            ${{ steps.changelog.outputs.CHANGES }}
-            
+
+            ${{ steps.changelog.outputs.changelog }}
+
             ## Installation
-            
+
             ```bash
-            npm install @anthropic/ai-tool-sync@${{ steps.version.outputs.VERSION }}
+            npm install @techupbusiness/ai-tool-sync@${{ steps.meta.outputs.version }}
             ```
-            
+
             Or globally:
-            
+
             ```bash
-            npm install -g @anthropic/ai-tool-sync@${{ steps.version.outputs.VERSION }}
+            npm install -g @techupbusiness/ai-tool-sync@${{ steps.meta.outputs.version }}
             ```
           draft: false
-          prerelease: ${{ contains(steps.version.outputs.VERSION, '-') }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: ${{ steps.meta.outputs.prerelease == 'true' }}
+          files: ${{ steps.pack.outputs.tarball_path }}
 

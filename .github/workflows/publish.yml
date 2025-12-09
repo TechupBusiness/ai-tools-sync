@@ -1,17 +1,22 @@
 # =============================================================================
-# AI Tool Sync - Publish Workflow
+# AI Tool Sync - Publish Workflow (Deprecated)
 # =============================================================================
-# Publishes to npm when a release is created
-# Supports both stable and pre-release versions
+# Superseded by release.yml. Kept for reference but disabled to avoid double
+# publishes.
 
 name: Publish
 
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Deprecated workflow - use release.yml'
+        required: false
+        default: 'disabled'
 
 jobs:
   publish-npm:
+    if: false
     name: Publish to npm
     runs-on: ubuntu-latest
     
