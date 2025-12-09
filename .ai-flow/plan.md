@@ -301,12 +301,18 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
 - [ ] **T238** - Skill to convert platform files to generic format
   - Convert existing `.cursor/`, `.factory/`, `.claude/` files into generic format equivalents
   - Run existing parser validation (frontmatter + field checks) as a basic syntax gate; upgrade to lint flow once **T231** lands
-  - **Deps: T231** for full lint; parser validation available now
+  - **Deps: T231**
 
 - [ ] **T239** - Skill to generate new generic format files
   - Create new generic format files from scratch with platform-aware defaults
   - Use existing parser validation as baseline syntax check; add lint flow when **T231** rule linting is available
-  - **Deps: T231** for lint; parser validation available now
+  - **Deps: T231**
+
+- [ ] **T259** - Add defaults prompt skill for LLM authoring
+  - Ship a default “authoring guide” skill in `defaults/` that instructs LLMs how to draft rules/personas/commands/hooks using generic schemas, slugging, and targets
+  - Include a short checklist to run `ai-sync create ... --dry-run` + `--run-lint` (rules) to validate and fix drafts
+  - Note mapping expectations (tools/models, snake_case frontmatter, platform extensions) and collision/overwrite guidance
+  - **Deps: T239, T231**
 
 ---
 
