@@ -209,6 +209,11 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
   - Ensure `npm run format:check` passes locally and in CI
   - Document formatting command in contributor docs/README if missing
   - **Deps: None**
+- [ ] **T260** - Silence noisy test warnings (low priority/P2)
+  - Mock/silence logger in tests that intentionally load a manifest without `name` (Claude plugin loader)
+  - Mock/silence hash skip warnings in manifest hash collection tests when missing files are intentional
+  - Goal: cleaner `npm test` output; behavior remains unchanged
+  - **Deps: None**
 
 #### Track G: Windows Compatibility (P0)
 
