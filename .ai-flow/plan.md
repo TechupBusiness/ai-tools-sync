@@ -110,7 +110,7 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
 
 #### Track B: npm Publishing (P0)
 
-- [ ] **T243** - Prepare npm package for publishing
+- [x] **T243** - Prepare npm package for publishing
   - Verify `package.json` metadata (name, version, description, keywords)
   - Verify repository, bugs, homepage URLs point to real GitHub repo
   - Ensure `files` array includes all necessary files
