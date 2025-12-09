@@ -2,6 +2,7 @@
 
 ### 1. Run Verification !!
 ```bash
+npm run format:check
 pnpm typecheck
 pnpm lint
 pnpm test

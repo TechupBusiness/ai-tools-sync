@@ -297,6 +297,18 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
   - Strip trailing newlines, respect max length limit
   - **Deps: T236**
 
+#### Track F: Generic Format Skills (P2)
+
+- [ ] **T238** - Skill to convert platform files to generic format
+  - Convert existing `.cursor/`, `.factory/`, `.claude/` files into generic format equivalents
+  - Run existing parser validation (frontmatter + field checks) as a basic syntax gate; upgrade to lint flow once **T231** lands
+  - **Deps: T231** for full lint; parser validation available now
+
+- [ ] **T239** - Skill to generate new generic format files
+  - Create new generic format files from scratch with platform-aware defaults
+  - Use existing parser validation as baseline syntax check; add lint flow when **T231** rule linting is available
+  - **Deps: T231** for lint; parser validation available now
+
 ---
 
 ## Platform Research Reference

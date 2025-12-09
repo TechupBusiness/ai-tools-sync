@@ -93,6 +93,7 @@ describe('FeatureName', () => {
 - **Config**: Add to `config.schema.ts` if needed
 
 ## 8. Acceptance Criteria
+- [ ] Format check pass (`npm run format:check`, if not `npm run format`)
 - [ ] All tests pass (`npm test -- feature.test.ts`)
 - [ ] No lint errors (`npm run lint`)
 - [ ] Types are strict (no `any`)
