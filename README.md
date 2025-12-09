@@ -1,8 +1,10 @@
 # ai-tool-sync
 
 [![npm version](https://img.shields.io/npm/v/@anthropic/ai-tool-sync.svg)](https://www.npmjs.com/package/@anthropic/ai-tool-sync)
+[![npm downloads](https://img.shields.io/npm/dm/@anthropic/ai-tool-sync.svg)](https://www.npmjs.com/package/@anthropic/ai-tool-sync)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-green.svg)](https://nodejs.org)
+[![Tests](https://img.shields.io/badge/tests-900%2B%20passing-brightgreen.svg)](https://github.com/anthropic/ai-tool-sync)
 
 **Unified AI tool configuration** — single source of truth for Cursor, Claude Code, Factory, and more.
 
@@ -301,6 +303,123 @@ When merging modified files, you'll be prompted for each file:
 
 After merging, files are automatically removed from the `input/` folder and placed in the correct location based on their content type.
 
+### `ai-sync clean`
+
+Remove generated files with safety checks.
+
+```bash
+ai-sync clean [options]
+
+Options:
+  -v, --verbose             Enable verbose output
+  -f, --force               Force removal of modified files (user changes will be lost)
+  -d, --dry-run             Preview what would be deleted
+  -p, --project <path>      Use a different project root
+  -c, --config-dir <path>   Configuration directory name (default: .ai-tool-sync)
+```
+
+**Behavior**:
+- Reads manifest (`.ai-tool-sync-generated.json`) to identify generated files
+- Uses SHA256 hashes to detect user-modified files
+- Skips modified files by default (warns user)
+- `--force` removes even modified files
+
+**Examples:**
+
+```bash
+# Preview what would be deleted
+ai-sync clean --dry-run
+
+# Clean with verbose output
+ai-sync clean --verbose
+
+# Force remove even modified files
+ai-sync clean --force
+```
+
+### `ai-sync status`
+
+Show status of generated files (unchanged, modified, missing).
+
+```bash
+ai-sync status [options]
+
+Options:
+  -v, --verbose             Show all files with their status
+  -p, --project <path>      Use a different project root
+  -c, --config-dir <path>   Configuration directory name (default: .ai-tool-sync)
+```
+
+**Output**:
+- Count of generated files by status (unchanged, modified, missing)
+- Verbose mode shows per-file status with icons (✓ unchanged, ⚠ modified, ✗ missing)
+
+**Examples:**
+
+```bash
+# Quick summary
+ai-sync status
+
+# Detailed per-file status
+ai-sync status --verbose
+```
+
+### `ai-sync plugins`
+
+Manage plugins from Git repositories.
+
+```bash
+# List installed plugins
+ai-sync plugins list [options]
+  --json                    Output as JSON
+  -v, --verbose             Show detailed information
+
+# Add a plugin from Git
+ai-sync plugins add <source> [options]
+  -n, --name <name>         Custom plugin name
+  -v, --version <version>   Pin to specific version
+  --force                   Overwrite if already installed
+  --include <types...>      Content types to include (rules,personas,commands,hooks)
+  --exclude <types...>      Content types to exclude
+  --timeout <ms>            Timeout for git operations
+
+# Remove a plugin
+ai-sync plugins remove <name> [options]
+  --force                   Remove even if in config.yaml
+  --keep-cache              Keep cached files
+
+# Check for and apply updates
+ai-sync plugins update [name] [options]
+  --apply                   Actually apply updates (default: dry-run)
+  --force                   Force re-download even if up to date
+  --all                     Update all plugins
+  --timeout <ms>            Timeout for git operations
+```
+
+**Source formats**:
+- `github:owner/repo@v1.0.0`
+- `gitlab:owner/repo@main`
+- `https://github.com/owner/repo.git#v1.0.0`
+
+**Examples:**
+
+```bash
+# List all plugins
+ai-sync plugins list
+
+# Add a plugin
+ai-sync plugins add github:company/ai-rules@v2.0.0
+
+# Check for updates (dry-run)
+ai-sync plugins update
+
+# Apply all updates
+ai-sync plugins update --all --apply
+
+# Remove a plugin
+ai-sync plugins remove company-ai-rules
+```
+
 ## Configuration
 
 ### Configurable Directory Name
@@ -409,6 +528,85 @@ requires: [_core]
 [Your rule content here...]
 ```
 
+#### Conditional Rules (`when:`)
+
+Include rules only when certain conditions are met in the project:
+
+```yaml
+---
+name: react-guidelines
+description: React development guidelines
+when: npm:react              # Only include if react is a dependency
+globs: ["**/*.tsx", "**/*.jsx"]
+---
+```
+
+**Supported namespaces**:
+
+| Namespace | Description | Example |
+|-----------|-------------|---------|
+| `npm:` | Node.js package.json dependency | `npm:react`, `npm:@types/node` |
+| `pip:` | Python dependency (requirements.txt, pyproject.toml, Pipfile) | `pip:django`, `pip:flask` |
+| `go:` | Go module (go.mod) | `go:github.com/gin-gonic/gin` |
+| `cargo:` | Rust crate (Cargo.toml) | `cargo:serde`, `cargo:tokio` |
+| `composer:` | PHP package (composer.json) | `composer:laravel/framework` |
+| `gem:` | Ruby gem (Gemfile) | `gem:rails`, `gem:rspec` |
+| `pub:` | Dart/Flutter package (pubspec.yaml) | `pub:flutter`, `pub:dio` |
+| `maven:` | Maven artifact (pom.xml) | `maven:spring-boot` |
+| `gradle:` | Gradle dependency (build.gradle) | `gradle:kotlin-stdlib` |
+| `nuget:` | .NET package (*.csproj) | `nuget:Newtonsoft.Json` |
+| `file:` | File exists in project | `file:tsconfig.json` |
+| `dir:` | Directory exists in project | `dir:.github/workflows` |
+| `pkg:` | package.json field value | `pkg:type == "module"` |
+| `var:` | Custom variable from config | `var:my_flag == true` |
+
+**Logical operators**:
+- `&&` — AND (both must be true)
+- `||` — OR (either can be true)
+- `!` — NOT (negate condition)
+
+**Comparison operators** (for `pkg:` and `var:`):
+- `==`, `!=`, `>`, `<`, `>=`, `<=`
+
+**Examples**:
+
+```yaml
+when: npm:typescript                           # TypeScript is installed
+when: npm:react && npm:@testing-library/react  # React with testing library
+when: file:docker-compose.yml || dir:.docker   # Has Docker setup
+when: !npm:jest                                # Jest is NOT installed
+when: pkg:type == "module"                     # ESM project
+```
+
+### Including Shared Content (`@include`)
+
+Rules can include content from other markdown files using the `@include` directive:
+
+```markdown
+---
+name: api-guidelines
+description: API development guidelines
+always_apply: false
+globs: ["**/api/**"]
+---
+
+# API Guidelines
+
+@include shared/base-rules.md
+@include shared/error-handling.md
+
+## API-Specific Rules
+
+[Additional content...]
+```
+
+**Features**:
+- Paths are relative to the including file
+- Frontmatter in included files is stripped (only body content is inlined)
+- Supports nested includes up to 10 levels deep
+- Circular includes are detected and rejected with clear error messages
+- Missing files produce helpful error messages with file path
+
 ### Persona Files (`.ai-tool-sync/personas/*.md`)
 
 ```yaml
@@ -432,6 +630,33 @@ targets: [cursor, claude, factory]
 
 [Persona instructions here...]
 ```
+
+#### Persona Inheritance (`extends:`)
+
+Personas can extend other personas to inherit their properties:
+
+```yaml
+---
+name: my-implementer
+extends: implementer        # Inherits from built-in implementer
+description: Custom implementer with project-specific traits
+model: powerful             # Override parent's model
+claude:
+  tools: [Read, Write, Edit, Bash]  # Override tools for Claude
+---
+
+# My Custom Implementer
+
+Additional instructions specific to my project...
+```
+
+**Inheritance rules**:
+- Child frontmatter overrides parent (shallow merge)
+- Platform extensions (`cursor`, `claude`, `factory`) are merged separately
+- Content is concatenated: parent content, then `---` separator, then child content
+- Missing parent persona generates a warning (inheritance skipped, not a fatal error)
+- Circular inheritance is detected and rejected
+- Maximum inheritance depth: 10 levels
 
 ### Command Files (`.ai-tool-sync/commands/*.md`)
 
@@ -471,6 +696,38 @@ targets: [claude]
 
 [Hook instructions...]
 ```
+
+### Platform-Conditional Content
+
+Include content only for specific platforms using conditional blocks:
+
+```markdown
+# Getting Started
+
+{{#claude}}
+Use `/command-name` to invoke this command in Claude Code.
+{{/claude}}
+
+{{#cursor}}
+Press Cmd+K and type the command name in Cursor.
+{{/cursor}}
+
+{{#factory}}
+Invoke via the Factory command palette or droid delegation.
+{{/factory}}
+
+Common content that appears for all platforms.
+```
+
+**Supported operators**:
+- `{{#platform}}...{{/platform}}` — Include only for that platform
+- `{{#claude|factory}}...{{/claude|factory}}` — OR: include for claude OR factory
+- `{{#claude&factory}}...{{/claude&factory}}` — AND: (rarely useful, for same-named blocks)
+- `{{#!cursor}}...{{/!cursor}}` — NOT: include for all platforms except cursor
+
+**Supported platforms**: `claude`, `cursor`, `factory`
+
+Non-matching blocks are completely removed from the generated output, keeping each platform's files clean.
 
 ## Generated Output
 

@@ -80,7 +80,7 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
 
 #### Track A: Documentation Updates (P0)
 
-- [ ] **T240** - Update README.md with all latest features
+- [x] **T240** - Update README.md with all latest features
   - Document `ai-sync clean` and `ai-sync status` commands
   - Document `ai-sync plugins list/add/remove/update` commands
   - Document `@include` syntax for rule composition
