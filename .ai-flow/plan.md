@@ -97,7 +97,7 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
   - Include migration notes from tool-specific configs
   - **Deps: None**
 
-- [ ] **T242** - Create language-specific installation guides
+- [x] **T242** - Create language-specific installation guides
   - **Node.js/TypeScript**: npm/yarn/pnpm/bun installation
   - **Python**: `npx ai-tool-sync` (via npm) or Docker
   - **PHP**: Same approach - npm global or Docker (works with Laravel, Symfony, etc.)
