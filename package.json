@@ -1,5 +1,5 @@
 {
-  "name": "@anthropic/ai-tool-sync",
+  "name": "@techupbusiness/ai-tool-sync",
   "version": "0.1.0",
   "description": "Unified AI tool configuration - single source of truth for Cursor, Claude Code, Factory, and more",
   "type": "module",
@@ -54,16 +54,16 @@
     "personas",
     "agents"
   ],
-  "author": "Anthropic",
+  "author": "TechupBusiness",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/anthropic/ai-tool-sync.git"
+    "url": "https://github.com/TechupBusiness/ai-tools-sync.git"
   },
   "bugs": {
-    "url": "https://github.com/anthropic/ai-tool-sync/issues"
+    "url": "https://github.com/TechupBusiness/ai-tools-sync/issues"
   },
-  "homepage": "https://github.com/anthropic/ai-tool-sync#readme",
+  "homepage": "https://github.com/TechupBusiness/ai-tools-sync#readme",
   "engines": {
     "node": ">=18.0.0"
   },

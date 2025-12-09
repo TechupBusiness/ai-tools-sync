@@ -32,14 +32,14 @@ Please be respectful and constructive in all interactions. We're building someth
 2. Clone your fork:
 
 ```bash
-git clone git@github.com:YOUR_USERNAME/ai-tool-sync.git
-cd ai-tool-sync
+git clone git@github.com:YOUR_USERNAME/ai-tools-sync.git
+cd ai-tools-sync
 ```
 
 3. Add the upstream remote:
 
 ```bash
-git remote add upstream git@github.com:anthropic/ai-tool-sync.git
+git remote add upstream git@github.com:TechupBusiness/ai-tools-sync.git
 ```
 
 ## Development Setup

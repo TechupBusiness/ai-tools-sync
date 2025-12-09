@@ -1,10 +1,10 @@
 # ai-tool-sync
 
-[![npm version](https://img.shields.io/npm/v/@anthropic/ai-tool-sync.svg)](https://www.npmjs.com/package/@anthropic/ai-tool-sync)
-[![npm downloads](https://img.shields.io/npm/dm/@anthropic/ai-tool-sync.svg)](https://www.npmjs.com/package/@anthropic/ai-tool-sync)
+[![npm version](https://img.shields.io/npm/v/@techupbusiness/ai-tool-sync.svg)](https://www.npmjs.com/package/@techupbusiness/ai-tool-sync)
+[![npm downloads](https://img.shields.io/npm/dm/@techupbusiness/ai-tool-sync.svg)](https://www.npmjs.com/package/@techupbusiness/ai-tool-sync)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-green.svg)](https://nodejs.org)
-[![Tests](https://img.shields.io/badge/tests-900%2B%20passing-brightgreen.svg)](https://github.com/anthropic/ai-tool-sync)
+[![Tests](https://img.shields.io/badge/tests-900%2B%20passing-brightgreen.svg)](https://github.com/TechupBusiness/ai-tools-sync)
 
 **Unified AI tool configuration** — single source of truth for Cursor, Claude Code, Factory, and more.
 
@@ -56,10 +56,10 @@ Maintaining separate configurations leads to:
 
 ```bash
 # Global installation
-npm install -g @anthropic/ai-tool-sync
+npm install -g @techupbusiness/ai-tool-sync
 
 # Or as a dev dependency
-npm install --save-dev @anthropic/ai-tool-sync
+npm install --save-dev @techupbusiness/ai-tool-sync
 ```
 
 ### Initialize Your Project
@@ -788,7 +788,7 @@ See [docs/LOADERS.md](docs/LOADERS.md) for detailed configuration.
 ## Programmatic API
 
 ```typescript
-import { sync, init, validate, migrate, merge, discover } from '@anthropic/ai-tool-sync';
+import { sync, init, validate, migrate, merge, discover } from '@techupbusiness/ai-tool-sync';
 
 // Sync configuration
 const result = await sync({
@@ -934,4 +934,4 @@ npm run typecheck
 
 ## License
 
-MIT © Anthropic
+MIT © TechupBusiness

@@ -87,7 +87,7 @@ const CONFIG_TEMPLATE = `# =====================================================
 # AI Tool Sync - Project Configuration
 # =============================================================================
 # This file configures how ai-sync generates tool-specific outputs.
-# For full documentation, see: https://github.com/anthropic/ai-tool-sync
+# For full documentation, see: https://github.com/TechupBusiness/ai-tools-sync
 
 version: "1.0.0"
 # project_name: my-project
