@@ -15,6 +15,7 @@ import { logger } from '../utils/logger.js';
 
 import { clean } from './commands/clean.js';
 import { init } from './commands/init.js';
+import { lint } from './commands/lint.js';
 import { merge } from './commands/merge.js';
 import { migrate } from './commands/migrate.js';
 import { createPluginsCommand } from './commands/plugins.js';
@@ -22,6 +23,8 @@ import { status } from './commands/status.js';
 import { sync } from './commands/sync.js';
 import { validate } from './commands/validate.js';
 import { watch } from './commands/watch.js';
+
+import type { LintCommandOptions } from './commands/lint.js';
 
 const program = new Command();
 
@@ -162,6 +165,59 @@ program
       process.exit(1);
     }
   });
+
+program
+  .command('lint')
+  .description('Lint rules for common issues')
+  .option('-s, --strict', 'Treat warnings as errors')
+  .option('-r, --rules <rules>', 'Comma-separated lint rules to run')
+  .option('-i, --ignore <rules>', 'Comma-separated lint rules to ignore')
+  .option('--include-info', 'Include info-level issues')
+  .option('--list-rules', 'List available lint rules')
+  .option('-v, --verbose', 'Verbose output')
+  .option('-p, --project <path>', 'Project root directory')
+  .option('-c, --config-dir <path>', 'Configuration directory name (default: .ai-tool-sync)')
+  .action(
+    async (options: {
+      strict?: boolean;
+      rules?: string;
+      ignore?: string;
+      includeInfo?: boolean;
+      listRules?: boolean;
+      verbose?: boolean;
+      project?: string;
+      configDir?: string;
+    }) => {
+      if (options.verbose) {
+        logger.setVerbose(true);
+      }
+
+      try {
+        const lintOptions: LintCommandOptions = {};
+        if (options.project !== undefined) lintOptions.projectRoot = options.project;
+        if (options.configDir !== undefined) lintOptions.configDir = options.configDir;
+        if (options.strict !== undefined) lintOptions.strict = options.strict;
+        if (options.rules !== undefined) {
+          lintOptions.rules = options.rules.split(',').filter(Boolean);
+        }
+        if (options.ignore !== undefined) {
+          lintOptions.ignore = options.ignore.split(',').filter(Boolean);
+        }
+        if (options.includeInfo !== undefined) lintOptions.includeInfo = options.includeInfo;
+        if (options.listRules !== undefined) lintOptions.listRules = options.listRules;
+        if (options.verbose !== undefined) lintOptions.verbose = options.verbose;
+
+        const result = await lint(lintOptions);
+        if (!result.success) {
+          process.exit(1);
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error(`Lint failed: ${message}`);
+        process.exit(1);
+      }
+    }
+  );
 
 program
   .command('clean')
@@ -342,10 +398,11 @@ export function run(): void {
 export default run;
 
 // Re-export commands for programmatic usage
-export { sync, init, validate, migrate, merge, clean, status };
+export { sync, init, validate, migrate, merge, clean, status, lint };
 export type { SyncOptions, SyncResult } from './commands/sync.js';
 export type { InitOptions, InitResult } from './commands/init.js';
 export type { ValidateOptions, ValidateResult } from './commands/validate.js';
+export type { LintCommandOptions } from './commands/lint.js';
 export type {
   MigrateOptions,
   MigrateResult,

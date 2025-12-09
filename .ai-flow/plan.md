@@ -245,7 +245,7 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
 
 #### Track B: Validation & Preview (P2)
 
-- [ ] **T231** - Implement rule linting
+ - [x] **T231** - Implement rule linting
   - Validate rules for common issues
   - Check frontmatter schema compliance
   - Warn on deprecated fields

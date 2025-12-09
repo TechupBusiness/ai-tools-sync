@@ -6,3 +6,4 @@ export * from './logger.js';
 export * from './fs.js';
 export * from './manifest.js';
 export * from './gitignore.js';
+export * from './errors.js';
