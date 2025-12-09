@@ -212,10 +212,9 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
 
 #### Track G: Windows Compatibility (P0)
 
-- [ ] **T255** - Fix Windows `npm test` `NODE_OPTIONS` usage
-  - Replace POSIX inline env in test script with cross-platform approach (e.g., `cross-env NODE_OPTIONS=--max-old-space-size=4096 vitest run` or move flag into the script/runner)
-  - Update Windows CI runners to use the new command
-  - Verify `npm test` passes on Windows without manual env setup
+- [x] **T255** - Fix Windows `npm test` `NODE_OPTIONS` usage
+  - Added `scripts/run-tests.ts` wrapper that merges existing `NODE_OPTIONS` and ensures `--max-old-space-size=4096` before invoking Vitest via Node.
+  - `package.json` `test` now runs the wrapper (`tsx scripts/run-tests.ts`); CI continues to call `npm test` across the matrix.
   - **Deps: None**
 
 ---

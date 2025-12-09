@@ -35,7 +35,7 @@
     "build": "tsup",
     "build:watch": "tsup --watch",
     "dev": "tsx src/cli/index.ts",
-    "test": "NODE_OPTIONS='--max-old-space-size=4096' vitest run",
+    "test": "tsx scripts/run-tests.ts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "vitest run tests/e2e/",
