@@ -39,6 +39,7 @@
 
 - [T207] 🟡 **Factory hooks parity**: Factory hooks mirror Claude events (including legacy `PreMessage`/`PreCommit`) and need merged sources (files + config) with default `Bash(git commit*)` matcher for `PreCommit` → Copy Claude's mapping/build pattern, run hooks through `sortHooksByEvent`, and include env/settings in `.factory/settings.json`
 - [T212] 🟢 **Generic format is tool-agnostic**: The generic format (`.ai-tool-sync/`) should NOT favor any particular tool's naming convention. Use snake_case (`always_apply`, `tool_match`) in the generic format; transformers exist to convert to each tool's expected format (e.g., `always_apply` → `alwaysApply` for Cursor). This separation keeps the generic format neutral and makes adding new targets straightforward.
+- [T256] 🟡 **Windows path compatibility**: Windows runs surfaced backslash-relative paths breaking expectations in tests, manifests, and CLI output → Normalize to POSIX early (`toPosixPath`) for any stored/returned path (converted files, generator outputs, manifest tracking, CLI results) and handle Windows absolute detection (`^[A-Za-z]:\\` and UNC `\\`) before resolution. Also ensure `${CLAUDE_PLUGIN_ROOT}` substitutions are JSON-safe to avoid parse errors on Windows paths.
 
 ## Manifest V2
 

@@ -603,8 +603,8 @@ export class ClaudePluginLoader implements Loader {
       try {
         const content = await fs.promises.readFile(manifestPath, 'utf-8');
 
-        // Resolve ${CLAUDE_PLUGIN_ROOT} in the entire manifest
-        const resolvedContent = resolvePluginRootVariable(content, pluginPath);
+        // Resolve ${CLAUDE_PLUGIN_ROOT} in the entire manifest (JSON-safe)
+        const resolvedContent = resolvePluginRootVariable(content, pluginPath, { jsonSafe: true });
         const manifest = JSON.parse(resolvedContent) as ClaudePluginManifest;
 
         // Validate required field
@@ -902,7 +902,7 @@ export class ClaudePluginLoader implements Loader {
 
     try {
       const rawContent = await fs.promises.readFile(hooksPath, 'utf-8');
-      const resolvedContent = resolvePluginRootVariable(rawContent, pluginRoot);
+      const resolvedContent = resolvePluginRootVariable(rawContent, pluginRoot, { jsonSafe: true });
       const parsed = JSON.parse(resolvedContent) as unknown;
       const hooksObject = this.extractHooksObject(parsed);
 
@@ -1046,8 +1046,8 @@ export class ClaudePluginLoader implements Loader {
     try {
       const content = await fs.promises.readFile(mcpPath, 'utf-8');
 
-      // Resolve ${CLAUDE_PLUGIN_ROOT} first
-      const resolvedContent = resolvePluginRootVariable(content, pluginRoot);
+      // Resolve ${CLAUDE_PLUGIN_ROOT} first (JSON-safe)
+      const resolvedContent = resolvePluginRootVariable(content, pluginRoot, { jsonSafe: true });
 
       // Then interpolate environment variables
       const interpolatedContent = interpolateEnvVars(resolvedContent);
@@ -1225,7 +1225,7 @@ export class ClaudePluginLoader implements Loader {
    * Extract frontmatter from markdown content
    */
   private extractFrontmatter<T>(content: string): { frontmatter: T | undefined; body: string } {
-    const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+    const frontmatterMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
 
     if (!frontmatterMatch) {
       return { frontmatter: undefined, body: content };

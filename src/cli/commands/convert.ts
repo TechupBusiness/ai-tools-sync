@@ -17,7 +17,7 @@ import type {
 import { getAiPaths } from '@/config/loader.js';
 import { convertPlatformFile } from '@/converters/platform-to-generic.js';
 import { toSafeFilename } from '@/generators/base.js';
-import { ensureDir, readFile, writeFile, copyFile } from '@/utils/fs.js';
+import { ensureDir, readFile, writeFile, copyFile, toPosixPath } from '@/utils/fs.js';
 import { ok } from '@/utils/result.js';
 import { serializeYaml } from '@/utils/yaml.js';
 
@@ -122,29 +122,30 @@ export async function convert(options: ConvertCommandOptions = {}): Promise<Conv
 
     for (const conversion of result.value) {
       const dest = getDestinationPath(conversion, aiPaths, usedPaths);
-      usedPaths.add(dest.relativePath);
+      const normalizedRelative = toPosixPath(dest.relativePath);
+      usedPaths.add(normalizedRelative);
 
       if (!(options.dryRun ?? false)) {
         await ensureDir(path.dirname(dest.absolutePath));
         const rendered = renderConversion(conversion);
         if (!rendered.ok) {
-          const message = `Failed to render ${dest.relativePath}: ${rendered.error.message}`;
+          const message = `Failed to render ${normalizedRelative}: ${rendered.error.message}`;
           errors.push(message);
-          issues.push({ level: 'error', message, path: dest.relativePath });
+          issues.push({ level: 'error', message, path: normalizedRelative });
           continue;
         }
         const writeResult = await writeFile(dest.absolutePath, rendered.value);
         if (!writeResult.ok) {
-          const message = `Failed to write ${dest.relativePath}: ${writeResult.error.message}`;
+          const message = `Failed to write ${normalizedRelative}: ${writeResult.error.message}`;
           errors.push(message);
-          issues.push({ level: 'error', message, path: dest.relativePath });
+          issues.push({ level: 'error', message, path: normalizedRelative });
           continue;
         }
       }
 
-      converted.push(dest.relativePath);
+      converted.push(normalizedRelative);
       if (conversion.warnings.length > 0) {
-        warnings.push(...conversion.warnings.map((warning) => `${dest.relativePath}: ${warning}`));
+        warnings.push(...conversion.warnings.map((warning) => `${normalizedRelative}: ${warning}`));
       }
     }
   }
@@ -169,12 +170,12 @@ function getDestinationPath(
   const baseName = toSafeFilename(conversion.frontmatter.name);
   const folder = getTargetFolder(conversion.kind, aiPaths);
   let candidate = `${baseName}.md`;
-  let relativePath = path.join(path.basename(folder), candidate);
+  let relativePath = toPosixPath(path.join(path.basename(folder), candidate));
   let counter = 1;
 
   while (usedPaths.has(relativePath)) {
     candidate = `${baseName}-${counter}.md`;
-    relativePath = path.join(path.basename(folder), candidate);
+    relativePath = toPosixPath(path.join(path.basename(folder), candidate));
     counter += 1;
   }
 

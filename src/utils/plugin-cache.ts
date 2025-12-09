@@ -168,8 +168,13 @@ export function calculateContentHash(content: string): string {
  * @param pluginPath - Absolute path to the plugin directory
  * @returns Resolved string with variable substituted
  */
-export function resolvePluginRootVariable(input: string, pluginPath: string): string {
-  return input.replace(/\$\{CLAUDE_PLUGIN_ROOT\}/g, pluginPath);
+export function resolvePluginRootVariable(
+  input: string,
+  pluginPath: string,
+  options?: { jsonSafe?: boolean }
+): string {
+  const replacement = options?.jsonSafe ? pluginPath.replace(/\\/g, '\\\\') : pluginPath;
+  return input.replace(/\$\{CLAUDE_PLUGIN_ROOT\}/g, replacement);
 }
 
 /**
