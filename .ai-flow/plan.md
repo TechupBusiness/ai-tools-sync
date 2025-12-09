@@ -206,9 +206,8 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
   - Detect circular includes
   - **Deps: T040-T046 ✅**
 
-- [ ] **T226** - Implement conditional rules
-  - Syntax: `when: typescript_project == true`
-  - Evaluate conditions from project context (package.json, file existence)
+- [x] **T226** - Implement conditional rules
+  - Implemented namespaced `when:` evaluation (deps, files, dirs, vars)
   - Support basic operators: `==`, `!=`, `&&`, `||`
   - **Deps: T225**
 
@@ -300,6 +299,152 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
   - Per-package overrides
   - **Deps: T120-T123 ✅**
 
+#### Track E: Custom Variables (P2)
+
+- [ ] **T236** - Implement custom variable providers
+  - Static variables in config.yaml: `variables: { custom_key: "value" }`
+  - Script-based resolution: `variables: { build_info: { command: "node scripts/build-info.js" } }`
+  - Cache script results per-sync (not per-file) for performance
+  - Timeout handling (default 5s) and graceful failure (preserve placeholder or use fallback)
+  - Security: Only execute scripts from project root, no shell expansion
+  - **Deps: T229**
+
+- [ ] **T237** - Implement file content variables
+  - Syntax: `{{file:path/to/file.txt}}` - inline file contents
+  - Syntax: `{{file:path/to/file.txt:1-10}}` - specific line range
+  - Complement to `@include` for inline snippets vs full file inclusion
+  - Strip trailing newlines, respect max length limit
+  - **Deps: T236**
+
+---
+
+### Wave 10: Release & Distribution (P0 - Go-Live)
+
+**Goal**: Publish `ai-tool-sync` to package managers and ensure comprehensive documentation for all programming language ecosystems.
+
+#### Track A: Documentation Updates (P0)
+
+- [ ] **T240** - Update README.md with all latest features
+  - Document `ai-sync clean` and `ai-sync status` commands
+  - Document `ai-sync plugins list/add/remove/update` commands
+  - Document `@include` syntax for rule composition
+  - Document `extends:` persona inheritance
+  - Document platform-conditional content blocks (`{{#claude}}...{{/claude}}`)
+  - Document template variables (`{{project_name}}`, etc.)
+  - Add badges: npm downloads, GitHub stars, test coverage
+  - Add animated GIF/demo showing workflow
+  - **Deps: All previous features ✅**
+
+- [ ] **T241** - Create CHANGELOG.md
+  - Document all features from 0.1.0
+  - Follow Keep a Changelog format
+  - Include migration notes from tool-specific configs
+  - **Deps: None**
+
+- [ ] **T242** - Create language-specific installation guides
+  - **Node.js/TypeScript**: npm/yarn/pnpm/bun installation
+  - **Python**: `npx ai-tool-sync` (via npm) or Docker
+  - **PHP**: Same approach - npm global or Docker (works with Laravel, Symfony, etc.)
+  - **Go**: Instructions to install via npm globally or use Docker
+  - **Rust**: Same as Go, npm global or Docker
+  - **Ruby**: Same approach with bundler exec workaround
+  - **Java/Kotlin**: Same approach, recommend global npm install
+  - Add to `docs/INSTALLATION.md` with language tabs/sections
+  - **Deps: T240**
+
+#### Track B: npm Publishing (P0)
+
+- [ ] **T243** - Prepare npm package for publishing
+  - Verify `package.json` metadata (name, version, description, keywords)
+  - Verify repository, bugs, homepage URLs point to real GitHub repo
+  - Ensure `files` array includes all necessary files
+  - Add `funding` field if applicable
+  - Review `engines` field (Node.js version support)
+  - **Deps: T240**
+
+- [ ] **T244** - Create GitHub Release workflow
+  - Add `.github/workflows/release.yml`
+  - Trigger on version tags (v*)
+  - Automated npm publish with `NPM_TOKEN`
+  - Generate GitHub release notes
+  - Attach build artifacts if applicable
+  - **Deps: T243**
+
+- [ ] **T245** - First npm publish
+  - Run full test suite: `npm test`
+  - Build production artifacts: `npm run build`
+  - Publish with `npm publish --access public`
+  - Verify installation: `npm install -g @anthropic/ai-tool-sync`
+  - Test CLI commands on fresh install
+  - **Deps: T244**
+
+#### Track C: Homebrew Distribution (P1)
+
+- [ ] **T246** - Create Homebrew formula
+  - Create `Formula/ai-tool-sync.rb` for homebrew-core or custom tap
+  - Define bottle configurations for macOS (arm64, x86_64)
+  - Include Linux support if possible
+  - Test formula locally: `brew install --build-from-source ./Formula/ai-tool-sync.rb`
+  - **Deps: T245**
+
+- [ ] **T247** - Set up Homebrew tap (optional, if not in homebrew-core)
+  - Create `homebrew-ai-tool-sync` repository
+  - Add auto-release workflow to update formula on npm publish
+  - Document `brew tap YOUR_USERNAME/ai-tool-sync && brew install ai-tool-sync`
+  - **Deps: T246**
+
+#### Track D: Cross-Platform Wrappers (P2)
+
+- [ ] **T248** - Create Docker image
+  - Multi-stage Dockerfile for minimal image size
+  - Include Node.js runtime and ai-tool-sync
+  - Publish to Docker Hub: `YOUR_USERNAME/ai-tool-sync`
+  - Publish to GitHub Container Registry: `ghcr.io/YOUR_USERNAME/ai-tool-sync`
+  - Document usage: `docker run -v $(pwd):/app YOUR_USERNAME/ai-tool-sync sync`
+  - **Deps: T245**
+
+- [ ] **T249** - Create npx-compatible standalone
+  - Verify `npx YOUR_PACKAGE_NAME` works without global install
+  - Ensure fast startup time
+  - Document in README for one-off usage
+  - **Deps: T245**
+
+- [ ] **T250** - Create installation script
+  - `curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/ai-tool-sync/main/install.sh | bash`
+  - Auto-detect OS and package manager
+  - Fallback to npm if no better option
+  - Verify Node.js installed or prompt to install
+  - **Deps: T245**
+
+#### Track E: Community & Ecosystem (P2)
+
+- [ ] **T251** - Create example repositories
+  - `ai-tool-sync-examples/react-typescript` - React app with TypeScript
+  - `ai-tool-sync-examples/python-django` - Django project
+  - `ai-tool-sync-examples/php-laravel` - Laravel PHP project
+  - `ai-tool-sync-examples/go-api` - Go REST API
+  - `ai-tool-sync-examples/rust-cli` - Rust CLI application
+  - Each includes `.ai-tool-sync/` config and demonstrates features
+  - **Deps: T245**
+
+- [ ] **T252** - Add to Awesome lists and package registries
+  - Submit to awesome-ai-coding-tools
+  - Add to npm categories
+  - Write announcement blog post
+  - Create Twitter/X thread
+  - Post on Hacker News
+  - **Deps: T245**
+
+- [ ] **T253** - Create publishing guide document
+  - Create `docs/PUBLISHING.md` with step-by-step instructions
+  - npm account setup and authentication
+  - GitHub Actions workflow setup
+  - Homebrew formula creation
+  - Docker image publishing
+  - Version bumping and release workflow
+  - Pre-release checklist
+  - **Deps: T244**
+
 ---
 
 ## Platform Research Reference
@@ -340,3 +485,248 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
 2. **Error Handling**: Use Result types throughout, only throw at CLI boundary
 3. **Documentation**: Keep docs in sync with implementation
 4. **Backwards Compatibility**: Design for extensibility from the start
+
+---
+
+## Publishing Instructions Reference
+
+### Prerequisites
+
+1. **npm Account**: Create account at https://www.npmjs.com/signup
+2. **npm Organization**: Either use personal scope or create org at https://www.npmjs.com/org/create
+3. **GitHub Repository**: Ensure repo is public and URLs in package.json are correct
+4. **2FA**: Enable 2FA on npm account (required for publishing to public packages)
+
+### Step-by-Step: npm Publishing
+
+> **Note**: Replace `YOUR_PACKAGE_NAME` with your actual package name.
+> - Scoped: `@your-org/ai-tool-sync` (requires npm org)
+> - Unscoped: `ai-tool-sync` (simpler, if name is available)
+
+```bash
+# 1. Verify you're logged into npm
+npm whoami
+# If not logged in:
+npm login
+
+# 2. Update package.json with YOUR namespace/name
+# - Change "name" field to your package name
+# - Update repository, homepage, bugs URLs to your GitHub repo
+
+# 3. Verify package.json metadata
+cat package.json | jq '{name, version, description, repository, homepage}'
+
+# 4. Run full test suite
+npm test
+
+# 5. Build production artifacts
+npm run build
+
+# 6. Check what files will be published
+npm pack --dry-run
+
+# 7. Publish (first time - creates package)
+# For scoped packages (@your-org/...):
+npm publish --access public
+# For unscoped packages:
+npm publish
+
+# 8. Verify the published package
+npm view YOUR_PACKAGE_NAME
+
+# 9. Test installation
+npm install -g YOUR_PACKAGE_NAME
+ai-sync --version
+```
+
+### Version Bumping
+
+```bash
+# Patch release (0.1.0 → 0.1.1) - bug fixes
+npm version patch
+
+# Minor release (0.1.0 → 0.2.0) - new features, backward compatible
+npm version minor
+
+# Major release (0.1.0 → 1.0.0) - breaking changes
+npm version major
+
+# After version bump, push with tags
+git push origin main --tags
+```
+
+### Setting Up GitHub Actions for Auto-Publish
+
+Create `.github/workflows/release.yml`:
+
+```yaml
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+      
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      
+      - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true
+```
+
+**Setup required secrets:**
+1. Go to npm → Access Tokens → Generate New Token (Automation)
+2. Go to GitHub repo → Settings → Secrets → Actions → New secret
+3. Name: `NPM_TOKEN`, Value: your npm token
+
+### Homebrew Formula (After npm Publish)
+
+Create `Formula/ai-tool-sync.rb`:
+
+```ruby
+class AiToolSync < Formula
+  desc "Unified AI tool configuration - single source of truth for Cursor, Claude Code, Factory"
+  homepage "https://github.com/YOUR_USERNAME/ai-tool-sync"
+  # Update URL to your published npm package
+  url "https://registry.npmjs.org/YOUR_PACKAGE_NAME/-/ai-tool-sync-VERSION.tgz"
+  sha256 "CHECKSUM_HERE"  # Get with: curl -sL URL | shasum -a 256
+  license "MIT"
+
+  depends_on "node"
+
+  def install
+    system "npm", "install", *Language::Node.std_npm_install_args(libexec)
+    bin.install_symlink Dir["#{libexec}/bin/*"]
+  end
+
+  test do
+    system "#{bin}/ai-sync", "--version"
+  end
+end
+```
+
+To get the checksum (after publishing):
+```bash
+# For scoped package:
+curl -sL "https://registry.npmjs.org/@your-org/ai-tool-sync/-/ai-tool-sync-0.1.0.tgz" | shasum -a 256
+
+# For unscoped package:
+curl -sL "https://registry.npmjs.org/ai-tool-sync/-/ai-tool-sync-0.1.0.tgz" | shasum -a 256
+```
+
+### Docker Image Publishing
+
+```dockerfile
+# Dockerfile
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY dist ./dist
+COPY bin ./bin
+COPY defaults ./defaults
+COPY targets ./targets
+
+FROM node:20-alpine
+WORKDIR /app
+COPY --from=builder /app ./
+RUN npm link
+WORKDIR /workspace
+ENTRYPOINT ["ai-sync"]
+CMD ["--help"]
+```
+
+Build and publish (replace `YOUR_USERNAME` with your Docker Hub/GitHub username):
+```bash
+# Build
+docker build -t YOUR_USERNAME/ai-tool-sync:0.1.0 -t YOUR_USERNAME/ai-tool-sync:latest .
+
+# Test
+docker run -v $(pwd):/workspace YOUR_USERNAME/ai-tool-sync sync --dry-run
+
+# Publish to Docker Hub
+docker login
+docker push YOUR_USERNAME/ai-tool-sync:0.1.0
+docker push YOUR_USERNAME/ai-tool-sync:latest
+
+# Publish to GitHub Container Registry
+docker login ghcr.io -u YOUR_USERNAME -p GITHUB_TOKEN
+docker tag YOUR_USERNAME/ai-tool-sync:0.1.0 ghcr.io/YOUR_USERNAME/ai-tool-sync:0.1.0
+docker push ghcr.io/YOUR_USERNAME/ai-tool-sync:0.1.0
+```
+
+### Language-Specific Installation Commands
+
+Add these to README and docs (replace `YOUR_PACKAGE_NAME` and `YOUR_USERNAME`):
+
+**Node.js / JavaScript / TypeScript:**
+```bash
+npm install -g YOUR_PACKAGE_NAME
+# or without installing:
+npx YOUR_PACKAGE_NAME init
+```
+
+**Python / PHP / Ruby:**
+```bash
+# Option 1: Global npm (recommended)
+npm install -g YOUR_PACKAGE_NAME
+
+# Option 2: npx (no install required)
+npx YOUR_PACKAGE_NAME init
+
+# Option 3: Docker
+docker run -v $(pwd):/workspace YOUR_USERNAME/ai-tool-sync init
+```
+
+**Go / Rust / Java / Kotlin / C# / Other:**
+```bash
+# Global npm install
+npm install -g YOUR_PACKAGE_NAME
+
+# Or use npx for one-off usage
+npx YOUR_PACKAGE_NAME init
+
+# Or Docker for isolated environment
+docker run -v $(pwd):/workspace YOUR_USERNAME/ai-tool-sync init
+```
+
+**macOS (Homebrew):**
+```bash
+brew tap YOUR_USERNAME/ai-tool-sync
+brew install ai-tool-sync
+```
+
+### Pre-Release Checklist
+
+- [ ] All tests passing (`npm test`)
+- [ ] Build succeeds (`npm run build`)
+- [ ] Version number updated in `package.json`
+- [ ] CHANGELOG.md updated
+- [ ] README.md up to date with all features
+- [ ] Repository URLs correct in package.json
+- [ ] License file present
+- [ ] .npmignore or `files` in package.json configured
+- [ ] Keywords relevant and complete
+- [ ] `npm pack --dry-run` shows expected files
+- [ ] Local test: `npm link && ai-sync --version`

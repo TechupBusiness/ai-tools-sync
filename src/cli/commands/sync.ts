@@ -26,6 +26,7 @@ import {
   createSubfolderContextGenerator,
 } from '../../generators/index.js';
 import {
+  type LoadError,
   type LoadResult,
   mergeLoadResults,
   isLoadResultEmpty,
@@ -33,6 +34,7 @@ import {
 } from '../../loaders/base.js';
 import { createLocalLoader } from '../../loaders/local.js';
 import { resolvePersonaInheritance } from '../../parsers/persona.js';
+import { buildProjectContext, shouldIncludeRule } from '../../transformers/condition-evaluator.js';
 import { updateGitignore, updateToolFolderGitignores } from '../../utils/gitignore.js';
 import { logger } from '../../utils/logger.js';
 import {
@@ -57,6 +59,7 @@ import {
 } from '../output.js';
 
 import type { ResolvedConfig } from '../../config/types.js';
+import type { ParsedRule } from '../../parsers/rule.js';
 
 /**
  * Current version for manifest
@@ -134,6 +137,12 @@ export async function sync(options: SyncOptions = {}): Promise<SyncResult> {
   // Step 2: Load content from sources
   printSubHeader('Loading content');
   const loadResult = await loadContent(config, options);
+
+  const conditionResult = await filterRulesByCondition(loadResult.rules, config);
+  loadResult.rules = conditionResult.rules;
+  if (conditionResult.errors.length > 0) {
+    loadResult.errors = [...(loadResult.errors ?? []), ...conditionResult.errors];
+  }
 
   if (isLoadResultEmpty(loadResult)) {
     printWarning('No content found to sync');
@@ -271,6 +280,34 @@ export async function sync(options: SyncOptions = {}): Promise<SyncResult> {
     errors: [],
     duration: Date.now() - startTime,
   };
+}
+
+async function filterRulesByCondition(
+  rules: ParsedRule[],
+  config: ResolvedConfig
+): Promise<{ rules: ParsedRule[]; errors: LoadError[] }> {
+  const filtered: ParsedRule[] = [];
+  const errors: LoadError[] = [];
+  const context = buildProjectContext(config.projectRoot, config.context ?? {});
+
+  for (const rule of rules) {
+    const evaluation = await shouldIncludeRule(rule.frontmatter, context);
+
+    if (!evaluation.ok) {
+      errors.push({
+        type: 'rule',
+        path: rule.filePath ?? rule.frontmatter.name,
+        message: evaluation.error.message,
+      });
+      continue;
+    }
+
+    if (evaluation.value) {
+      filtered.push(rule);
+    }
+  }
+
+  return { rules: filtered, errors };
 }
 
 /**

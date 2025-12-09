@@ -91,6 +91,17 @@
       },
       "additionalProperties": false
     },
+    "context": {
+      "type": "object",
+      "description": "User-defined variables available to conditional rules",
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "string" },
+          { "type": "number" },
+          { "type": "boolean" }
+        ]
+      }
+    },
     "claude": {
       "type": "object",
       "description": "Claude Code platform-specific settings",

@@ -212,6 +212,8 @@ export interface Config {
   subfolder_contexts?: Record<string, SubfolderContextConfig>;
   hooks?: Record<string, HookConfig[]>;
   output?: OutputConfig;
+  /** User-defined variables for conditional rules */
+  context?: Record<string, string | number | boolean>;
   
   /** Claude Code platform-specific settings */
   claude?: ClaudeConfig;

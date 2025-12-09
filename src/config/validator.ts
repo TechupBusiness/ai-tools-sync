@@ -58,6 +58,9 @@ export function validateConfig(config: unknown): Result<Config, ConfigValidation
   // Validate use section
   validateUseSection(configObj, ctx);
 
+  // Validate context variables
+  validateContext(configObj, ctx);
+
   // Validate rules
   validateRules(configObj, ctx);
 
@@ -235,6 +238,29 @@ function validateUseSection(config: Record<string, unknown>, ctx: ValidationCont
   // Validate plugins
   if (useObj.plugins !== undefined) {
     validatePlugins(useObj.plugins, ctx);
+  }
+}
+
+/**
+ * Validate user-defined context variables
+ */
+function validateContext(config: Record<string, unknown>, ctx: ValidationContext): void {
+  const context = config.context;
+
+  if (context === undefined) {
+    return;
+  }
+
+  if (typeof context !== 'object' || context === null || Array.isArray(context)) {
+    ctx.addError('context', 'Context must be an object', context);
+    return;
+  }
+
+  for (const [key, value] of Object.entries(context as Record<string, unknown>)) {
+    const valueType = typeof value;
+    if (valueType !== 'string' && valueType !== 'number' && valueType !== 'boolean') {
+      ctx.addError(`context.${key}`, 'Context values must be string, number, or boolean', value);
+    }
   }
 }
 

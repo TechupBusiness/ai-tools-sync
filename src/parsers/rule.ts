@@ -39,6 +39,8 @@ export interface Rule extends BaseFrontmatter {
   name: string;
   /** Always load this rule regardless of context */
   always_apply?: boolean;
+  /** Conditional expression to include the rule */
+  when?: string;
   /** Glob patterns to trigger this rule */
   globs?: string[];
   /** Other rules that must be loaded with this rule */
@@ -126,6 +128,14 @@ function validateRuleFields(data: Record<string, unknown>): ContentValidationErr
       path: 'always_apply',
       message: 'always_apply must be a boolean',
       value: data.always_apply,
+    });
+  }
+
+  if (data.when !== undefined && typeof data.when !== 'string') {
+    errors.push({
+      path: 'when',
+      message: 'when must be a string',
+      value: data.when,
     });
   }
 
@@ -239,6 +249,12 @@ function applyRuleDefaults(data: Record<string, unknown>): Rule {
   }
   if (data.version !== undefined) {
     rule.version = data.version as string;
+  }
+  if (data.when !== undefined) {
+    const whenValue = (data.when as string).trim();
+    if (whenValue !== '') {
+      rule.when = whenValue;
+    }
   }
   if (data.category !== undefined) {
     rule.category = data.category as RuleCategory;

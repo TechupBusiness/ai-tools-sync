@@ -20,6 +20,8 @@
 - [T159] 🟡 **Exact optional props**: `exactOptionalPropertyTypes` rejects `undefined` in Result payloads and options objects → When passing optional fields through wrappers (cache metadata, loader options), strip or conditionally include keys and return non-optional types (e.g., `NonNullable<T>`) for metadata helpers before assigning.
 - [T161] 🟡 **Manifest precedence**: Loader manifest search order matters (`.claude-plugin/plugin.json` should win over root `plugin.json`) → Explicitly order possible manifest paths by priority and add tests that assert the chosen metadata matches the preferred location.
 - [T228] 🟢 **Type/value imports**: ESLint `import/order` flags separate type/value imports from the same module (`import type { T } ... import { fn } ...`) → Prefer a single combined import with `type` inline (`import { fn, type T } from '...';`) to satisfy ordering rules.
+- [T226] 🟡 **Regex capture safety**: Destructuring regex matches (`const [, a, b] = match`) leaves `a|b` typed as possibly `undefined`, breaking strict null checks. Guard before use (e.g., `const a = match[1]; if (!a) return err(...)`) and avoid relying on optional tuple slots.
+- [T226] 🟡 **Template literals with unknown**: `restrict-template-expressions` rejects template parts typed as `unknown`/`never` (e.g., default switch cases). Cast or string-normalize first (`const ns: unknown = namespace; const nsStr = String(ns);`) before interpolation to keep lint/typecheck clean.
 
 ## Tooling & Config
 
@@ -42,4 +44,4 @@
 
 ---
 
-*Last updated: 2025-12-08*
+*Last updated: 2025-12-09*
