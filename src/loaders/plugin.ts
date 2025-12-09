@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
+import { isAbsolutePath } from '../utils/fs.js';
 import { logger } from '../utils/logger.js';
 import { DEFAULT_PLUGIN_CACHE_DIR, generatePluginId } from '../utils/plugin-cache.js';
 import { err, ok, type Result } from '../utils/result.js';
@@ -141,7 +142,7 @@ export class PluginLoader implements Loader {
 
   private resolveLocalPath(source: string, options?: PluginLoaderOptions): string {
     const basePath = options?.basePath ?? process.cwd();
-    return path.isAbsolute(source) ? source : path.resolve(basePath, source);
+    return isAbsolutePath(source) ? source : path.resolve(basePath, source);
   }
 
   /**
@@ -364,7 +365,7 @@ export class PluginLoader implements Loader {
 
     const basePath = options?.basePath ?? process.cwd();
     const cacheDir = DEFAULT_GIT_CACHE_DIR;
-    return path.isAbsolute(cacheDir) ? cacheDir : path.resolve(basePath, cacheDir);
+    return isAbsolutePath(cacheDir) ? cacheDir : path.resolve(basePath, cacheDir);
   }
 
   private buildPluginPath(

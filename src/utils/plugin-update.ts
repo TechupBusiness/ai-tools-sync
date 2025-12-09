@@ -5,7 +5,7 @@ import { promisify } from 'node:util';
 
 import { GitLoader, isGitAvailable, parseGitSource } from '../loaders/git.js';
 
-import { dirExists, ensureDir } from './fs.js';
+import { dirExists, ensureDir, isAbsolutePath } from './fs.js';
 import { logger } from './logger.js';
 import { generatePluginId, type PluginCache, type PluginCacheEntry } from './plugin-cache.js';
 import { err, ok, type Result } from './result.js';
@@ -96,7 +96,7 @@ function buildPluginId(
 }
 
 function isLocalSource(source: string): boolean {
-  return source.startsWith('./') || source.startsWith('../') || path.isAbsolute(source);
+  return source.startsWith('./') || source.startsWith('../') || isAbsolutePath(source);
 }
 
 /**

@@ -17,7 +17,7 @@ import { parseCommand } from '../parsers/command.js';
 import { parseHook } from '../parsers/hook.js';
 import { parsePersona } from '../parsers/persona.js';
 import { parseRule } from '../parsers/rule.js';
-import { dirExists, findMarkdownFiles, readFile } from '../utils/fs.js';
+import { dirExists, findMarkdownFiles, readFile, isAbsolutePath } from '../utils/fs.js';
 import { logger } from '../utils/logger.js';
 
 import {
@@ -69,7 +69,7 @@ export class LocalLoader implements Loader {
     }
 
     // Accept absolute paths
-    if (source.startsWith('/')) {
+    if (isAbsolutePath(source)) {
       return true;
     }
 
@@ -96,7 +96,7 @@ export class LocalLoader implements Loader {
 
     // Resolve the source path
     const basePath = options?.basePath ?? process.cwd();
-    const sourcePath = path.isAbsolute(source) ? source : path.resolve(basePath, source);
+    const sourcePath = isAbsolutePath(source) ? source : path.resolve(basePath, source);
 
     logger.debug(`Loading from: ${sourcePath}`);
 

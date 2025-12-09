@@ -216,6 +216,11 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
   - Added `scripts/run-tests.ts` wrapper that merges existing `NODE_OPTIONS` and ensures `--max-old-space-size=4096` before invoking Vitest via Node.
   - `package.json` `test` now runs the wrapper (`tsx scripts/run-tests.ts`); CI continues to call `npm test` across the matrix.
   - **Deps: None**
+- [x] **T256** - Normalize paths for Windows generation/loading
+  - Added POSIX path normalization for generator outputs, deleted file tracking, manifest hashes.
+  - Enhanced Windows absolute-path detection for plugin/local loaders and cache utilities.
+  - Ensures unit/integration suites pass on Windows with consistent path expectations.
+  - **Deps: None**
 
 ---
 
@@ -300,13 +305,8 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
 
 - [x] **T238** - Skill to convert platform files to generic format
   - Convert existing `.cursor/`, `.factory/`, `.claude/` files into generic format equivalents
-<<<<<<< Current (Your changes)
-  - Run existing parser validation (frontmatter + field checks) as a basic syntax gate; upgrade to lint flow once **T231** lands
-  - **Deps: T231**
-=======
   - Parser validation + lint integration (T231) wired; CLI `convert` command writes normalized files
   - **Deps: T231** for full lint; parser validation available now
->>>>>>> Incoming (Background Agent changes)
 
 - [ ] **T239** - Skill to generate new generic format files
   - Create new generic format files from scratch with platform-aware defaults

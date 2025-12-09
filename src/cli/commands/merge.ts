@@ -19,7 +19,7 @@ import { parseFrontmatter } from '../../parsers/frontmatter.js';
 import { parseHook } from '../../parsers/hook.js';
 import { parsePersona } from '../../parsers/persona.js';
 import { parseRule } from '../../parsers/rule.js';
-import { copyFile, ensureDir, glob, readFile } from '../../utils/fs.js';
+import { copyFile, ensureDir, glob, readFile, toPosixPath } from '../../utils/fs.js';
 import { logger } from '../../utils/logger.js';
 import {
   createSpinner,
@@ -379,7 +379,7 @@ async function analyzeInputFiles(files: string[], aiDir: string): Promise<InputF
   const inputDir = path.join(aiDir, 'input');
 
   for (const filePath of files) {
-    const relativePath = path.relative(inputDir, filePath);
+    const relativePath = toPosixPath(path.relative(inputDir, filePath));
     const contentResult = await readFile(filePath);
 
     if (!contentResult.ok) {

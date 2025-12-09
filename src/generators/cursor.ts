@@ -16,7 +16,15 @@ import * as path from 'node:path';
 import { isCommandServer, type McpConfig } from '../parsers/mcp.js';
 import { serializeFrontmatter, transformForCursor } from '../transformers/frontmatter.js';
 import { mapTools } from '../transformers/tool-mapper.js';
-import { dirExists, ensureDir, glob, joinPath, removeDir, writeFile } from '../utils/fs.js';
+import {
+  dirExists,
+  ensureDir,
+  glob,
+  joinPath,
+  removeDir,
+  toPosixPath,
+  writeFile,
+} from '../utils/fs.js';
 
 import {
   type GeneratedFile,
@@ -134,14 +142,15 @@ export class CursorGenerator implements Generator {
         const filePath = joinPath(outputDir, file.path);
         const writeResult = await writeFile(filePath, file.content);
         if (writeResult.ok) {
-          result.files.push(file.path);
+          result.files.push(toPosixPath(file.path));
         } else {
           result.warnings.push(`Failed to write ${file.path}: ${writeResult.error.message}`);
         }
       }
     } else {
-      result.generated = generated;
-      result.files = generated.map((f) => f.path);
+      const normalized = generated.map((f) => ({ ...f, path: toPosixPath(f.path) }));
+      result.generated = normalized;
+      result.files = normalized.map((f) => f.path);
     }
 
     return result;
@@ -158,7 +167,7 @@ export class CursorGenerator implements Generator {
     if (await dirExists(rulesDir)) {
       const files = await glob('*.mdc', { cwd: rulesDir, absolute: false });
       await removeDir(rulesDir);
-      deleted.push(...files.map((f) => joinPath(CURSOR_DIRS.rules, f)));
+      deleted.push(...files.map((f) => toPosixPath(joinPath(CURSOR_DIRS.rules, f))));
     }
 
     // Clean roles directory
@@ -166,7 +175,7 @@ export class CursorGenerator implements Generator {
     if (await dirExists(rolesDir)) {
       const files = await glob('*.md', { cwd: rolesDir, absolute: false });
       await removeDir(rolesDir);
-      deleted.push(...files.map((f) => joinPath(CURSOR_DIRS.roles, f)));
+      deleted.push(...files.map((f) => toPosixPath(joinPath(CURSOR_DIRS.roles, f))));
     }
 
     return deleted;
@@ -201,7 +210,7 @@ export class CursorGenerator implements Generator {
    */
   private generateRuleFile(rule: ParsedRule, options: GeneratorOptions): GeneratedFile {
     const filename = `${toSafeFilename(rule.frontmatter.name)}.mdc`;
-    const filePath = joinPath(CURSOR_DIRS.rules, filename);
+    const filePath = toPosixPath(joinPath(CURSOR_DIRS.rules, filename));
 
     // Transform frontmatter to Cursor format
     const cursorFrontmatter = transformForCursor(
@@ -267,7 +276,7 @@ export class CursorGenerator implements Generator {
    */
   private generatePersonaFile(persona: ParsedPersona, options: GeneratorOptions): GeneratedFile {
     const filename = `${toSafeFilename(persona.frontmatter.name)}.md`;
-    const filePath = joinPath(CURSOR_DIRS.roles, filename);
+    const filePath = toPosixPath(joinPath(CURSOR_DIRS.roles, filename));
 
     // Map tools to Cursor-specific names
     const tools = persona.frontmatter.tools ?? [];
@@ -347,7 +356,7 @@ export class CursorGenerator implements Generator {
    */
   private generateCommandFile(command: ParsedCommand, options: GeneratorOptions): GeneratedFile {
     const filename = `${toSafeFilename(command.frontmatter.name)}.md`;
-    const filePath = joinPath(CURSOR_DIRS.commands, filename);
+    const filePath = toPosixPath(joinPath(CURSOR_DIRS.commands, filename));
 
     // Build content
     const parts: string[] = [];

@@ -51,6 +51,7 @@ IMPORTANT!!! Review your work against:
 
 - **All pass** → "✅ Ready for review"
 - **Issues found** → Fix if quick (<5min), otherwise flag and ask
+- Use `npm run format` and `pnpm lint --fix` to fix files before you try it yourself !!!
 
 ---
 
@@ -62,3 +63,4 @@ IMPORTANT!!! Review your work against:
 | New pattern | Doesn't match existing similar files |
 | Over-engineering | Added abstraction not in spec |
 | Stale docs | plan.md/project.md don't reflect current state |
+| format or lint errors occur| Didn't run `npm run format` and `pnpm lint --fix` first |

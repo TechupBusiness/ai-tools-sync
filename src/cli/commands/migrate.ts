@@ -19,7 +19,7 @@ import * as readline from 'node:readline';
 
 import { getAiPaths, resolveConfigDir } from '../../config/loader.js';
 import { parseFrontmatter, hasFrontmatter } from '../../parsers/frontmatter.js';
-import { ensureDir, glob, readFile, writeFile, copyFile } from '../../utils/fs.js';
+import { ensureDir, glob, readFile, writeFile, copyFile, toPosixPath } from '../../utils/fs.js';
 import { logger } from '../../utils/logger.js';
 import {
   printHeader,
@@ -220,7 +220,7 @@ function detectContentType(
   }
 
   // Check file path patterns
-  const lowerPath = filePath.toLowerCase();
+  const lowerPath = toPosixPath(filePath).toLowerCase();
   if (
     lowerPath.includes('/rules/') ||
     lowerPath.includes('/skills/') ||
@@ -313,7 +313,7 @@ export async function discover(projectRoot: string): Promise<DiscoveryResult> {
 
       try {
         const stats = await fs.stat(filePath);
-        const relativePath = path.relative(projectRoot, filePath);
+        const relativePath = toPosixPath(path.relative(projectRoot, filePath));
         const contentResult = await readFile(filePath);
         const content = contentResult.ok ? contentResult.value : '';
 

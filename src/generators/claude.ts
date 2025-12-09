@@ -16,7 +16,15 @@ import * as path from 'node:path';
 import { isCommandServer, type McpConfig } from '../parsers/mcp.js';
 import { mapModel } from '../transformers/model-mapper.js';
 import { mapTools } from '../transformers/tool-mapper.js';
-import { dirExists, ensureDir, glob, joinPath, removeDir, writeFile } from '../utils/fs.js';
+import {
+  dirExists,
+  ensureDir,
+  glob,
+  joinPath,
+  removeDir,
+  toPosixPath,
+  writeFile,
+} from '../utils/fs.js';
 
 import {
   type GeneratedFile,
@@ -187,14 +195,15 @@ export class ClaudeGenerator implements Generator {
         const filePath = joinPath(outputDir, file.path);
         const writeResult = await writeFile(filePath, file.content);
         if (writeResult.ok) {
-          result.files.push(file.path);
+          result.files.push(toPosixPath(file.path));
         } else {
           result.warnings.push(`Failed to write ${file.path}: ${writeResult.error.message}`);
         }
       }
     } else {
-      result.generated = generated;
-      result.files = generated.map((f) => f.path);
+      const normalized = generated.map((f) => ({ ...f, path: toPosixPath(f.path) }));
+      result.generated = normalized;
+      result.files = normalized.map((f) => f.path);
     }
 
     return result;
@@ -211,7 +220,7 @@ export class ClaudeGenerator implements Generator {
     if (await dirExists(skillsDir)) {
       const dirs = await glob('*', { cwd: skillsDir, onlyDirectories: true, absolute: false });
       await removeDir(skillsDir);
-      deleted.push(...dirs.map((d) => joinPath(CLAUDE_DIRS.skills, d)));
+      deleted.push(...dirs.map((d) => toPosixPath(joinPath(CLAUDE_DIRS.skills, d))));
     }
 
     // Clean agents directory
@@ -219,7 +228,7 @@ export class ClaudeGenerator implements Generator {
     if (await dirExists(agentsDir)) {
       const files = await glob('*.md', { cwd: agentsDir, absolute: false });
       await removeDir(agentsDir);
-      deleted.push(...files.map((f) => joinPath(CLAUDE_DIRS.agents, f)));
+      deleted.push(...files.map((f) => toPosixPath(joinPath(CLAUDE_DIRS.agents, f))));
     }
 
     // Clean commands directory
@@ -227,7 +236,7 @@ export class ClaudeGenerator implements Generator {
     if (await dirExists(commandsDir)) {
       const files = await glob('*.md', { cwd: commandsDir, absolute: false });
       await removeDir(commandsDir);
-      deleted.push(...files.map((f) => joinPath(CLAUDE_DIRS.commands, f)));
+      deleted.push(...files.map((f) => toPosixPath(joinPath(CLAUDE_DIRS.commands, f))));
     }
 
     return deleted;
@@ -262,7 +271,7 @@ export class ClaudeGenerator implements Generator {
   ): Promise<GeneratedFile> {
     const skillName = toSafeFilename(rule.frontmatter.name);
     const skillDir = joinPath(CLAUDE_DIRS.skills, skillName);
-    const filePath = joinPath(skillDir, 'SKILL.md');
+    const filePath = toPosixPath(joinPath(skillDir, 'SKILL.md'));
 
     // Ensure skill directory exists
     if (!options.dryRun) {
@@ -312,7 +321,7 @@ export class ClaudeGenerator implements Generator {
     parts.push('');
 
     return {
-      path: filePath,
+      path: toPosixPath(filePath),
       content: parts.join('\n'),
       type: 'rule',
     };
@@ -351,7 +360,7 @@ export class ClaudeGenerator implements Generator {
    */
   private generateAgentFile(persona: ParsedPersona, options: GeneratorOptions): GeneratedFile {
     const filename = `${toSafeFilename(persona.frontmatter.name)}.md`;
-    const filePath = joinPath(CLAUDE_DIRS.agents, filename);
+    const filePath = toPosixPath(joinPath(CLAUDE_DIRS.agents, filename));
 
     // Prefer claude-specific overrides when present
     const tools = persona.frontmatter.claude?.tools ?? persona.frontmatter.tools ?? [];
@@ -444,7 +453,7 @@ export class ClaudeGenerator implements Generator {
    */
   private generateCommandFile(command: ParsedCommand, options: GeneratorOptions): GeneratedFile {
     const commandName = toSafeFilename(command.frontmatter.name);
-    const filePath = joinPath(CLAUDE_DIRS.commands, `${commandName}.md`);
+    const filePath = toPosixPath(joinPath(CLAUDE_DIRS.commands, `${commandName}.md`));
 
     const parts: string[] = [];
 
@@ -699,7 +708,7 @@ export class ClaudeGenerator implements Generator {
     }
 
     return {
-      path: joinPath(CLAUDE_DIRS.root, 'settings.json'),
+      path: toPosixPath(joinPath(CLAUDE_DIRS.root, 'settings.json')),
       content: JSON.stringify(settings, null, 2) + '\n',
       type: 'config',
     };
@@ -852,7 +861,7 @@ export class ClaudeGenerator implements Generator {
     }
 
     return {
-      path: joinPath(CLAUDE_DIRS.root, 'mcp_servers.json'),
+      path: toPosixPath(joinPath(CLAUDE_DIRS.root, 'mcp_servers.json')),
       content: JSON.stringify(mcpJson, null, 2) + '\n',
       type: 'config',
     };

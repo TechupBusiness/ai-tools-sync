@@ -17,7 +17,7 @@ import addFormats from 'ajv-formats';
 
 import manifestSchema from '../schemas/manifest.schema.json' assert { type: 'json' };
 
-import { fileExists, readFile, writeFile } from './fs.js';
+import { fileExists, readFile, writeFile, isAbsolutePath, toPosixPath } from './fs.js';
 import { logger } from './logger.js';
 import { ok, err, tryCatchAsync, type Result } from './result.js';
 
@@ -169,11 +169,12 @@ export function collectGeneratedPaths(
   const dirSet = new Set<string>();
 
   for (const file of files) {
-    const relativePath = path.isAbsolute(file) ? path.relative(projectRoot, file) : file;
+    const rawRelative = isAbsolutePath(file) ? path.relative(projectRoot, file) : file;
+    const relativePath = toPosixPath(rawRelative);
 
     fileSet.add(relativePath);
 
-    const dirPath = path.dirname(relativePath);
+    const dirPath = path.posix.dirname(relativePath);
     if (dirPath && dirPath !== '.') {
       dirSet.add(`${dirPath}/`);
 

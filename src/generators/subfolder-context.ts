@@ -9,7 +9,7 @@
 
 import * as path from 'node:path';
 
-import { ensureDir, joinPath, writeFile } from '../utils/fs.js';
+import { ensureDir, joinPath, toPosixPath, writeFile } from '../utils/fs.js';
 
 import {
   type GeneratedFile,
@@ -135,14 +135,15 @@ export class SubfolderContextGenerator implements Generator {
         await ensureDir(path.dirname(filePath));
         const writeResult = await writeFile(filePath, file.content);
         if (writeResult.ok) {
-          result.files.push(file.path);
+          result.files.push(toPosixPath(file.path));
         } else {
           result.warnings.push(`Failed to write ${file.path}: ${writeResult.error.message}`);
         }
       }
     } else {
-      result.generated = generated;
-      result.files = generated.map((f) => f.path);
+      const normalized = generated.map((f) => ({ ...f, path: toPosixPath(f.path) }));
+      result.generated = normalized;
+      result.files = normalized.map((f) => f.path);
     }
 
     return result;
@@ -250,7 +251,7 @@ export class SubfolderContextGenerator implements Generator {
     }
 
     return {
-      path: joinPath(config.path, 'CLAUDE.md'),
+      path: toPosixPath(joinPath(config.path, 'CLAUDE.md')),
       content: parts.join('\n'),
       type: 'entrypoint',
     };
@@ -337,7 +338,7 @@ export class SubfolderContextGenerator implements Generator {
     }
 
     return {
-      path: joinPath(config.path, 'AGENTS.md'),
+      path: toPosixPath(joinPath(config.path, 'AGENTS.md')),
       content: parts.join('\n'),
       type: 'entrypoint',
     };

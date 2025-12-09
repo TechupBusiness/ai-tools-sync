@@ -182,7 +182,7 @@ export function resolvePath(basePath: string, relativePath: string): string {
  * Get the relative path from one directory to another
  */
 export function relativePath(from: string, to: string): string {
-  return path.relative(from, to);
+  return toPosixPath(path.relative(from, to));
 }
 
 /**
@@ -218,14 +218,23 @@ export function getDirname(filePath: string): string {
  * Normalize a path (resolve . and ..)
  */
 export function normalizePath(filePath: string): string {
-  return path.normalize(filePath);
+  return toPosixPath(path.normalize(filePath));
 }
 
 /**
  * Check if a path is absolute
  */
 export function isAbsolutePath(filePath: string): boolean {
-  return path.isAbsolute(filePath);
+  return (
+    path.isAbsolute(filePath) || /^[a-zA-Z]:[\\/]/.test(filePath) || filePath.startsWith('\\\\')
+  );
+}
+
+/**
+ * Convert any path to POSIX-style separators (/)
+ */
+export function toPosixPath(filePath: string): string {
+  return filePath.replace(/\\/g, '/');
 }
 
 /**

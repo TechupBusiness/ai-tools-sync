@@ -18,7 +18,15 @@ import { isCommandServer, type McpConfig } from '../parsers/mcp.js';
 import { serializeFrontmatter } from '../transformers/frontmatter.js';
 import { mapModel } from '../transformers/model-mapper.js';
 import { mapTools } from '../transformers/tool-mapper.js';
-import { dirExists, ensureDir, glob, joinPath, removeDir, writeFile } from '../utils/fs.js';
+import {
+  dirExists,
+  ensureDir,
+  glob,
+  joinPath,
+  removeDir,
+  toPosixPath,
+  writeFile,
+} from '../utils/fs.js';
 
 import {
   type GeneratedFile,
@@ -192,14 +200,15 @@ export class FactoryGenerator implements Generator {
         const filePath = joinPath(outputDir, file.path);
         const writeResult = await writeFile(filePath, file.content);
         if (writeResult.ok) {
-          result.files.push(file.path);
+          result.files.push(toPosixPath(file.path));
         } else {
           result.warnings.push(`Failed to write ${file.path}: ${writeResult.error.message}`);
         }
       }
     } else {
-      result.generated = generated;
-      result.files = generated.map((f) => f.path);
+      const normalized = generated.map((f) => ({ ...f, path: toPosixPath(f.path) }));
+      result.generated = normalized;
+      result.files = normalized.map((f) => f.path);
     }
 
     return result;
@@ -216,7 +225,7 @@ export class FactoryGenerator implements Generator {
     if (await dirExists(skillsDir)) {
       const dirs = await glob('*', { cwd: skillsDir, onlyDirectories: true, absolute: false });
       await removeDir(skillsDir);
-      deleted.push(...dirs.map((d) => joinPath(FACTORY_DIRS.skills, d)));
+      deleted.push(...dirs.map((d) => toPosixPath(joinPath(FACTORY_DIRS.skills, d))));
     }
 
     // Clean droids directory
@@ -224,7 +233,7 @@ export class FactoryGenerator implements Generator {
     if (await dirExists(droidsDir)) {
       const files = await glob('*.md', { cwd: droidsDir, absolute: false });
       await removeDir(droidsDir);
-      deleted.push(...files.map((f) => joinPath(FACTORY_DIRS.droids, f)));
+      deleted.push(...files.map((f) => toPosixPath(joinPath(FACTORY_DIRS.droids, f))));
     }
 
     // Clean commands directory
@@ -232,7 +241,7 @@ export class FactoryGenerator implements Generator {
     if (await dirExists(commandsDir)) {
       const files = await glob('*.md', { cwd: commandsDir, absolute: false });
       await removeDir(commandsDir);
-      deleted.push(...files.map((f) => joinPath(FACTORY_DIRS.commands, f)));
+      deleted.push(...files.map((f) => toPosixPath(joinPath(FACTORY_DIRS.commands, f))));
     }
 
     return deleted;
@@ -267,7 +276,7 @@ export class FactoryGenerator implements Generator {
   ): Promise<GeneratedFile> {
     const skillName = toSafeFilename(rule.frontmatter.name);
     const skillDir = joinPath(FACTORY_DIRS.skills, skillName);
-    const filePath = joinPath(skillDir, 'SKILL.md');
+    const filePath = toPosixPath(joinPath(skillDir, 'SKILL.md'));
 
     // Ensure skill directory exists
     if (!options.dryRun) {
@@ -377,7 +386,7 @@ export class FactoryGenerator implements Generator {
    */
   private generateDroidFile(persona: ParsedPersona, options: GeneratorOptions): GeneratedFile {
     const filename = `${toSafeFilename(persona.frontmatter.name)}.md`;
-    const filePath = joinPath(FACTORY_DIRS.droids, filename);
+    const filePath = toPosixPath(joinPath(FACTORY_DIRS.droids, filename));
 
     // Prefer factory-specific overrides when present
     const tools =
@@ -484,7 +493,7 @@ export class FactoryGenerator implements Generator {
    */
   private generateCommandFile(command: ParsedCommand, options: GeneratorOptions): GeneratedFile {
     const filename = `${toSafeFilename(command.frontmatter.name)}.md`;
-    const filePath = joinPath(FACTORY_DIRS.commands, filename);
+    const filePath = toPosixPath(joinPath(FACTORY_DIRS.commands, filename));
 
     // Build content
     const parts: string[] = [];
@@ -676,7 +685,7 @@ export class FactoryGenerator implements Generator {
     }
 
     return {
-      path: joinPath(FACTORY_DIRS.root, 'settings.json'),
+      path: toPosixPath(joinPath(FACTORY_DIRS.root, 'settings.json')),
       content: JSON.stringify(settings, null, 2) + '\n',
       type: 'config',
     };
@@ -874,7 +883,7 @@ export class FactoryGenerator implements Generator {
     }
 
     return {
-      path: joinPath(FACTORY_DIRS.root, 'mcp.json'),
+      path: toPosixPath(joinPath(FACTORY_DIRS.root, 'mcp.json')),
       content: JSON.stringify(mcpJson, null, 2) + '\n',
       type: 'config',
     };

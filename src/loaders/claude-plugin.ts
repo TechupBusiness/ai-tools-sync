@@ -18,6 +18,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import { interpolateEnvVars } from '../parsers/mcp.js';
+import { isAbsolutePath } from '../utils/fs.js';
 import { logger } from '../utils/logger.js';
 import { resolvePluginRootVariable } from '../utils/plugin-cache.js';
 import { parseYaml } from '../utils/yaml.js';
@@ -321,7 +322,7 @@ export class ClaudePluginLoader implements Loader {
     // Load hooks - from manifest path, settings.json, or hooks/hooks.json
     const hooksPath = manifest?.hooks ?? this.findHooksFile(pluginPath);
     if (hooksPath) {
-      const resolvedHooksPath = path.isAbsolute(hooksPath)
+      const resolvedHooksPath = isAbsolutePath(hooksPath)
         ? hooksPath
         : path.join(pluginPath, hooksPath);
       const hooksResult = await this.loadHooksFromPath(resolvedHooksPath, pluginPath, options);
@@ -332,7 +333,7 @@ export class ClaudePluginLoader implements Loader {
     // Load MCP servers - from manifest path or convention (.mcp.json)
     const mcpPath = manifest?.mcpServers ?? this.findMcpFile(pluginPath);
     if (mcpPath) {
-      const resolvedMcpPath = path.isAbsolute(mcpPath) ? mcpPath : path.join(pluginPath, mcpPath);
+      const resolvedMcpPath = isAbsolutePath(mcpPath) ? mcpPath : path.join(pluginPath, mcpPath);
       const mcpResult = await this.loadMcpFromPath(resolvedMcpPath, pluginPath, options);
       if (Object.keys(mcpResult.servers).length > 0) {
         result.mcpServers = mcpResult.servers;
@@ -405,7 +406,7 @@ export class ClaudePluginLoader implements Loader {
       resolvedPath = await this.resolveNpmPlugin(spec.slice(4), options);
     }
     // Absolute path
-    else if (spec.startsWith('/')) {
+    else if (spec.startsWith('/') || isAbsolutePath(spec)) {
       resolvedPath = spec;
     }
     // Relative path
@@ -642,7 +643,7 @@ export class ClaudePluginLoader implements Loader {
   ): string | null {
     // Try manifest path first
     if (manifestPath) {
-      const resolved = path.isAbsolute(manifestPath)
+      const resolved = isAbsolutePath(manifestPath)
         ? manifestPath
         : path.join(pluginPath, manifestPath);
 
