@@ -350,6 +350,33 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
   - Update defaults/rules/authoring-guide.md to reflect policies vs skills
   - **Deps: T261**
 
+- [ ] **T263** - Add linters for personas/commands/hooks/config
+  - Extend lint pipeline to validate personas, commands, hooks, and config.yaml alongside policies/skills
+  - Ensure schema coverage for YAML/JSON configs (ai-tool-sync config, platform MCP/manifest files)
+  - Add docs noting supported config file types and how to run lint per kind
+  - **Deps: T231, T261**
+
+- [ ] **T264** - Research tool config coverage & document capabilities
+  - Research each platform/tool config format (Cursor, Claude, Factory, MCP, ai-tool-sync) from official docs/URLs
+  - Produce per-tool prompt/summary in `docs/analysis/` listing options, required fields, defaults, and gaps
+  - Compile a compact capability matrix for use as source material for implementation
+  - Identify missing config support areas to prioritize follow-up implementation tasks
+  - **Deps: T231**
+
+- [ ] **T265** - Configurable platform targeting for generation
+  - Allow selecting target platforms via CLI flags and config to control generated outputs
+  - Generators honor platform selection for policies/skills/personas/commands/hooks
+  - Validate unknown platforms and document defaults/precedence (CLI overrides config)
+  - Update README and docs/CONFIGURATION.md / docs/GENERATORS.md with examples
+  - **Deps: T239, T261**
+
+- [ ] **T266** - Local developer overrides for config (gitignored)
+  - Support optional per-developer override config merged on top of project config
+  - Define override filename/location and ensure it is added to .gitignore
+  - Merge strategy documented (override wins) and validated in CLI
+  - Update README/docs/CONFIGURATION.md with usage and safety notes
+  - **Deps: T231**
+
 ---
 
 ## Platform Research Reference
