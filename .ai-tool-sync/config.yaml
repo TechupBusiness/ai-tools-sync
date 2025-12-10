@@ -1,0 +1,30 @@
+# ai-tool-sync dogfooding configuration
+# This project uses its own tool for AI assistant configuration
+
+version: 1.0.0
+project_name: ai-tool-sync
+
+# Use defaults from the package itself
+use:
+  rules:
+    - authoring-guide
+    - code-review
+    - documentation
+  personas:
+    - architect
+    - implementer
+    - test-zealot
+  commands: []
+  hooks: []
+
+# Generate for all supported targets
+targets:
+  - cursor
+  - claude
+  - factory
+
+# Output settings
+output:
+  clean_before_sync: false
+  add_headers: true
+  update_gitignore: true

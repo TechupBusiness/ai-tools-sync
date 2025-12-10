@@ -318,11 +318,17 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
   - Tests: `npm test -- creators`
   - **Deps: T231**
 
-- [ ] **T259** - Add defaults prompt skill for LLM authoring
-  - Ship a default “authoring guide” skill in `defaults/` that instructs LLMs how to draft rules/personas/commands/hooks using generic schemas, slugging, and targets
-  - Include a short checklist to run `ai-sync create ... --dry-run` + `--run-lint` (rules) to validate and fix drafts
-  - Note mapping expectations (tools/models, snake_case frontmatter, platform extensions) and collision/overwrite guidance
+- [x] **T259** - Add defaults prompt skill for LLM authoring
+  - Shipped `defaults/rules/authoring-guide.md` with comprehensive LLM guidance
+  - Added `.ai-tool-sync/config.yaml` for dogfooding the tool in its own development
+  - Covers all four kinds, tool/model mappings, validation workflow, platform extensions
   - **Deps: T239, T231**
+
+- [ ] **T260** - Add path-based validation to lint and validate commands
+  - Enable `ai-sync lint <file>` and `ai-sync validate --path <dir>` for ad-hoc validation
+  - Auto-detect file type from directory or frontmatter
+  - Supports dogfooding, CI pipelines, and quick file checks
+  - **Deps: None**
 
 ---
 
