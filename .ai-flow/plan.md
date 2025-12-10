@@ -330,7 +330,8 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
   - Supports dogfooding, CI pipelines, and quick file checks
   - **Deps: None**
 
-- [ ] **T261** - Separate skills from policies in folder structure
+- [ ] **T261** - Separate skills from policies in folder structure **(REWORK: add skill content type before rename)**
+  - Rework: Claude skills are more complex; define a dedicated skill content type before (or alongside) the policies rename
   - Rename `rules/` to `policies/`; add `skills/` as distinct top-level folder
   - Policies = what you must do (constraints/enforcement via globs or always_apply)
   - Skills = what you can do (capabilities/knowledge via semantic or explicit invocation)
@@ -377,6 +378,12 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
   - Update README/docs/CONFIGURATION.md with usage and safety notes
   - **Deps: T231**
 
+- [ ] **T267** - Preserve subfolder structure in rules/content deployment
+  - Track relative subfolder path from content directory (e.g., `policies/frontend/react.md` → `frontend/`)
+  - Cursor: Deploy to `.cursor/rules/<subfolder>/<name>.mdc` if subfolders exist
+  - Claude/Factory: Flatten subfolder into skill name (e.g., `frontend-react`) since one folder per skill
+  - Config option `preserve_subfolders: true|false` (default: true for Cursor, false for others)
+  - **Deps: None**
 ---
 
 ## Platform Research Reference
