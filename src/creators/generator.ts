@@ -31,6 +31,7 @@ import { DEFAULT_TARGETS as PARSER_DEFAULT_TARGETS, validateTargets } from '@/pa
 import { serializeFrontmatter } from '@/transformers/frontmatter.js';
 import { isGenericModel, mapModel } from '@/transformers/model-mapper.js';
 import { isKnownGenericTool, mapTool } from '@/transformers/tool-mapper.js';
+import { toPosixPath } from '@/utils/fs.js';
 import { updateToolFolderGitignores } from '@/utils/gitignore.js';
 import { err, ok } from '@/utils/result.js';
 
@@ -606,7 +607,7 @@ async function updateGitignoreIfNeeded(params: {
     params.aiPaths.commandsDir,
     params.aiPaths.hooksDir,
   ]
-    .map((dir) => path.relative(params.projectRoot, dir))
+    .map((dir) => toPosixPath(path.relative(params.projectRoot, dir)))
     .filter((dir) => dir && !dir.startsWith('..'))
     .map(ensureTrailingSlash);
 
