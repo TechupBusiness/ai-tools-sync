@@ -6,22 +6,33 @@ ai-tool-sync is distributed as an npm package but works with **any** programming
 
 ```bash
 # Option 1: Global npm install (recommended for frequent use)
-npm install -g @anthropic/ai-tool-sync
+npm install -g @techupbusiness/ai-tool-sync
 
 # Option 2: npx (no install required, runs latest version)
-npx @anthropic/ai-tool-sync init
-
-# Option 3: Docker (no Node.js required, image publishing in progress)
-docker run -v $(pwd):/workspace ghcr.io/anthropic/ai-tool-sync init
+npx @techupbusiness/ai-tool-sync init
 ```
 
-> Homebrew support is planned (T246-T247). Docker image publishing is in progress (T248); use the Docker commands above once the image is available.
+> Homebrew support is planned (T246-T247). A Docker image is not published yet; use npm/npx or a local checkout in the meantime.
 
 ## Requirements
 
 - Node.js 18+ for npm/npx usage
-- OR Docker for containerized usage
+- No Docker image published yet (container support planned)
 - No runtime dependencies are added to your project
+
+## Using a local checkout (development)
+
+If you're developing `ai-tool-sync` and want to use that build in other projects on your machine:
+
+1. Install dependencies in this repo: `npm install`
+2. Build once (or watch): `npm run build` (or `npm run build:watch`)
+3. Use it elsewhere:
+   - Option A: Global link  
+     - In this repo: `npm link`  
+     - In the target project: `npm link @techupbusiness/ai-tool-sync`
+   - Option B: Install from the local path  
+     - In the target project: `npm install /path/to/ai-tools-sync`
+4. After code changes, re-run `npm run build` so the `dist/` output stays in sync (the CLI entry loads from `dist/`).
 
 ## Node.js / TypeScript / JavaScript
 
@@ -30,31 +41,25 @@ The native environment with multiple installation options.
 ### Global Install (Recommended)
 
 ```bash
-npm install -g @anthropic/ai-tool-sync
+npm install -g @techupbusiness/ai-tool-sync
 ```
 
 ### npx (One-Off)
 
 ```bash
-npx @anthropic/ai-tool-sync init
+npx @techupbusiness/ai-tool-sync init
 ```
 
 ### Project Dev Dependency
 
 ```bash
-npm install --save-dev @anthropic/ai-tool-sync
+npm install --save-dev @techupbusiness/ai-tool-sync
 # or
-yarn add -D @anthropic/ai-tool-sync
+yarn add -D @techupbusiness/ai-tool-sync
 # or
-pnpm add -D @anthropic/ai-tool-sync
+pnpm add -D @techupbusiness/ai-tool-sync
 # or
-bun add -d @anthropic/ai-tool-sync
-```
-
-### Docker (No Node.js Required)
-
-```bash
-docker run -v $(pwd):/workspace ghcr.io/anthropic/ai-tool-sync init
+bun add -d @techupbusiness/ai-tool-sync
 ```
 
 ### package.json Scripts
@@ -83,19 +88,16 @@ globs: ["src/**/*.{ts,tsx,js,jsx}"]
 
 ## Python
 
-No Python package required—install via npm globally, use npx, or run via Docker.
+No Python package required—install via npm globally or use npx.
 
 ### Installation
 
 ```bash
 # Option 1: Global npm (if Node.js available)
-npm install -g @anthropic/ai-tool-sync
+npm install -g @techupbusiness/ai-tool-sync
 
 # Option 2: npx (no install)
-npx @anthropic/ai-tool-sync init
-
-# Option 3: Docker (no Node.js required, image publishing in progress)
-docker run -v $(pwd):/workspace ghcr.io/anthropic/ai-tool-sync init
+npx @techupbusiness/ai-tool-sync init
 ```
 
 ### When Condition Example
@@ -112,16 +114,16 @@ globs: ["**/*.py", "**/templates/**/*.html"]
 
 ## PHP (Laravel, Symfony, WordPress, etc.)
 
-No Composer package required—install via npm globally or use Docker.
+No Composer package required—install via npm globally or use npx.
 
 ### Installation
 
 ```bash
 # Option 1: Global npm
-npm install -g @anthropic/ai-tool-sync
+npm install -g @techupbusiness/ai-tool-sync
 
-# Option 2: Docker (image publishing in progress)
-docker run -v $(pwd):/workspace ghcr.io/anthropic/ai-tool-sync init
+# Option 2: npx (no install)
+npx @techupbusiness/ai-tool-sync init
 ```
 
 ### When Condition Example
@@ -138,14 +140,14 @@ globs: ["app/**/*.php", "routes/**/*.php"]
 
 ## Go
 
-No Go module required—install via npm globally or use Docker.
+No Go module required—install via npm globally or use npx.
 
 ### Installation
 
 ```bash
-npm install -g @anthropic/ai-tool-sync
-# or
-docker run -v $(pwd):/workspace ghcr.io/anthropic/ai-tool-sync init
+npm install -g @techupbusiness/ai-tool-sync
+# or npx
+npx @techupbusiness/ai-tool-sync init
 ```
 
 ### When Condition Example
@@ -162,14 +164,14 @@ globs: ["**/*.go"]
 
 ## Rust
 
-No Cargo crate required—install via npm globally or use Docker.
+No Cargo crate required—install via npm globally or use npx.
 
 ### Installation
 
 ```bash
-npm install -g @anthropic/ai-tool-sync
-# or
-docker run -v $(pwd):/workspace ghcr.io/anthropic/ai-tool-sync init
+npm install -g @techupbusiness/ai-tool-sync
+# or npx
+npx @techupbusiness/ai-tool-sync init
 ```
 
 ### When Condition Example
@@ -186,14 +188,14 @@ globs: ["src/**/*.rs"]
 
 ## Ruby
 
-No gem required—install via npm globally or use Docker.
+No gem required—install via npm globally or use npx.
 
 ### Installation
 
 ```bash
-npm install -g @anthropic/ai-tool-sync
-# or
-docker run -v $(pwd):/workspace ghcr.io/anthropic/ai-tool-sync init
+npm install -g @techupbusiness/ai-tool-sync
+# or npx
+npx @techupbusiness/ai-tool-sync init
 ```
 
 ### When Condition Example
@@ -215,21 +217,21 @@ globs: ["app/**/*.rb", "config/**/*.rb"]
 namespace :ai do
   desc "Sync AI tool configurations"
   task :sync do
-    sh "npx @anthropic/ai-tool-sync"
+    sh "npx @techupbusiness/ai-tool-sync"
   end
 end
 ```
 
 ## Java / Kotlin
 
-No Maven/Gradle plugin required—install via npm globally or use Docker.
+No Maven/Gradle plugin required—install via npm globally or use npx.
 
 ### Installation
 
 ```bash
-npm install -g @anthropic/ai-tool-sync
-# or
-docker run -v $(pwd):/workspace ghcr.io/anthropic/ai-tool-sync init
+npm install -g @techupbusiness/ai-tool-sync
+# or npx
+npx @techupbusiness/ai-tool-sync init
 ```
 
 ### When Condition Examples
@@ -255,14 +257,14 @@ globs: ["**/*.kt"]
 
 ## .NET / C#
 
-No NuGet package required—install via npm globally or use Docker.
+No NuGet package required—install via npm globally or use npx.
 
 ### Installation
 
 ```bash
-npm install -g @anthropic/ai-tool-sync
-# or
-docker run -v $(pwd):/workspace ghcr.io/anthropic/ai-tool-sync init
+npm install -g @techupbusiness/ai-tool-sync
+# or npx
+npx @techupbusiness/ai-tool-sync init
 ```
 
 ### When Condition Example
@@ -279,14 +281,14 @@ globs: ["**/*.cs"]
 
 ## Dart / Flutter
 
-No pub package required—install via npm globally or use Docker.
+No pub package required—install via npm globally or use npx.
 
 ### Installation
 
 ```bash
-npm install -g @anthropic/ai-tool-sync
-# or
-docker run -v $(pwd):/workspace ghcr.io/anthropic/ai-tool-sync init
+npm install -g @techupbusiness/ai-tool-sync
+# or npx
+npx @techupbusiness/ai-tool-sync init
 ```
 
 ### When Condition Example
@@ -300,35 +302,6 @@ when: pub:flutter
 globs: ["lib/**/*.dart"]
 ---
 ```
-
-## Docker Usage
-
-For teams that prefer not to install Node.js locally.
-
-### Basic Commands
-
-```bash
-# Initialize
-docker run -v $(pwd):/workspace ghcr.io/anthropic/ai-tool-sync init
-
-# Sync
-docker run -v $(pwd):/workspace ghcr.io/anthropic/ai-tool-sync
-
-# Validate
-docker run -v $(pwd):/workspace ghcr.io/anthropic/ai-tool-sync validate
-
-# With options
-docker run -v $(pwd):/workspace ghcr.io/anthropic/ai-tool-sync --dry-run --verbose
-```
-
-### Shell Alias
-
-```bash
-# Add to ~/.bashrc or ~/.zshrc
-alias ai-sync='docker run -v $(pwd):/workspace ghcr.io/anthropic/ai-tool-sync'
-```
-
-Then use: `ai-sync init`, `ai-sync --dry-run`, etc.
 
 ## CI/CD Integration
 
@@ -346,7 +319,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npx @anthropic/ai-tool-sync validate
+      - run: npx @techupbusiness/ai-tool-sync validate
 ```
 
 ### GitLab CI
@@ -355,7 +328,7 @@ jobs:
 ai-sync:
   image: node:20-alpine
   script:
-    - npx @anthropic/ai-tool-sync validate
+    - npx @techupbusiness/ai-tool-sync validate
   rules:
     - changes:
         - .ai-tool-sync/**/*
@@ -366,7 +339,7 @@ ai-sync:
 ```bash
 #!/bin/sh
 # .git/hooks/pre-commit
-npx @anthropic/ai-tool-sync validate || exit 1
+npx @techupbusiness/ai-tool-sync validate || exit 1
 ```
 
 ## Verifying Installation
@@ -393,7 +366,7 @@ Global npm packages may not be in your PATH. Try:
 
 ```bash
 # Use npx instead
-npx @anthropic/ai-tool-sync --version
+npx @techupbusiness/ai-tool-sync --version
 
 # Or find npm global bin directory
 npm config get prefix
@@ -404,7 +377,7 @@ npm config get prefix
 
 ```bash
 # Option 1: Use npx (no global install needed)
-npx @anthropic/ai-tool-sync init
+npx @techupbusiness/ai-tool-sync init
 
 # Option 2: Fix npm permissions
 # See: https://docs.npmjs.com/resolving-eacces-permissions-errors-when-installing-packages-globally
