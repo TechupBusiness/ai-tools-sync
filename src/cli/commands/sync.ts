@@ -10,6 +10,7 @@
  */
 
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { loadConfig } from '../../config/loader.js';
 import {
@@ -60,6 +61,9 @@ import {
 
 import type { ResolvedConfig } from '../../config/types.js';
 import type { ParsedRule } from '../../parsers/rule.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Current version for manifest
@@ -333,10 +337,7 @@ async function loadContent(config: ResolvedConfig, _options: SyncOptions): Promi
     for (const loaderConfig of config.loaders) {
       if (loaderConfig.type === 'ai-tool-sync') {
         // Load from defaults directory in the package
-        const defaultsPath = path.resolve(
-          path.dirname(new URL(import.meta.url).pathname),
-          '../../../defaults'
-        );
+        const defaultsPath = path.resolve(__dirname, '../../../defaults');
         logger.debug(`Loading defaults from: ${defaultsPath}`);
         const defaultsResult = await localLoader.load(defaultsPath, {
           basePath: config.projectRoot,
