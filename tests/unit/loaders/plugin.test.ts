@@ -1,13 +1,15 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { PluginLoader } from '../../../src/loaders/plugin.js';
 import { createPluginCache, generatePluginId } from '../../../src/utils/plugin-cache.js';
 
-const __dirname = path.dirname(new URL(import.meta.url).pathname);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const FIXTURES_PATH = path.join(__dirname, '../../fixtures/claude-plugins');
 const BASIC_PLUGIN = path.join(FIXTURES_PATH, 'basic-plugin');
 
