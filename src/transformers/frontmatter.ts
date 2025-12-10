@@ -438,7 +438,22 @@ export function serializeFrontmatter(frontmatter: Record<string, unknown>): stri
     } else if (typeof value === 'object') {
       lines.push(`${key}:`);
       for (const [subKey, subValue] of Object.entries(value as Record<string, unknown>)) {
-        lines.push(`  ${subKey}: ${safeString(subValue)}`);
+        if (subValue === undefined || subValue === null) continue;
+
+        if (Array.isArray(subValue)) {
+          if (subValue.length === 0) {
+            lines.push(`  ${subKey}: []`);
+          } else {
+            lines.push(`  ${subKey}:`);
+            for (const item of subValue) {
+              lines.push(`    - ${safeString(item)}`);
+            }
+          }
+        } else if (typeof subValue === 'object') {
+          lines.push(`  ${subKey}: ${safeString(subValue)}`);
+        } else {
+          lines.push(`  ${subKey}: ${safeString(subValue)}`);
+        }
       }
     }
   }

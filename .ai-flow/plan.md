@@ -313,9 +313,9 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
   - Parser validation + lint integration (T231) wired; CLI `convert` command writes normalized files
   - **Deps: T231** for full lint; parser validation available now
 
-- [ ] **T239** - Skill to generate new generic format files
-  - Create new generic format files from scratch with platform-aware defaults
-  - Use existing parser validation as baseline syntax check; add lint flow when **T231** rule linting is available
+- [x] **T239** - Skill to generate new generic format files
+  - Generator + CLI implemented with tool/model mapping warnings, gitignore update, lint optional
+  - Tests: `npm test -- creators`
   - **Deps: T231**
 
 - [ ] **T259** - Add defaults prompt skill for LLM authoring
