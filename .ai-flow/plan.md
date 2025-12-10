@@ -330,6 +330,26 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
   - Supports dogfooding, CI pipelines, and quick file checks
   - **Deps: None**
 
+- [ ] **T261** - Separate skills from policies in folder structure
+  - Rename `rules/` to `policies/`; add `skills/` as distinct top-level folder
+  - Policies = what you must do (constraints/enforcement via globs or always_apply)
+  - Skills = what you can do (capabilities/knowledge via semantic or explicit invocation)
+  - Add `kind` field to frontmatter schema: `policy | skill | persona | command | hook`
+  - Add `loading.strategy` field: `glob | always | semantic | explicit`
+  - Update docs (README/CONFIGURATION/etc.) for policies vs skills split
+  - Restructure `defaults/` to `defaults/policies` + `defaults/skills` with references updated
+  - Update authoring-guide.md with distinction table
+  - Update parsers/generators for new folder structure
+  - **Deps: T259**
+
+- [ ] **T262** - Update README.md for policies/skills concept
+  - Remove detailed lists of built-in personas/commands/hooks, just mention predefined ones ship for easy use
+  - Document new folder structure with policies/ (was rules/) and skills/ distinction
+  - Update all examples to use new terminology
+  - Update docs/*.md files as well
+  - Update defaults/rules/authoring-guide.md to reflect policies vs skills
+  - **Deps: T261**
+
 ---
 
 ## Platform Research Reference
