@@ -137,8 +137,12 @@ targets:
 # =============================================================================
 
 output:
+  # Clean generated files before syncing (default: true; recommended to avoid stale files)
   clean_before_sync: true
+  # Add generation notices (default: true; uses HTML/# comments or JSON metadata; safe to disable if you prefer)
   add_do_not_edit_headers: true
+  # Manage .gitignore entries for generated paths (default: true; updates a managed block even in manually maintained files)
+  update_gitignore: true
 
 # =============================================================================
 # Rules Configuration (Optional)

@@ -108,6 +108,31 @@ Based on the architecture defined in `plan.md`, this document tracks remaining t
   - Add to `docs/INSTALLATION.md` with language tabs/sections
   - **Deps: T240**
 
+- [ ] **T268** - Rename `_core.md` to `project.md`
+  - Update `ai-sync init` to generate `project.md` instead of `_core.md`
+  - Rename default docs and references to `project.md`
+  - Update tests and samples to expect `project.md`
+  - **Deps: None**
+
+- [ ] **T269** - Refactor loader config: per-loader `use` filter, remove `ai-tool-sync` type
+  - Move `use` from global config into each loader's config for per-source filtering
+  - Remove `ai-tool-sync` loader type (use npm/local/git for defaults instead)
+  - Support `*` wildcard to select all items of a content type
+  - Update schema, types, sync logic, and docs/LOADERS.md
+  - **Deps: None**
+
+- [ ] **T270** - Refactor rules config: per-loader `rules` overrides with regex support
+  - Move `rules` from global config into each loader's config for per-source overrides
+  - Add `patterns` field for regex matching alongside existing `globs`
+  - Update schema, types, sync logic, and docs/CONFIGURATION.md
+  - **Deps: T269**
+
+- [ ] **T271** - Remove `subfolder_contexts` configuration
+  - Remove redundant feature - no AI tool supports subfolder context files
+  - Globs in rules already solve contextual rule application
+  - Delete subfolder-context.ts generator and all related code
+  - **Deps: T270**
+
 #### Track B: npm Publishing (P0)
 
 - [x] **T243** - Prepare npm package for publishing

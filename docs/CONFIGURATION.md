@@ -448,14 +448,20 @@ Output generation settings.
 output:
   clean_before_sync: true
   add_do_not_edit_headers: true
+  update_gitignore: true
 ```
 
 ### Output Properties
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `clean_before_sync` | boolean | `true` | Delete generated files before syncing |
-| `add_do_not_edit_headers` | boolean | `true` | Add "do not edit" comments to generated files |
+| `clean_before_sync` | boolean | `true` | Delete generated files before syncing (recommended to avoid stale files) |
+| `add_do_not_edit_headers` | boolean | `true` | Add generation notices (Markdown uses HTML comments, YAML uses `#`, JSON adds a `__generated_by` key) |
+| `update_gitignore` | boolean | `true` | Manage a generated block in `.gitignore` for output paths (adds/updates even if you maintain the file manually) |
+
+**Notes:**
+- `add_do_not_edit_headers` uses target-safe comment styles and does not break output syntax; set to `false` if you prefer no headers.
+- `clean_before_sync` is recommended to prevent stale generated files from lingering.
 
 ## Complete Examples
 
