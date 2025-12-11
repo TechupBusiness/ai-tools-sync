@@ -6,6 +6,38 @@ This document describes the key data structures used throughout ai-tool-sync.
 
 ai-tool-sync manages four primary content types, all extending a common base:
 
+```text
+                    ┌─────────────────────────────────┐
+                    │        BaseFrontmatter          │
+                    ├─────────────────────────────────┤
+                    │ + name: string                  │
+                    │ + description?: string          │
+                    │ + version?: string              │
+                    │ + targets?: TargetType[]        │
+                    │ + cursor?: CursorExtension      │
+                    │ + claude?: ClaudeExtension      │
+                    │ + factory?: FactoryExtension    │
+                    └───────────────┬─────────────────┘
+                                    │
+        ┌───────────────┬───────────┴───────────┬───────────────┐
+        │               │                       │               │
+        ▼               ▼                       ▼               ▼
+┌───────────────┐ ┌───────────────┐ ┌───────────────────┐ ┌───────────────┐
+│     Rule      │ │    Persona    │ │      Command      │ │     Hook      │
+├───────────────┤ ├───────────────┤ ├───────────────────┤ ├───────────────┤
+│ + kind?       │ │ + extends?    │ │ + execute?        │ │ + event       │
+│ + always_apply│ │ + tools?      │ │ + args?           │ │ + match?      │
+│ + when?       │ │ + model?      │ │ + globs?          │ │ + action?     │
+│ + globs?      │ │ + traits?     │ │ + allowedTools?   │ │ + message?    │
+│ + loading?    │ └───────────────┘ │ + variables?      │ │ + type?       │
+│ + invocation? │                   └───────────────────┘ └───────────────┘
+│ + expertise?  │
+│ + requires?   │
+│ + category?   │
+│ + priority?   │
+└───────────────┘
+```
+
 ```mermaid
 classDiagram
     class BaseFrontmatter {
@@ -64,6 +96,21 @@ classDiagram
 
 All parsed content is wrapped in a generic structure:
 
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                    ParsedContent<T>                             │
+├─────────────────────────────────────────────────────────────────┤
+│ + frontmatter: T        // Parsed YAML metadata                 │
+│ + content: string       // Markdown body                        │
+│ + filePath?: string     // Source file path                     │
+└─────────────────────────────────────────────────────────────────┘
+                                    │
+        ┌───────────────┬───────────┴───────────┬───────────────┐
+        │               │                       │               │
+        ▼               ▼                       ▼               ▼
+  ParsedRule      ParsedPersona         ParsedCommand      ParsedHook
+```
+
 ```mermaid
 classDiagram
     class ParsedContent~T~ {
@@ -106,6 +153,32 @@ classDiagram
 
 Content loaders return this unified result:
 
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                        LoadResult                               │
+├─────────────────────────────────────────────────────────────────┤
+│ + rules: ParsedRule[]                                           │
+│ + personas: ParsedPersona[]                                     │
+│ + commands: ParsedCommand[]                                     │
+│ + hooks: ParsedHook[]                                           │
+│ + mcpServers?: Record<string, McpServer>                        │
+│ + errors?: LoadError[]                                          │
+│ + source?: string                                               │
+└───────────────────────────────────┬─────────────────────────────┘
+                                    │
+                                    │ extends
+                                    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      ResolvedContent                            │
+├─────────────────────────────────────────────────────────────────┤
+│ + projectRoot: string                                           │
+│ + projectName?: string                                          │
+│ + mcpConfig?: McpConfig                                         │
+│ + claudeSettings?: ClaudeSettingsConfig                         │
+│ + factorySettings?: FactorySettingsConfig                       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
 ```mermaid
 classDiagram
     class LoadResult {
@@ -132,6 +205,26 @@ classDiagram
 ## Platform Extensions
 
 Each content type can have platform-specific overrides:
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          PlatformExtensions                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+        │                         │                         │
+        ▼                         ▼                         ▼
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────────┐
+│ CursorExtension │     │ ClaudeExtension │     │  FactoryExtension   │
+├─────────────────┤     ├─────────────────┤     ├─────────────────────┤
+│ + alwaysApply?  │     │ + import_as_    │     │ + allowed-tools?    │
+│ + globs?        │     │     skill?      │     │ + tools?            │
+│ + description?  │     │ + tools?        │     │ + model?            │
+│ + allowedTools? │     │ + model?        │     │ + reasoningEffort?  │
+└─────────────────┘     │ + action?       │     │ + variables?        │
+                        │ + message?      │     └─────────────────────┘
+                        │ + type?         │
+                        │ + timeout?      │
+                        └─────────────────┘
+```
 
 ```mermaid
 classDiagram
@@ -246,6 +339,47 @@ type HookEvent =
 ```
 
 ## Configuration Types
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                           Config                                │
+├─────────────────────────────────────────────────────────────────┤
+│ + version: string                                               │
+│ + project_name?: string                                         │
+│ + use?: UseConfig ─────────────────────────────────────────┐    │
+│ + loaders?: LoaderConfig[]                                 │    │
+│ + targets?: string[]                                       │    │
+│ + rules?: Record<string, RuleConfig>                       │    │
+│ + subfolder_contexts?: Record<string, SubfolderConfig>     │    │
+│ + hooks?: Record<string, HookConfig[]>                     │    │
+│ + output?: OutputConfig                                    │    │
+│ + context?: Record<string, string|number|boolean>          │    │
+│ + claude?: ClaudeConfig                                    │    │
+│ + factory?: FactoryConfig                                  │    │
+└────────────────────────────────────────────────────────────┼────┘
+                                                             │
+                         ┌───────────────────────────────────┘
+                         ▼
+              ┌─────────────────────┐
+              │      UseConfig      │
+              ├─────────────────────┤
+              │ + personas?: string[]
+              │ + commands?: string[]
+              │ + plugins?: PluginConfig[]
+              └──────────┬──────────┘
+                         │
+                         ▼
+              ┌─────────────────────┐
+              │    PluginConfig     │
+              ├─────────────────────┤
+              │ + name: string      │
+              │ + source: string    │
+              │ + version?: string  │
+              │ + enabled: boolean  │
+              │ + include?: string[]│
+              │ + exclude?: string[]│
+              └─────────────────────┘
+```
 
 ```mermaid
 classDiagram

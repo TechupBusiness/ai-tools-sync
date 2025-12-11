@@ -20,7 +20,7 @@ After loaders collect content, generators transform it for each configured targe
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Generic Format                            │
+│                    Generic Format                           │
 │  (rules, personas, commands, hooks)                         │
 └─────────────────────────────────────────────────────────────┘
                            │

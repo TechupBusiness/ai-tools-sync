@@ -6,6 +6,38 @@ This document provides a high-level overview of the ai-tool-sync architecture, a
 
 ai-tool-sync acts as a configuration synchronization layer that transforms a single source of truth into platform-specific outputs.
 
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        SOURCE (.ai-tool-sync/)                              │
+├─────────────┬─────────────┬─────────────┬─────────────┬─────────────────────┤
+│ config.yaml │  rules/*.md │personas/*.md│commands/*.md│    hooks/*.md       │
+└──────┬──────┴──────┬──────┴──────┬──────┴──────┬──────┴──────────┬──────────┘
+       │             │             │             │                 │
+       └─────────────┴──────┬──────┴─────────────┴─────────────────┘
+                            │
+                            ▼
+       ┌────────────────────────────────────────────────────────────┐
+       │                   PROCESSING LAYER                         │
+       ├────────────────┬───────────────────┬───────────────────────┤
+       │ Content Loaders│     Parsers       │   Content Resolver    │
+       └───────┬────────┴─────────┬─────────┴───────────┬───────────┘
+               │                  │                     │
+               └──────────────────┼─────────────────────┘
+                                  │
+                                  ▼
+       ┌────────────────────────────────────────────────────────────┐
+       │                   GENERATION LAYER                         │
+       ├──────────────────┬──────────────────┬──────────────────────┤
+       │ Cursor Generator │ Claude Generator │  Factory Generator   │
+       └────────┬─────────┴────────┬─────────┴──────────┬───────────┘
+                │                  │                    │
+                ▼                  ▼                    ▼
+       ┌────────────────┐ ┌────────────────┐ ┌──────────────────────┐
+       │.cursor/rules/  │ │.claude/skills/ │ │ .factory/skills/     │
+       │    *.mdc       │ │  CLAUDE.md     │ │   AGENTS.md          │
+       └────────────────┘ └────────────────┘ └──────────────────────┘
+```
+
 ```mermaid
 flowchart TB
     subgraph Source["Source (.ai-tool-sync/)"]
@@ -53,6 +85,49 @@ flowchart TB
 ```
 
 ## Module Structure
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              CLI LAYER                                      │
+│                           (src/cli/)                                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  index.ts ──┬── commands/sync.ts                                            │
+│             ├── commands/init.ts                                            │
+│             ├── commands/validate.ts                                        │
+│             ├── commands/convert.ts                                         │
+│             └── commands/watch.ts                                           │
+└──────────────────────────────────┬──────────────────────────────────────────┘
+                                   │
+          ┌────────────────────────┼────────────────────────┐
+          │                        │                        │
+          ▼                        ▼                        ▼
+┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐
+│   CONFIG LAYER      │  │   LOADERS LAYER     │  │  GENERATORS LAYER   │
+│   (src/config/)     │  │   (src/loaders/)    │  │  (src/generators/)  │
+├─────────────────────┤  ├─────────────────────┤  ├─────────────────────┤
+│ • loader.ts         │  │ • base.ts           │  │ • base.ts           │
+│ • types.ts          │  │ • local.ts          │  │ • cursor.ts         │
+└─────────────────────┘  │ • git.ts            │  │ • claude.ts         │
+                         │ • npm.ts            │  │ • factory.ts        │
+                         │ • pip.ts            │  └─────────────────────┘
+                         │ • url.ts            │
+                         │ • plugin.ts         │
+                         └──────────┬──────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │   PARSERS LAYER     │
+                         │   (src/parsers/)    │
+                         ├─────────────────────┤
+                         │ • types.ts          │
+                         │ • frontmatter.ts    │
+                         │ • rule.ts           │
+                         │ • persona.ts        │
+                         │ • command.ts        │
+                         │ • hook.ts           │
+                         │ • mcp.ts            │
+                         └─────────────────────┘
+```
 
 ```mermaid
 graph TB
@@ -121,6 +196,8 @@ graph TB
     G_CLAUDE --> P_TYPES
     G_FACTORY --> P_TYPES
 ```
+
+
 
 ## Directory Structure
 
